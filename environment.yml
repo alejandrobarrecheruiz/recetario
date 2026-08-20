@@ -1,0 +1,20 @@
+# Entorno de desarrollo del recetario.
+#
+# Recrear:      conda env create -f environment.yml
+# Actualizar:   conda env update -f environment.yml --prune
+# Activar:      conda activate recetario
+#
+# El entorno hay que activarlo EN CADA TERMINAL NUEVA. El Node del sistema no es
+# el Node del proyecto.
+#
+# conda solo aporta el runtime de Node. Las dependencias de la aplicacion las
+# gestiona npm en package.json / package-lock.json; aqui no se duplican.
+name: recetario
+
+channels:
+  - conda-forge
+
+dependencies:
+  # Node 22 LTS. Es la version que usa Vercel para el runtime de Node.js, asi que
+  # local y produccion corren lo mismo.
+  - nodejs=22

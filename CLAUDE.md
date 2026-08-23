@@ -330,6 +330,23 @@ En el plan gratuito la única salida es `0.0.0.0/0` en Atlas > Network Access; l
 IP estáticas de salida son de pago. No deja la base abierta: sigue protegida por
 usuario y contraseña, que es lo que de verdad la protege.
 
+### Cómo comprobar que la separación quedó bien
+
+`/api/salud` hace un ping a la base y devuelve `{ ok: true }` o un 503. El nombre
+de la base **no va en la respuesta**, que es pública: va al log del servidor. En
+los *Logs* de Vercel se lee `salud: ok, base "recetas_prod"` en Production y
+`recetas_dev` en el preview de `develop`. Esa es la confirmación de que las
+casillas de las variables quedaron bien puestas.
+
+Existe porque las variables de Vercel y la apertura de Atlas se configuran a
+ciegas: nada las comprueba hasta que algo intenta usarlas, y lo primero que lo
+intenta es Better Auth. Sin esta ruta, un fallo en la fase 3 tiene tres
+sospechosos a la vez.
+
+Lleva `export const dynamic = "force-dynamic"`. Sin eso Next puede resolverla en
+el build, el ping se ejecutaría al desplegar y un Atlas que no contesta rompería
+el despliegue entero en vez de devolver un 503.
+
 ### La primera vez que se toque producción
 
 `recetas_prod` nace vacía y **sin índices**. Antes del primer despliegue que lea
@@ -551,7 +568,8 @@ recetario/
 │  │  └─ api/
 │  │     ├─ auth/[...all]/route.ts   # handler de Better Auth
 │  │     ├─ recetas/route.ts
-│  │     └─ imagenes/firma/route.ts  # firma de subida a ImageKit
+│  │     ├─ imagenes/firma/route.ts  # firma de subida a ImageKit
+│  │     └─ salud/route.ts           # ping a la base; ver sección 8
 │  ├─ lib/
 │  │  ├─ mongo.ts                    # cliente cacheado + índices
 │  │  ├─ auth.ts
@@ -574,7 +592,8 @@ recetario/
    └─ entorno/                       # tocan la red: `npm run test:entorno`
       ├─ variables.test.ts
       ├─ mongo.test.ts
-      └─ imagekit.test.ts
+      ├─ imagekit.test.ts
+      └─ salud.test.ts
 ```
 
 Las pruebas corren con el runner de `node:test` y `tsx`, que ya estaban en el

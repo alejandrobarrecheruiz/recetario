@@ -74,6 +74,9 @@ npm run dev          # desarrollo, http://localhost:3000
 npm run build        # build de producción
 npm run lint         # ESLint
 npm run typecheck    # tsc --noEmit
+npm run test         # pruebas puras (visibilidad y esquemas). Sin red.
+npm run test:entorno # comprueba .env.local: Atlas e ImageKit de verdad
+npm run test:todo    # las dos anteriores
 npm run indices      # crea los índices de MongoDB (idempotente)
 npm run seed:dev     # datos de ejemplo (solo recetas_dev)
 npm run backup       # volcado manual de la base
@@ -87,6 +90,11 @@ Antes de empezar hay que copiar la plantilla de entorno:
 ```bash
 cp .env.example .env.local
 ```
+
+Con `.env.local` relleno, `npm run test:entorno` dice si de verdad sirve: conecta
+con Atlas, comprueba permisos de escritura, crea y verifica los índices y valida
+las claves de ImageKit contra su API. Es lo primero que hay que lanzar cuando
+algo «no va» y no se sabe si es el código o el entorno.
 
 ---
 
@@ -457,11 +465,24 @@ recetario/
 │  │  ├─ imagen.ts
 │  │  └─ usuario.ts
 │  └─ components/
-└─ scripts/
-   ├─ indices.ts
-   ├─ backup.ts
-   └─ seed-dev.ts
+├─ scripts/
+│  ├─ indices.ts
+│  ├─ backup.ts
+│  └─ seed-dev.ts
+└─ tests/
+   ├─ unidad/                        # puras: `npm run test`
+   │  ├─ visibilidad.test.ts
+   │  └─ modelos.test.ts
+   └─ entorno/                       # tocan la red: `npm run test:entorno`
+      ├─ variables.test.ts
+      ├─ mongo.test.ts
+      └─ imagekit.test.ts
 ```
+
+Las pruebas corren con el runner de `node:test` y `tsx`, que ya estaban en el
+proyecto: **no hay framework de pruebas ni dependencia nueva**. Las de
+`tests/entorno/` escriben en la base, así que se niegan a arrancar si
+`MONGODB_DB` apunta a producción, y borran lo que insertan.
 
 Los ficheros con `// TODO(fase N)` son andamiaje: la cabecera dice qué va ahí y
 en qué fase. Muchos llevan ya la API oficial verificada en comentarios

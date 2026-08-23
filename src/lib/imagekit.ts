@@ -20,6 +20,18 @@
 // Es sincrona y devuelve { token, signature, expire }. El navegador necesita
 // ademas `publicKey`, que ya es publica.
 //
+// OJO: `@imagekit/next/server` SOLO se puede importar desde dentro de Next. El
+// paquete declara ese subpath con las claves "main" y "module" dentro de
+// "exports", y esas no son condiciones que Node entienda, asi que desde Node
+// plano (los scripts de scripts/ y las pruebas de tests/) el import revienta con
+// ERR_PACKAGE_PATH_NOT_EXPORTED. Dentro de Next lo resuelve el empaquetador:
+// verificado con un build y una peticion real (agosto de 2026).
+//
+// Si alguna vez hace falta firmar fuera de Next, el equivalente esta en el otro
+// paquete y calcula el mismo HMAC-SHA1:
+//
+//   new ImageKit({ privateKey }).helper.getAuthenticationParameters()
+//
 // --- Subida desde el navegador ---
 //
 //   import { upload } from "@imagekit/next";

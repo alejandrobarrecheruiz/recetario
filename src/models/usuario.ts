@@ -37,6 +37,21 @@ export const ROL_POR_DEFECTO: RolAlmacenado = "registrado";
  * Sin sesion -> `publico`. Con sesion y `role: "admin"` -> `admin`. Con sesion y
  * cualquier otra cosa (incluido el `"user"` que pone Better Auth por defecto)
  * -> `registrado`.
+ *
+ * OJO AL CONECTAR BETTER_AUTH (fase 3). Esta funcion recibe el rol, no la
+ * sesion, asi que NO distingue "no hay sesion" de "hay sesion pero el documento
+ * de usuario no tiene campo `role`". Los dos casos llegan aqui como `null` o
+ * `undefined` y los dos devuelven `publico`.
+ *
+ * En la practica no deberia pasar, porque el plugin `admin` pone `"user"` a los
+ * usuarios nuevos. Pero un documento tocado a mano (y el admin se crea a mano)
+ * puede quedarse sin ese campo, y entonces un usuario con sesion valida veria el
+ * blog como si fuera un visitante anonimo.
+ *
+ * Falla cerrado, asi que no es un agujero de seguridad: se ve de menos, nunca de
+ * mas. Si en la fase 3 molesta, la solucion es pasar la sesion entera en vez del
+ * rol, para poder separar los dos casos. Se deja apuntado, no resuelto, porque
+ * es una decision de esa fase.
  */
 export function rolDeSesion(rolGuardado: string | null | undefined): Rol {
   if (rolGuardado === undefined || rolGuardado === null) return "publico";

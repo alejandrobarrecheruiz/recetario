@@ -288,6 +288,12 @@ y las variables de entorno.
 
 ## 8. Separación dev / prod
 
+> **Estado (23 de agosto de 2026): esto ya está montado y comprobado.** Las
+> variables están puestas en los tres entornos de Vercel, Atlas acepta las
+> conexiones de Vercel y `/api/salud` responde correctamente en Production y en
+> Preview. Lo que sigue es la referencia de cómo quedó, no una lista de tareas
+> pendientes.
+
 **Un solo clúster de Atlas con dos bases**: `recetas_dev` y `recetas_prod`.
 
 La cadena de conexión (`MONGODB_URI`) es **idéntica** en local y en Vercel. Lo
@@ -328,7 +334,9 @@ error mucho más confuso de leer).
 
 En el plan gratuito la única salida es `0.0.0.0/0` en Atlas > Network Access; las
 IP estáticas de salida son de pago. No deja la base abierta: sigue protegida por
-usuario y contraseña, que es lo que de verdad la protege.
+usuario y contraseña, que es lo que de verdad la protege. **Ya está configurado
+así**; si algún día el despliegue empieza a fallar al conectar, es lo primero que
+hay que mirar por si se revirtió.
 
 ### Cómo comprobar que la separación quedó bien
 

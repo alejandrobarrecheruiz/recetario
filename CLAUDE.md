@@ -295,14 +295,50 @@ La cadena de conexión (`MONGODB_URI`) es **idéntica** en local y en Vercel. Lo
 
 En Vercel:
 
-| Entorno | `MONGODB_DB` | `IMAGEKIT_FOLDER` |
-|---|---|---|
-| Production | `recetas_prod` | `prod` |
-| Preview | `recetas_dev` | `dev` |
-| Development | `recetas_dev` | `dev` |
+| Entorno | `MONGODB_DB` | `IMAGEKIT_FOLDER` | `BETTER_AUTH_URL` |
+|---|---|---|---|
+| Production | `recetas_prod` | `prod` | `https://recetario-36ok.vercel.app` |
+| Preview | `recetas_dev` | `dev` | URL fija de rama de `develop` |
+| Development | `recetas_dev` | `dev` | `http://localhost:3000` |
+
+Las otras cinco (`MONGODB_URI`, `BETTER_AUTH_SECRET`, `IMAGEKIT_PRIVATE_KEY`,
+`NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY`, `NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT`) valen lo
+mismo en los tres entornos.
 
 `recetas_prod` va **solo** en el entorno Production. Al meter la variable en
 Vercel hay que desmarcar Preview y Development explícitamente.
+
+**Orden al rellenarlas, y no es un capricho:** Vercel marca las tres casillas por
+defecto. Primero las cinco compartidas, luego los valores de dev y `recetas_prod`
+el último. Si se empieza por producción, el preview de `develop` queda apuntando
+a la base de producción hasta que alguien se dé cuenta.
+
+`BETTER_AUTH_URL` **no puede quedarse en `localhost` en Vercel**: Better Auth la
+usa para construir los enlaces de sesión. La de Preview es la URL fija de rama de
+`develop`, que se lee en el panel de Vercel; no la de un despliegue concreto, que
+cambia en cada push. Hasta la fase 3 nadie la lee, así que se puede rellenar
+después del primer despliegue, que es cuando se conocen las URLs.
+
+### Atlas tiene que aceptar las conexiones de Vercel
+
+En local basta con la IP propia autorizada, pero **las funciones de Vercel salen
+por IPs que cambian en cada invocación**. Con solo la IP de casa en la lista, el
+despliegue falla al conectar (no en las credenciales: en la conexión, que es un
+error mucho más confuso de leer).
+
+En el plan gratuito la única salida es `0.0.0.0/0` en Atlas > Network Access; las
+IP estáticas de salida son de pago. No deja la base abierta: sigue protegida por
+usuario y contraseña, que es lo que de verdad la protege.
+
+### La primera vez que se toque producción
+
+`recetas_prod` nace vacía y **sin índices**. Antes del primer despliegue que lea
+o escriba recetas de verdad hay que crearlos a mano, que es el caso legítimo del
+permiso explícito:
+
+```bash
+MONGODB_DB=recetas_prod npm run indices -- --permitir-prod
+```
 
 **Nunca ejecutar scripts contra `recetas_prod` desde local.** Los scripts de
 `scripts/` comprueban `MONGODB_DB` y se niegan a arrancar si apunta a prod:

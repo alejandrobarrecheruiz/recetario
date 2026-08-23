@@ -44,6 +44,9 @@ yarn-error.log*
 # ajustes locales de Claude Code
 .claude/settings.local.json
 
+# ajustes locales del IDE (JetBrains): workspace, tema y .iml son de esta maquina
+/.idea/
+
 # vercel
 .vercel
 

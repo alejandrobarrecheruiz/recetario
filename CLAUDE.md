@@ -421,18 +421,20 @@ reales.
 
 ## 13. Orden de construcción
 
-1. **Repo, Next, ramas y despliegue en blanco a Vercel** ← **estamos aquí**
-2. Conexión a Mongo con cliente cacheado
-3. Better Auth, roles y usuario admin creado a mano
+1. ~~Repo, Next, ramas y despliegue en blanco a Vercel~~ ✅
+2. ~~Conexión a Mongo con cliente cacheado~~ ✅
+3. **Better Auth, roles y usuario admin creado a mano** ← **estamos aquí**
 4. Esquema de receta con Zod
 5. Panel: crear y editar recetas **sin imágenes** todavía
 6. ImageKit con subida firmada
-7. Vistas públicas y filtro de visibilidad
-8. JSON-LD de `schema.org/Recipe`, SEO y script de backup
+7. **Dirección de arte y sistema visual** (ver sección 14)
+8. Vistas públicas y filtro de visibilidad
+9. JSON-LD de `schema.org/Recipe`, SEO y script de backup
 
 La lógica del orden: validar el pipeline completo de despliegue cuando todavía no
-hay nada que perder, y meter las imágenes tarde porque son la pieza con más
-partes móviles.
+hay nada que perder, meter las imágenes tarde porque son la pieza con más partes
+móviles, y decidir el lenguaje visual justo antes de construir las páginas que lo
+usan, para no tener que rehacerlas.
 
 (El andamiaje de la fase 1 ya adelanta `src/lib/mongo.ts`, `src/lib/visibilidad.ts`
 y los modelos de Zod, porque son la base sobre la que se apoya todo lo demás.)
@@ -451,7 +453,64 @@ firmar. Sin eso, cualquiera puede pedir firmas y subir a nuestra cuenta.
 
 ---
 
-## 14. Decisiones aún abiertas
+## 14. La fase de diseño
+
+Es una fase, no una mano de pintura al final. Va la séptima, justo antes de
+construir las vistas públicas, para que las páginas nazcan ya con su cara en vez
+de retocarse después.
+
+**El panel no entra.** Lo usa una sola persona una vez por semana: que sea
+legible y cómodo de rellenar es suficiente. El esfuerzo de diseño va entero a la
+parte pública, que es la que se regala.
+
+### Lo que ya está cerrado
+
+Tailwind, sin fichero de estilos aparte. Los tokens (color, tipografía, escala de
+espaciado) se definen una vez en la configuración de Tailwind y todo lo demás los
+usa; nada de valores sueltos repartidos por los componentes.
+
+Sigue en pie la regla de no añadir dependencias sin preguntar. Eso incluye
+librerías de componentes: una receta no necesita un sistema de diseño entero.
+
+### Restricciones que salen del propio proyecto
+
+No son gustos, son consecuencias de lo que es este blog. Cualquier propuesta
+visual tiene que convivir con ellas:
+
+1. **Las fotos son el contenido, no la decoración.** El diseño es el marco, y un
+   marco que compite con la foto está mal.
+2. **Se lee en la cocina, con el móvil en la encimera y las manos sucias.** Cuerpo
+   de texto grande, pasos que no se pierdan al hacer scroll, y nada que dependa
+   del hover para revelarse.
+3. **Una receta a la semana.** La portada no va a tener doscientas tarjetas nunca.
+   Puede permitirse ser generosa en lugar de una rejilla densa; diseñarla como un
+   catálogo sería diseñar para un problema que no tenemos.
+4. **Es un regalo.** Tiene que tener cara propia. Si el resultado se parece a una
+   plantilla, la fase no está terminada.
+5. **Los ingredientes se van a poder escalar por raciones.** Por eso `cantidad`,
+   `unidad` y `nombre` van separados. La lista de ingredientes tiene que dejar
+   sitio a ese control desde el primer boceto, no encajarlo a la fuerza después.
+
+### Y una que es fácil de romper sin darse cuenta
+
+**Una receta que el visitante no puede ver no existe para él.** Nada de candados,
+de tarjetas borrosas ni de «inicia sesión para ver esta receta». Eso sería un
+condicional de render, y ya viajó al navegador: contradice la regla dura de la
+sección 5 y además confirma que la receta existe.
+
+### Lo que la fase tiene que decidir
+
+- Dos familias tipográficas y una escala; el ritmo vertical de la página.
+- La paleta, con sus dos temas si se quiere modo oscuro.
+- La tarjeta de receta de la portada.
+- La ficha: cómo conviven ingredientes y pasos, y qué manda en móvil.
+- Las fotos de paso: intercaladas con el texto o en una tira aparte.
+- El estado vacío y el 404, que en un blog de una receta semanal se ven más de lo
+  que parece.
+
+---
+
+## 15. Decisiones aún abiertas
 
 No darlas por cerradas sin querer.
 
@@ -463,10 +522,13 @@ No darlas por cerradas sin querer.
   que si más adelante se decide renderizarlo como Markdown **no hará falta migrar
   nada**.
 - **Dominio propio**: por ahora se usa el subdominio gratuito de Vercel.
+- **La dirección de arte**: no hay nada elegido todavía, ni paleta ni tipografías.
+  Lo que sí está fijado son las restricciones de la sección 14, que acotan el
+  terreno sin cerrar la decisión.
 
 ---
 
-## 15. Estructura
+## 16. Estructura
 
 ```
 recetario/

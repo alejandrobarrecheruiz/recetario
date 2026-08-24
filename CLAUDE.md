@@ -472,8 +472,8 @@ reales.
 5. ~~Panel: crear y editar recetas sin imágenes todavía~~ ✅
 6. ~~ImageKit con subida firmada~~ ✅
 7. ~~Dirección de arte y sistema visual~~ ✅ (lo decidido, en la sección 14)
-8. **Vistas públicas y filtro de visibilidad** ← **estamos aquí**
-9. JSON-LD de `schema.org/Recipe`, SEO y script de backup
+8. ~~Vistas públicas y filtro de visibilidad~~ ✅
+9. **JSON-LD de `schema.org/Recipe`, SEO y script de backup** ← **estamos aquí**
 
 La lógica del orden: validar el pipeline completo de despliegue cuando todavía no
 hay nada que perder, meter las imágenes tarde porque son la pieza con más partes
@@ -625,9 +625,10 @@ recetario/
 ├─ README.md
 ├─ src/
 │  ├─ app/
+│  │  ├─ not-found.tsx               # el 404 del sistema; texto ambiguo a propósito
 │  │  ├─ (public)/
-│  │  │  ├─ page.tsx                 # portada
-│  │  │  └─ recetas/[slug]/page.tsx  # detalle de receta
+│  │  │  ├─ page.tsx                 # portada especial: cubierta, buscador (?q, ?categoria)
+│  │  │  └─ recetas/[slug]/page.tsx  # ficha con escalador de raciones
 │  │  ├─ (auth)/
 │  │  │  └─ login/page.tsx
 │  │  ├─ admin/
@@ -650,8 +651,9 @@ recetario/
 │  │  ├─ auth-client.ts
 │  │  ├─ sesion.ts                   # sesión y rol de la petición, en servidor
 │  │  ├─ recetas.ts                  # doc ↔ receta (ObjectId ↔ hex) y publicadaEn
-│  │  ├─ imagenes.ts                 # doc ↔ imagen
+│  │  ├─ imagenes.ts                 # doc ↔ imagen + urlConAncho (transformaciones)
 │  │  ├─ imagekit.ts                 # cliente de servidor: borrar por fileId
+│  │  ├─ formato.ts                  # fechas y cantidades, puro e isomorfo
 │  │  └─ visibilidad.ts              # rol → filtro de Mongo
 │  ├─ models/
 │  │  ├─ receta.ts                   # Zod, fuente de verdad
@@ -660,6 +662,7 @@ recetario/
 │  └─ components/
 │     ├─ formulario-receta.tsx       # crear/editar; mismo Zod que la API
 │     ├─ selector-imagen.tsx         # firma → subida directa → metadatos
+│     ├─ ingredientes-escalables.tsx # el escalador de raciones (cliente)
 │     └─ boton-salir.tsx
 ├─ scripts/
 │  ├─ indices.ts

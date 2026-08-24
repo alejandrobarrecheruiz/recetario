@@ -16,6 +16,16 @@ export function imagenADoc(imagen: Imagen): ImagenDoc {
   };
 }
 
+/**
+ * URL de entrega con transformacion de ImageKit: ancho fijado y compresion.
+ * Las transformaciones y el CDN son gratis; el navegador nunca descarga la
+ * foto original de la camara.
+ */
+export function urlConAncho(url: string, ancho: number): string {
+  const separador = url.includes("?") ? "&" : "?";
+  return `${url}${separador}tr=w-${ancho},q-80`;
+}
+
 export function docAImagen(doc: ImagenDoc): Imagen {
   return {
     ...doc,

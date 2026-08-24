@@ -1,26 +1,124 @@
 @import "tailwindcss";
 
+/*
+ * Tokens del sistema visual (fase 7, sección 14 de CLAUDE.md). Se definen UNA
+ * vez aquí y todo lo demás los usa; nada de valores sueltos por los componentes.
+ *
+ * El modo oscuro es automático con prefers-color-scheme, sin interruptor: los
+ * tokens cambian de valor y las clases de Tailwind (bg-papel, text-tinta...)
+ * siguen valiendo tal cual.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --papel: #fcfbf8;
+  --superficie: #ffffff;
+  --tinta: #22333d;
+  --apagado: #6c7e86;
+  --apagado-medio: #7e8f96;
+  --apagado-suave: #93a3aa;
+  --filo: #e2e8e9;
+  --filo-fino: #edf0ee;
+  --celeste: #7ec8df;
+  --celeste-numero: #5fb6d2;
+  --celeste-relleno: #ddf1f7;
+  --celeste-borde: #bfe6f2;
+  --enlace: #3f97b4;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --papel: #141f26;
+    --superficie: #1b2830;
+    --tinta: #e4eae8;
+    --apagado: #7f949e;
+    --apagado-medio: #7f949e;
+    --apagado-suave: #5f7580;
+    --filo: #263640;
+    --filo-fino: #1e2c34;
+    /* De noche el celeste gana protagonismo: numeros a pleno color. */
+    --celeste: #7ec8df;
+    --celeste-numero: #7ec8df;
+    --celeste-relleno: #1d3540;
+    --celeste-borde: #2e5d6d;
+    --enlace: #7ec8df;
   }
 }
 
+@theme inline {
+  --color-papel: var(--papel);
+  --color-superficie: var(--superficie);
+  --color-tinta: var(--tinta);
+  --color-apagado: var(--apagado);
+  --color-apagado-medio: var(--apagado-medio);
+  --color-apagado-suave: var(--apagado-suave);
+  --color-filo: var(--filo);
+  --color-filo-fino: var(--filo-fino);
+  --color-celeste: var(--celeste);
+  --color-celeste-numero: var(--celeste-numero);
+  --color-celeste-relleno: var(--celeste-relleno);
+  --color-celeste-borde: var(--celeste-borde);
+  --color-enlace: var(--enlace);
+  --font-display: var(--font-newsreader);
+  --font-cuerpo: var(--font-literata);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--papel);
+  color: var(--tinta);
+  font-family: var(--font-literata), Georgia, serif;
+}
+
+/* Animaciones de la portada. Solo entrada y vaivenes suaves. */
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bajar {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translateY(8px);
+    opacity: 0.5;
+  }
+}
+
+@keyframes vaho {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translateY(-3px);
+  }
+}
+
+.aparece {
+  animation: aparecer 0.9s ease-out both;
+}
+
+.invita-a-bajar {
+  animation: bajar 1.8s ease-in-out infinite;
+}
+
+.vaho {
+  animation: vaho 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aparece,
+  .invita-a-bajar,
+  .vaho {
+    animation: none;
+  }
 }

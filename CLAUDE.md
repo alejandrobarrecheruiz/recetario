@@ -78,6 +78,8 @@ npm run test         # pruebas puras (visibilidad y esquemas). Sin red.
 npm run test:entorno # comprueba .env.local: Atlas e ImageKit de verdad
 npm run test:todo    # las dos anteriores
 npm run indices      # crea los índices de MongoDB (idempotente)
+npm run crear-usuario           # alta de usuario, rol registrado
+npm run crear-usuario -- --rol admin   # alta del admin
 npm run seed:dev     # datos de ejemplo (solo recetas_dev)
 npm run backup       # volcado manual de la base
 ```
@@ -195,9 +197,14 @@ Sobre los roles (`src/models/usuario.ts`):
 - **`publico` no es un rol almacenado.** Es la ausencia de sesión. Nadie tiene
   `role: "publico"` en la base de datos.
 - En `user.role` solo se guarda `admin` o `registrado`.
-- El plugin `admin` pone `"user"` por defecto en los usuarios nuevos, así que
-  `rolDeSesion()` trata cualquier valor desconocido con sesión válida como
-  `registrado`.
+- El plugin `admin` pondría `"user"` por defecto; en `src/lib/auth.ts` se le
+  configuran `defaultRole: "registrado"` y los roles del dominio, así que en la
+  base solo entra lo que dice `rolAlmacenadoSchema`. `rolDeSesion()` trata
+  igualmente cualquier valor desconocido con sesión válida como `registrado`.
+- **El registro público está cerrado** (`disableSignUp`). Las recetas con
+  visibilidad `registrada` son para gente invitada; un alta libre se las
+  enseñaría a cualquiera. Las cuentas (admin incluido) se crean con
+  `npm run crear-usuario`, que usa `auth.api.createUser` en servidor.
 
 ### Índices
 
@@ -369,9 +376,10 @@ MONGODB_DB=recetas_prod npm run indices -- --permitir-prod
 `scripts/` comprueban `MONGODB_DB` y se niegan a arrancar si apunta a prod:
 
 - `seed-dev.ts` **escribe**: aborta contra prod sin excepción posible.
-- `indices.ts` y `backup.ts` admiten `--permitir-prod` para el caso legítimo
-  (crear los índices en producción la primera vez, volcar producción). Hay que
-  teclearlo a mano; nunca por accidente.
+- `indices.ts`, `backup.ts` y `crear-usuario.ts` admiten `--permitir-prod` para
+  el caso legítimo (crear los índices en producción la primera vez, volcar
+  producción, dar de alta al admin real). Hay que teclearlo a mano; nunca por
+  accidente.
 
 ---
 
@@ -448,8 +456,8 @@ reales.
 
 1. ~~Repo, Next, ramas y despliegue en blanco a Vercel~~ ✅
 2. ~~Conexión a Mongo con cliente cacheado~~ ✅
-3. **Better Auth, roles y usuario admin creado a mano** ← **estamos aquí**
-4. Esquema de receta con Zod
+3. ~~Better Auth, roles y usuario admin creado a mano~~ ✅
+4. **Esquema de receta con Zod** ← **estamos aquí**
 5. Panel: crear y editar recetas **sin imágenes** todavía
 6. ImageKit con subida firmada
 7. **Dirección de arte y sistema visual** (ver sección 14)
@@ -613,3 +621,13 @@ Los ficheros con `// TODO(fase N)` son andamiaje: la cabecera dice qué va ahí 
 en qué fase. Muchos llevan ya la API oficial verificada en comentarios
 (Better Auth 1.7.x, ImageKit, agosto de 2026) para no tener que volver a
 investigarla.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

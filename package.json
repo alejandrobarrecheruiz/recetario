@@ -2,6 +2,7 @@
   "name": "recetario",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -12,6 +13,7 @@
     "test:entorno": "node --env-file=.env.local --import tsx --test-reporter=spec --test \"tests/entorno/*.test.ts\"",
     "test:todo": "npm run test && npm run test:entorno",
     "indices": "node --env-file=.env.local --import tsx scripts/indices.ts",
+    "crear-usuario": "node --env-file=.env.local --import tsx scripts/crear-usuario.ts",
     "seed:dev": "node --env-file=.env.local --import tsx scripts/seed-dev.ts",
     "backup": "node --env-file=.env.local --import tsx scripts/backup.ts"
   },

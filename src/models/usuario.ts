@@ -15,9 +15,11 @@ import type { ObjectId } from "mongodb";
  *     `role: "publico"` en la base de datos.
  *   - En `user.role` (campo que anade el plugin `admin` de Better Auth) solo se
  *     guarda `admin` o `registrado`.
- *   - El plugin `admin` pone `"user"` por defecto en los usuarios nuevos, asi
- *     que `rolDeSesion` trata cualquier valor desconocido con sesion valida
- *     como `registrado`.
+ *   - El plugin `admin` pondria `"user"` por defecto en los usuarios nuevos; en
+ *     src/lib/auth.ts se le configura `defaultRole: ROL_POR_DEFECTO` para que
+ *     no lo haga. `rolDeSesion` trata igualmente cualquier valor desconocido
+ *     con sesion valida como `registrado`, por si algun documento viejo o
+ *     tocado a mano lo trae.
  */
 
 /** Rol efectivo en tiempo de ejecucion. Es lo que consume `filtroVisibilidad`. */
@@ -38,20 +40,16 @@ export const ROL_POR_DEFECTO: RolAlmacenado = "registrado";
  * cualquier otra cosa (incluido el `"user"` que pone Better Auth por defecto)
  * -> `registrado`.
  *
- * OJO AL CONECTAR BETTER_AUTH (fase 3). Esta funcion recibe el rol, no la
- * sesion, asi que NO distingue "no hay sesion" de "hay sesion pero el documento
- * de usuario no tiene campo `role`". Los dos casos llegan aqui como `null` o
- * `undefined` y los dos devuelven `publico`.
+ * Esta funcion recibe el rol, no la sesion, asi que NO distingue "no hay
+ * sesion" de "hay sesion pero el documento de usuario no tiene campo `role`".
+ * Los dos casos llegan aqui como `null` o `undefined` y los dos devuelven
+ * `publico`.
  *
- * En la practica no deberia pasar, porque el plugin `admin` pone `"user"` a los
- * usuarios nuevos. Pero un documento tocado a mano (y el admin se crea a mano)
- * puede quedarse sin ese campo, y entonces un usuario con sesion valida veria el
- * blog como si fuera un visitante anonimo.
- *
- * Falla cerrado, asi que no es un agujero de seguridad: se ve de menos, nunca de
- * mas. Si en la fase 3 molesta, la solucion es pasar la sesion entera en vez del
- * rol, para poder separar los dos casos. Se deja apuntado, no resuelto, porque
- * es una decision de esa fase.
+ * Decision de la fase 3: se queda asi. Todas las altas pasan por
+ * `auth.api.createUser` (scripts/crear-usuario.ts), que siempre escribe `role`,
+ * y el plugin lleva `defaultRole: ROL_POR_DEFECTO` por si acaso; el documento
+ * sin campo `role` solo puede salir de tocar la base a mano. Y si sale, falla
+ * cerrado: ese usuario ve de menos, nunca de mas.
  */
 export function rolDeSesion(rolGuardado: string | null | undefined): Rol {
   if (rolGuardado === undefined || rolGuardado === null) return "publico";

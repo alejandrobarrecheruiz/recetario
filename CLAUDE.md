@@ -471,8 +471,8 @@ reales.
 4. ~~Esquema de receta con Zod~~ ✅
 5. ~~Panel: crear y editar recetas sin imágenes todavía~~ ✅
 6. ~~ImageKit con subida firmada~~ ✅
-7. **Dirección de arte y sistema visual** (ver sección 14) ← **estamos aquí**
-8. Vistas públicas y filtro de visibilidad
+7. ~~Dirección de arte y sistema visual~~ ✅ (lo decidido, en la sección 14)
+8. **Vistas públicas y filtro de visibilidad** ← **estamos aquí**
 9. JSON-LD de `schema.org/Recipe`, SEO y script de backup
 
 La lógica del orden: validar el pipeline completo de despliegue cuando todavía no
@@ -542,15 +542,57 @@ de tarjetas borrosas ni de «inicia sesión para ver esta receta». Eso sería u
 condicional de render, y ya viajó al navegador: contradice la regla dura de la
 sección 5 y además confirma que la receta existe.
 
-### Lo que la fase tiene que decidir
+### Lo decidido (fase cerrada el 24 de agosto de 2026)
 
-- Dos familias tipográficas y una escala; el ritmo vertical de la página.
-- La paleta, con sus dos temas si se quiere modo oscuro.
-- La tarjeta de receta de la portada.
-- La ficha: cómo conviven ingredientes y pasos, y qué manda en móvil.
-- Las fotos de paso: intercaladas con el texto o en una tira aparte.
-- El estado vacío y el 404, que en un blog de una receta semanal se ven más de lo
-  que parece.
+El estudio visual completo, con los tableros aprobados, vive en
+https://claude.ai/code/artifact/55ee468b-28d3-489c-9b44-5660d0ab45ab
+(páginas «Propuesta» y «Direcciones»). Esto es el resumen ejecutable; ante la
+duda, el lienzo manda.
+
+**Nombre del blog: «La cocina nos Une»** (con la U mayúscula tal cual).
+
+**Tipografías** (Google Fonts): Newsreader para display (títulos, números de
+paso) y Literata para el cuerpo. Cuerpo de lectura a 17–18 px.
+
+**Paleta clara**: papel `#FCFBF8`, tinta petróleo `#22333D`, celeste `#7EC8DF`
+como **único acento** (`#5FB6D2` para los números de paso sobre claro, que el
+puro no contrasta), apagados `#6C7E86` / `#7E8F96` / `#93A3AA`, filos `#E2E8E9`
+(y `#EDF0EE` el fino), relleno celeste `#DDF1F7` con borde `#BFE6F2`, enlaces
+`#3F97B4`.
+
+**Modo oscuro: automático** con `prefers-color-scheme`, sin interruptor (de
+noche en la cocina el móvil ya está en oscuro). Fondo `#141F26`, superficie
+`#1B2830`, texto hueso `#E4EAE8`, apagados `#7F949E` / `#5F7580`, filos
+`#263640` / `#1E2C34`, celeste `#7EC8DF` a pleno (de noche gana protagonismo),
+relleno `#1D3540` con borde `#2E5D6D`.
+
+**La portada es especial**: al entrar, la foto de la semana a pantalla completa
+con el nombre encima y una flecha que invita a bajar; al hacer scroll aparece lo
+demás — la receta de la semana como tarjeta de álbum (marco blanco con borde
+fino), el buscador («¿Qué te apetece cocinar?») con las categorías como
+píldoras, las recetas anteriores a dos columnas y la despedida «una receta cada
+semana, hecha con cariño». Lema bajo el nombre: «de nuestra cocina a la tuya».
+Animaciones de entrada en cascada y flecha con vaivén, en CSS y respetando
+`prefers-reduced-motion`.
+
+**La ficha**: ingredientes en filas con filo fino (nombre a la izquierda,
+cantidad en negrita a la derecha), con el escalador de raciones dentro de la
+cabecera de la lista (botones redondos de 44 px en celeste). Pasos con número
+grande en Newsreader celeste y las fotos **intercaladas** con el texto, en marco
+fino. Etiquetas de sección en versalitas espaciadas.
+
+**Estado vacío**: búsqueda sin resultados → plato vacío a línea, «De eso aún no
+tenemos.», «Pídenosla y puede que caiga la semana que viene», categorías a mano.
+Blog sin recetas → olla con vaho animado, «La primera está al fuego.»
+
+**404**: número gigante en celeste (el lenguaje de los números de paso), «Esta
+página se nos ha quemado.», texto deliberadamente ambiguo («o nunca existió, o
+ya no está») porque este mismo 404 es lo que ve un visitante ante una receta de
+solo registrados. Una acción principal: volver a la portada.
+
+**Sin corazones dibujados.** El celeste (el 🩵 de la casa) ya es el corazón:
+vive en el escalador, los números de paso, la píldora de «todas las recetas» y
+los enlaces, y en nada más. Toques de 44 px como mínimo en todo lo tocable.
 
 ---
 
@@ -566,9 +608,9 @@ No darlas por cerradas sin querer.
   que si más adelante se decide renderizarlo como Markdown **no hará falta migrar
   nada**.
 - **Dominio propio**: por ahora se usa el subdominio gratuito de Vercel.
-- **La dirección de arte**: no hay nada elegido todavía, ni paleta ni tipografías.
-  Lo que sí está fijado son las restricciones de la sección 14, que acotan el
-  terreno sin cerrar la decisión.
+
+(La dirección de arte dejó de estar abierta: se cerró en la fase 7. Ver la
+sección 14.)
 
 ---
 

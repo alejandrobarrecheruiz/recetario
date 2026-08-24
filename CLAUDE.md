@@ -458,8 +458,8 @@ reales.
 2. ~~Conexión a Mongo con cliente cacheado~~ ✅
 3. ~~Better Auth, roles y usuario admin creado a mano~~ ✅
 4. ~~Esquema de receta con Zod~~ ✅
-5. **Panel: crear y editar recetas *sin imágenes* todavía** ← **estamos aquí**
-6. ImageKit con subida firmada
+5. ~~Panel: crear y editar recetas sin imágenes todavía~~ ✅
+6. **ImageKit con subida firmada** ← **estamos aquí**
 7. **Dirección de arte y sistema visual** (ver sección 14)
 8. Vistas públicas y filtro de visibilidad
 9. JSON-LD de `schema.org/Recipe`, SEO y script de backup
@@ -580,16 +580,21 @@ recetario/
 │  │  ├─ admin/
 │  │  │  ├─ layout.tsx               # guard de rol admin
 │  │  │  ├─ page.tsx                 # listado de recetas
-│  │  │  └─ recetas/[id]/editar/page.tsx
+│  │  │  └─ recetas/
+│  │  │     ├─ nueva/page.tsx        # alta
+│  │  │     └─ [id]/editar/page.tsx
 │  │  └─ api/
 │  │     ├─ auth/[...all]/route.ts   # handler de Better Auth
-│  │     ├─ recetas/route.ts
+│  │     ├─ recetas/route.ts         # GET listado (por rol), POST alta
+│  │     ├─ recetas/[id]/route.ts    # PUT, DELETE (solo admin)
 │  │     ├─ imagenes/firma/route.ts  # firma de subida a ImageKit
 │  │     └─ salud/route.ts           # ping a la base; ver sección 8
 │  ├─ lib/
 │  │  ├─ mongo.ts                    # cliente cacheado + índices
 │  │  ├─ auth.ts
 │  │  ├─ auth-client.ts
+│  │  ├─ sesion.ts                   # sesión y rol de la petición, en servidor
+│  │  ├─ recetas.ts                  # doc ↔ receta (ObjectId ↔ hex) y publicadaEn
 │  │  ├─ imagekit.ts
 │  │  └─ visibilidad.ts              # rol → filtro de Mongo
 │  ├─ models/
@@ -597,8 +602,11 @@ recetario/
 │  │  ├─ imagen.ts
 │  │  └─ usuario.ts
 │  └─ components/
+│     ├─ formulario-receta.tsx       # crear/editar; mismo Zod que la API
+│     └─ boton-salir.tsx
 ├─ scripts/
 │  ├─ indices.ts
+│  ├─ crear-usuario.ts               # única vía de alta de cuentas
 │  ├─ backup.ts
 │  └─ seed-dev.ts
 └─ tests/

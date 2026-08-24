@@ -19,10 +19,9 @@
  *
  * Este script ESCRIBE. No debe correr nunca contra recetas_prod.
  */
-import { ObjectId } from "mongodb";
-
 import { esBaseDeProduccion, obtenerCliente, obtenerDb, obtenerRecetas } from "../src/lib/mongo";
-import { recetaSchema, type Receta, type RecetaDoc } from "../src/models/receta";
+import { recetaADoc } from "../src/lib/recetas";
+import { recetaSchema, type Receta } from "../src/models/receta";
 
 /**
  * Identificadores fijos (hex valido; "5eed" por "seed") para que el upsert sea
@@ -168,20 +167,6 @@ function recetas(autorId: string): Receta[] {
   ];
 }
 
-/** De la forma validada (ids en hex) a la que vive en Mongo (ObjectId). */
-function aDoc(receta: Receta): RecetaDoc {
-  return {
-    ...receta,
-    _id: new ObjectId(receta._id),
-    autorId: new ObjectId(receta.autorId),
-    portadaId: receta.portadaId === null ? null : new ObjectId(receta.portadaId),
-    pasos: receta.pasos.map((paso) => ({
-      ...paso,
-      imagenId: paso.imagenId === null ? null : new ObjectId(paso.imagenId),
-    })),
-  };
-}
-
 async function principal() {
   const base = process.env.MONGODB_DB;
 
@@ -211,7 +196,7 @@ async function principal() {
   for (const cruda of recetas(admin._id.toString())) {
     // La validacion va antes del insert a proposito; ver cabecera.
     const receta = recetaSchema.parse(cruda);
-    const { _id, ...resto } = aDoc(receta);
+    const { _id, ...resto } = recetaADoc(receta);
 
     await coleccion.updateOne(
       { slug: receta.slug },

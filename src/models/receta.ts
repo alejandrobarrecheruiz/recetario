@@ -23,6 +23,20 @@ export const idSchema = z
   .string()
   .regex(/^[0-9a-f]{24}$/, "Identificador de MongoDB no valido");
 
+/**
+ * Propone un slug a partir del titulo: minusculas, sin tildes y con guiones.
+ * Lo usa el formulario del panel; el resultado sigue pasando por `recetaSchema`,
+ * que es quien manda.
+ */
+export function generarSlug(titulo: string): string {
+  return titulo
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // fuera tildes y virgulillas
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 /** Responde a "esta terminada?". No confundir con `visibilidad`. */
 export const estadoSchema = z.enum(["borrador", "publicada"]);
 

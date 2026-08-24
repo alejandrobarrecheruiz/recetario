@@ -14,6 +14,7 @@ import {
   recetaEntradaSchema,
   ingredienteSchema,
   pasoSchema,
+  generarSlug,
 } from "@/models/receta";
 import { imagenSchema } from "@/models/imagen";
 
@@ -153,6 +154,31 @@ describe("pasoSchema", () => {
       pasoSchema.safeParse({ id: "p1", orden: 1.5, texto: "Batir.", imagenId: null }).success,
       false,
     );
+  });
+});
+
+describe("generarSlug", () => {
+  test("lo que propone pasa la validacion de slug del esquema", () => {
+    const slugSchema = recetaSchema.shape.slug;
+    for (const titulo of [
+      "Tarta de queso",
+      "Croquetas de jamón",
+      "Ñoquis a la crema",
+      "  Pollo al ajillo (¡el bueno!)  ",
+      "Café con leche 2.0",
+    ]) {
+      const slug = generarSlug(titulo);
+      assert.ok(
+        slugSchema.safeParse(slug).success,
+        `"${titulo}" produjo el slug invalido "${slug}"`,
+      );
+    }
+  });
+
+  test("quita tildes y enes, y une con guiones", () => {
+    assert.equal(generarSlug("Croquetas de jamón"), "croquetas-de-jamon");
+    assert.equal(generarSlug("Ñoquis a la crema"), "noquis-a-la-crema");
+    assert.equal(generarSlug("  Café   con leche  "), "cafe-con-leche");
   });
 });
 

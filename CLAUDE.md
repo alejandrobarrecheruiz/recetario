@@ -470,8 +470,8 @@ reales.
 3. ~~Better Auth, roles y usuario admin creado a mano~~ ✅
 4. ~~Esquema de receta con Zod~~ ✅
 5. ~~Panel: crear y editar recetas sin imágenes todavía~~ ✅
-6. **ImageKit con subida firmada** ← **estamos aquí**
-7. **Dirección de arte y sistema visual** (ver sección 14)
+6. ~~ImageKit con subida firmada~~ ✅
+7. **Dirección de arte y sistema visual** (ver sección 14) ← **estamos aquí**
 8. Vistas públicas y filtro de visibilidad
 9. JSON-LD de `schema.org/Recipe`, SEO y script de backup
 
@@ -597,8 +597,10 @@ recetario/
 │  │  └─ api/
 │  │     ├─ auth/[...all]/route.ts   # handler de Better Auth
 │  │     ├─ recetas/route.ts         # GET listado (por rol), POST alta
-│  │     ├─ recetas/[id]/route.ts    # PUT, DELETE (solo admin)
-│  │     ├─ imagenes/firma/route.ts  # firma de subida a ImageKit
+│  │     ├─ recetas/[id]/route.ts    # PUT, DELETE con limpieza de imágenes
+│  │     ├─ imagenes/route.ts        # POST metadatos tras subir a ImageKit
+│  │     ├─ imagenes/[id]/route.ts   # DELETE: ImageKit + metadatos + referencias
+│  │     ├─ imagenes/firma/route.ts  # firma de subida (solo admin)
 │  │     └─ salud/route.ts           # ping a la base; ver sección 8
 │  ├─ lib/
 │  │  ├─ mongo.ts                    # cliente cacheado + índices
@@ -606,7 +608,8 @@ recetario/
 │  │  ├─ auth-client.ts
 │  │  ├─ sesion.ts                   # sesión y rol de la petición, en servidor
 │  │  ├─ recetas.ts                  # doc ↔ receta (ObjectId ↔ hex) y publicadaEn
-│  │  ├─ imagekit.ts
+│  │  ├─ imagenes.ts                 # doc ↔ imagen
+│  │  ├─ imagekit.ts                 # cliente de servidor: borrar por fileId
 │  │  └─ visibilidad.ts              # rol → filtro de Mongo
 │  ├─ models/
 │  │  ├─ receta.ts                   # Zod, fuente de verdad
@@ -614,6 +617,7 @@ recetario/
 │  │  └─ usuario.ts
 │  └─ components/
 │     ├─ formulario-receta.tsx       # crear/editar; mismo Zod que la API
+│     ├─ selector-imagen.tsx         # firma → subida directa → metadatos
 │     └─ boton-salir.tsx
 ├─ scripts/
 │  ├─ indices.ts

@@ -10,6 +10,8 @@ import {
   type Receta,
   type RecetaEntrada,
 } from "@/models/receta";
+import type { Imagen } from "@/models/imagen";
+import { SelectorImagen } from "@/components/selector-imagen";
 
 /**
  * Formulario de creacion y edicion de recetas. Valida con
@@ -20,9 +22,9 @@ import {
  * del array: al reordenar, las keys por indice hacen que React reutilice el
  * nodo equivocado y el texto salta de fila.
  *
- * TODO(fase 6): subida de imagenes (portada y pasos). Hasta entonces el
- * formulario funciona sin fotos, a proposito: `portadaId` e `imagenId` van
- * siempre a null.
+ * Las fotos (portada y pasos) solo se pueden anadir EDITANDO una receta que ya
+ * existe: la subida necesita `recetaId` para que la imagen quede ligada a su
+ * receta y la limpieza al borrar funcione. Crear primero, fotos despues.
  */
 
 function ingredienteVacio(): Ingrediente {
@@ -53,7 +55,13 @@ const claseCampo = "rounded border px-3 py-2 text-base";
 const claseEtiqueta = "flex flex-col gap-1 text-sm";
 const claseBotonFila = "rounded border px-2 py-1 text-xs disabled:opacity-30";
 
-export function FormularioReceta({ receta }: { receta?: Receta }) {
+export function FormularioReceta({
+  receta,
+  imagenes = [],
+}: {
+  receta?: Receta;
+  imagenes?: Imagen[];
+}) {
   const router = useRouter();
   const editando = receta !== undefined;
 
@@ -80,6 +88,10 @@ export function FormularioReceta({ receta }: { receta?: Receta }) {
   const [pasos, setPasos] = useState<Paso[]>(receta?.pasos ?? [pasoVacio()]);
   const [notas, setNotas] = useState(receta?.notas ?? "");
   const [seoDescripcion, setSeoDescripcion] = useState(receta?.seo.descripcion ?? "");
+  const [portadaId, setPortadaId] = useState(receta?.portadaId ?? null);
+  const [imagenesPorId, setImagenesPorId] = useState<Record<string, Imagen>>(() =>
+    Object.fromEntries(imagenes.map((imagen) => [imagen._id, imagen])),
+  );
 
   const [errores, setErrores] = useState<string[]>([]);
   const [mensaje, setMensaje] = useState<string | null>(null);
@@ -109,6 +121,19 @@ export function FormularioReceta({ receta }: { receta?: Receta }) {
     setPasos((lista) => lista.map((paso) => (paso.id === id ? { ...paso, texto } : paso)));
   }
 
+  function registrarImagen(imagen: Imagen | null) {
+    if (imagen) setImagenesPorId((mapa) => ({ ...mapa, [imagen._id]: imagen }));
+  }
+
+  function cambiarFotoDePaso(idPaso: string, imagen: Imagen | null) {
+    registrarImagen(imagen);
+    setPasos((lista) =>
+      lista.map((paso) =>
+        paso.id === idPaso ? { ...paso, imagenId: imagen?._id ?? null } : paso,
+      ),
+    );
+  }
+
   async function guardar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     setMensaje(null);
@@ -130,7 +155,7 @@ export function FormularioReceta({ receta }: { receta?: Receta }) {
       ingredientes,
       // El orden se recalcula desde la posicion actual en el formulario.
       pasos: pasos.map((paso, indice) => ({ ...paso, orden: indice })),
-      portadaId: receta?.portadaId ?? null,
+      portadaId,
       notas: notas.trim() === "" ? undefined : notas,
       seo: { descripcion: seoDescripcion },
     } satisfies Record<keyof RecetaEntrada, unknown>);
@@ -263,6 +288,24 @@ export function FormularioReceta({ receta }: { receta?: Receta }) {
           conserva aunque vuelva a borrador.
         </p>
       )}
+
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-2 font-medium">Portada</legend>
+        {editando ? (
+          <SelectorImagen
+            recetaId={receta._id}
+            tipo="portada"
+            altPorDefecto={titulo || "Portada"}
+            imagen={portadaId ? (imagenesPorId[portadaId] ?? null) : null}
+            onCambio={(imagen) => {
+              registrarImagen(imagen);
+              setPortadaId(imagen?._id ?? null);
+            }}
+          />
+        ) : (
+          <p className="text-sm opacity-70">Guarda la receta para poder anadir fotos.</p>
+        )}
+      </fieldset>
 
       <div className="grid gap-3 sm:grid-cols-4">
         <label className={claseEtiqueta}>
@@ -402,18 +445,35 @@ export function FormularioReceta({ receta }: { receta?: Receta }) {
 
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-2 font-medium">
-          Pasos <span className="text-sm font-normal opacity-60">(las fotos llegan en la fase 6)</span>
+          Pasos
+          {!editando && (
+            <span className="text-sm font-normal opacity-60">
+              {" "}
+              (guarda la receta para poder anadir fotos)
+            </span>
+          )}
         </legend>
         {pasos.map((paso, indice) => (
           <div key={paso.id} className="flex items-start gap-2">
             <span className="w-6 pt-2 text-right text-sm opacity-60">{indice + 1}.</span>
-            <textarea
-              className={`${claseCampo} flex-1`}
-              rows={2}
-              aria-label={`Paso ${indice + 1}`}
-              value={paso.texto}
-              onChange={(e) => actualizarPaso(paso.id, e.target.value)}
-            />
+            <div className="flex flex-1 flex-col gap-2">
+              <textarea
+                className={claseCampo}
+                rows={2}
+                aria-label={`Paso ${indice + 1}`}
+                value={paso.texto}
+                onChange={(e) => actualizarPaso(paso.id, e.target.value)}
+              />
+              {editando && (
+                <SelectorImagen
+                  recetaId={receta._id}
+                  tipo="paso"
+                  altPorDefecto={`${titulo || "Receta"}: paso ${indice + 1}`}
+                  imagen={paso.imagenId ? (imagenesPorId[paso.imagenId] ?? null) : null}
+                  onCambio={(imagen) => cambiarFotoDePaso(paso.id, imagen)}
+                />
+              )}
+            </div>
             <div className="flex flex-col gap-1 pt-1">
               <button
                 type="button"

@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import { MongoServerError } from "mongodb";
-import { obtenerRecetas } from "@/lib/mongo";
+import { obtenerColecciones, obtenerRecetas } from "@/lib/mongo";
+import { borrarDeImageKit } from "@/lib/imagekit";
 import { docAReceta, recetaADoc, resolverPublicadaEn } from "@/lib/recetas";
 import { rolActual } from "@/lib/sesion";
 import { idSchema, recetaEntradaSchema, recetaSchema } from "@/models/receta";
@@ -73,13 +74,31 @@ export async function DELETE(_peticion: Request, contexto: Contexto) {
     return Response.json({ error: "Identificador no valido." }, { status: 404 });
   }
 
-  // TODO(fase 6): al borrar una receta habra que borrar tambien sus imagenes
-  // en ImageKit (via fileId) y en la coleccion `images`.
-  const coleccion = await obtenerRecetas();
-  const resultado = await coleccion.findOneAndDelete({ _id: new ObjectId(idValido.data) });
+  const { recetas, imagenes } = await obtenerColecciones();
+  const resultado = await recetas.findOneAndDelete({ _id: new ObjectId(idValido.data) });
   if (!resultado) {
     return Response.json({ error: "No existe esa receta." }, { status: 404 });
   }
 
-  return Response.json(docAReceta(resultado));
+  // Limpieza de sus imagenes: primero el fichero en ImageKit y solo despues los
+  // metadatos. Si ImageKit falla, el documento conserva su fileId y se puede
+  // reintentar; el fallo se cuenta en la respuesta, no se esconde.
+  const deLaReceta = await imagenes.find({ recetaId: resultado._id }).toArray();
+  let imagenesBorradas = 0;
+  let imagenesConFallo = 0;
+  for (const imagen of deLaReceta) {
+    try {
+      await borrarDeImageKit(imagen.fileId);
+      await imagenes.deleteOne({ _id: imagen._id });
+      imagenesBorradas += 1;
+    } catch {
+      imagenesConFallo += 1;
+    }
+  }
+
+  return Response.json({
+    receta: docAReceta(resultado),
+    imagenesBorradas,
+    imagenesConFallo,
+  });
 }

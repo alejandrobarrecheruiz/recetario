@@ -16,7 +16,7 @@ import {
   pasoSchema,
   generarSlug,
 } from "@/models/receta";
-import { imagenSchema } from "@/models/imagen";
+import { imagenSchema, imagenEntradaSchema } from "@/models/imagen";
 
 const ID = "507f1f77bcf86cd799439011";
 
@@ -237,5 +237,18 @@ describe("imagenSchema", () => {
 
   test("url tiene que ser una URL de verdad", () => {
     assert.equal(imagenSchema.safeParse({ ...imagenValida(), url: "/dev/tarta.jpg" }).success, false);
+  });
+
+  test("lo que manda el panel no incluye _id, subidaEn ni subidaPor", () => {
+    // Esos tres los decide el servidor, como en recetaEntradaSchema.
+    const { _id, subidaEn, subidaPor, ...entrada } = imagenValida();
+    void _id;
+    void subidaEn;
+    void subidaPor;
+
+    const resultado = imagenEntradaSchema.safeParse(entrada);
+    assert.ok(resultado.success, JSON.stringify(resultado.error?.issues));
+    assert.equal("_id" in resultado.data, false);
+    assert.equal("subidaPor" in resultado.data, false);
   });
 });

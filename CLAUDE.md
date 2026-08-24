@@ -475,10 +475,16 @@ reales.
 8. ~~Vistas públicas y filtro de visibilidad~~ ✅
 9. ~~JSON-LD de `schema.org/Recipe`, SEO y script de backup~~ ✅
 
-**Las nueve fases están completas** (24 de agosto de 2026). Lo que queda no es
-construcción sino estreno: subir `develop` a `main` por PR y, antes de la
-primera receta real, el ritual de producción de la sección 8 (índices con
-`--permitir-prod` y el usuario admin de prod con `crear-usuario`).
+**Las nueve fases están completas y el blog está estrenado** (24 de agosto de
+2026): `develop` mergeado a `main` (PR #2), índices y admin creados en
+`recetas_prod`, y el login de producción comprobado en
+`https://recetario-36ok.vercel.app`. El único tropiezo del estreno quedó
+documentado: el login solo funciona en el dominio canónico de cada entorno (el
+que declara `BETTER_AUTH_URL`); en las URLs de deployment con hash, Better Auth
+responde `INVALID_ORIGIN`, y es lo esperado.
+
+Desde aquí, el ritmo semanal: escribir la receta en el panel, publicarla y
+`npm run backup`.
 
 La lógica del orden: validar el pipeline completo de despliegue cuando todavía no
 hay nada que perder, meter las imágenes tarde porque son la pieza con más partes

@@ -457,8 +457,8 @@ reales.
 1. ~~Repo, Next, ramas y despliegue en blanco a Vercel~~ ✅
 2. ~~Conexión a Mongo con cliente cacheado~~ ✅
 3. ~~Better Auth, roles y usuario admin creado a mano~~ ✅
-4. **Esquema de receta con Zod** ← **estamos aquí**
-5. Panel: crear y editar recetas **sin imágenes** todavía
+4. ~~Esquema de receta con Zod~~ ✅
+5. **Panel: crear y editar recetas *sin imágenes* todavía** ← **estamos aquí**
 6. ImageKit con subida firmada
 7. **Dirección de arte y sistema visual** (ver sección 14)
 8. Vistas públicas y filtro de visibilidad

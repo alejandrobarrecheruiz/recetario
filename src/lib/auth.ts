@@ -1,33 +1,57 @@
-// TODO(fase 3): instancia de servidor de Better Auth.
-//
-// Aqui va el `betterAuth({...})` con el adaptador de MongoDB y el plugin `admin`.
-// La API de abajo esta verificada contra la documentacion oficial de Better Auth
-// 1.7.x (agosto de 2026); no hay que volver a investigarla.
-//
-//   import { betterAuth } from "better-auth";
-//   import { mongodbAdapter } from "better-auth/adapters/mongodb";
-//   import { admin } from "better-auth/plugins";
-//   import { obtenerCliente, obtenerDb } from "@/lib/mongo";
-//
-//   const cliente = await obtenerCliente();
-//   const db = await obtenerDb();
-//
-//   export const auth = betterAuth({
-//     database: mongodbAdapter(db, { client: cliente }), // `client` habilita transacciones
-//     emailAndPassword: { enabled: true },
-//     plugins: [admin()],
-//   });
-//
-// Notas:
-//   - El adaptador recibe el `Db`, no el `MongoClient`.
-//   - En MongoDB no hay que generar ni migrar esquema: Better Auth crea las
-//     colecciones `user`, `session`, `account` y `verification` al vuelo.
-//   - El plugin `admin` anade a `user`: role, banned, banReason, banExpires; y a
-//     `session`: impersonatedBy.
-//   - Lee BETTER_AUTH_SECRET y BETTER_AUTH_URL del entorno.
-//   - El usuario admin se crea a mano (fase 3): registrarse por la web y luego
-//     poner `role: "admin"` en el documento de `user`.
-//   - NO usar NextAuth. El equipo de Auth.js se integro en Better Auth en
-//     septiembre de 2025. Ver CLAUDE.md.
+import { betterAuth } from "better-auth";
+import { mongodbAdapter } from "better-auth/adapters/mongodb";
+import { admin } from "better-auth/plugins";
+import { createAccessControl } from "better-auth/plugins/access";
+import { adminAc, defaultStatements, userAc } from "better-auth/plugins/admin/access";
+import { obtenerCliente, obtenerDb } from "@/lib/mongo";
+import { ROL_POR_DEFECTO } from "@/models/usuario";
 
-export {};
+/**
+ * Instancia de servidor de Better Auth.
+ *
+ * Solo de servidor: lee BETTER_AUTH_SECRET y BETTER_AUTH_URL del entorno y
+ * recibe el cliente de Mongo. El navegador usa src/lib/auth-client.ts.
+ *
+ * Las colecciones `user`, `session`, `account` y `verification` las crea el
+ * adaptador al vuelo; no se declaran ni se migran esquemas.
+ */
+
+// El adaptador recibe el `Db`; pasarle tambien el cliente habilita transacciones.
+// El await de nivel de modulo reutiliza la promesa cacheada de mongo.ts, asi que
+// no abre conexiones de mas.
+const cliente = await obtenerCliente();
+const db = await obtenerDb();
+
+// Los roles del plugin, declarados con el vocabulario del dominio: "registrado"
+// en vez del "user" que trae por defecto. Los permisos son los estandar del
+// plugin; lo unico que cambia es el nombre. Con esto `createUser` acepta (y
+// tipa) exactamente los valores de rolAlmacenadoSchema y rechaza el resto.
+const control = createAccessControl(defaultStatements);
+const roles = {
+  admin: control.newRole(adminAc.statements),
+  registrado: control.newRole(userAc.statements),
+};
+
+export const auth = betterAuth({
+  database: mongodbAdapter(db, { client: cliente }),
+
+  emailAndPassword: {
+    enabled: true,
+    // No hay registro abierto: las recetas con visibilidad "registrada" son
+    // para gente invitada, y un alta libre en /api/auth/sign-up/email se las
+    // ensenaria a cualquiera. Las cuentas se crean con `auth.api.createUser`
+    // (scripts/crear-usuario.ts), que no pasa por el registro.
+    disableSignUp: true,
+  },
+
+  plugins: [
+    admin({
+      ac: control,
+      roles,
+      // Sin esto el plugin pondria `role: "user"`, que no es un rol del dominio.
+      // `rolDeSesion` lo trataria igual como "registrado", pero mejor que en la
+      // base solo haya lo que dice rolAlmacenadoSchema.
+      defaultRole: ROL_POR_DEFECTO,
+    }),
+  ],
+});

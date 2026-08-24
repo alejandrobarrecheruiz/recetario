@@ -38,8 +38,19 @@ export const imagenSchema = z.object({
   subidaPor: idSchema,
 });
 
+/**
+ * Lo que envia el panel tras subir el fichero a ImageKit. Los campos que decide
+ * el servidor (`_id`, `subidaEn`, `subidaPor`) no viajan desde el navegador.
+ */
+export const imagenEntradaSchema = imagenSchema.omit({
+  _id: true,
+  subidaEn: true,
+  subidaPor: true,
+});
+
 export type TipoImagen = z.infer<typeof tipoImagenSchema>;
 export type Imagen = z.infer<typeof imagenSchema>;
+export type ImagenEntrada = z.infer<typeof imagenEntradaSchema>;
 
 /** La imagen tal y como vive en MongoDB. Ver la nota de `RecetaDoc`. */
 export type ImagenDoc = Omit<

@@ -78,6 +78,8 @@ npm run test         # pruebas puras (visibilidad y esquemas). Sin red.
 npm run test:entorno # comprueba .env.local: Atlas e ImageKit de verdad
 npm run test:todo    # las dos anteriores
 npm run indices      # crea los índices de MongoDB (idempotente)
+npm run crear-usuario           # alta de usuario, rol registrado
+npm run crear-usuario -- --rol admin   # alta del admin
 npm run seed:dev     # datos de ejemplo (solo recetas_dev)
 npm run backup       # volcado manual de la base
 ```
@@ -195,9 +197,14 @@ Sobre los roles (`src/models/usuario.ts`):
 - **`publico` no es un rol almacenado.** Es la ausencia de sesión. Nadie tiene
   `role: "publico"` en la base de datos.
 - En `user.role` solo se guarda `admin` o `registrado`.
-- El plugin `admin` pone `"user"` por defecto en los usuarios nuevos, así que
-  `rolDeSesion()` trata cualquier valor desconocido con sesión válida como
-  `registrado`.
+- El plugin `admin` pondría `"user"` por defecto; en `src/lib/auth.ts` se le
+  configuran `defaultRole: "registrado"` y los roles del dominio, así que en la
+  base solo entra lo que dice `rolAlmacenadoSchema`. `rolDeSesion()` trata
+  igualmente cualquier valor desconocido con sesión válida como `registrado`.
+- **El registro público está cerrado** (`disableSignUp`). Las recetas con
+  visibilidad `registrada` son para gente invitada; un alta libre se las
+  enseñaría a cualquiera. Las cuentas (admin incluido) se crean con
+  `npm run crear-usuario`, que usa `auth.api.createUser` en servidor.
 
 ### Índices
 
@@ -288,6 +295,12 @@ y las variables de entorno.
 
 ## 8. Separación dev / prod
 
+> **Estado (23 de agosto de 2026): esto ya está montado y comprobado.** Las
+> variables están puestas en los tres entornos de Vercel, Atlas acepta las
+> conexiones de Vercel y `/api/salud` responde correctamente en Production y en
+> Preview. Lo que sigue es la referencia de cómo quedó, no una lista de tareas
+> pendientes.
+
 **Un solo clúster de Atlas con dos bases**: `recetas_dev` y `recetas_prod`.
 
 La cadena de conexión (`MONGODB_URI`) es **idéntica** en local y en Vercel. Lo
@@ -298,8 +311,19 @@ En Vercel:
 | Entorno | `MONGODB_DB` | `IMAGEKIT_FOLDER` | `BETTER_AUTH_URL` |
 |---|---|---|---|
 | Production | `recetas_prod` | `prod` | `https://recetario-36ok.vercel.app` |
-| Preview | `recetas_dev` | `dev` | URL fija de rama de `develop` |
+| Preview | `recetas_dev` | `dev` | `https://recetario-36ok-git-develop-barrechee.vercel.app` |
 | Development | `recetas_dev` | `dev` | `http://localhost:3000` |
+
+Las tres URLs van **completas, con `https://`**. Una `BETTER_AUTH_URL` sin
+esquema no parsea y tumba el build entero al prerenderizar `/login` (error
+`Invalid base URL` en «Collecting page data»); pasó el 24 de agosto de 2026 y
+así se diagnosticó.
+
+Sobre el proyecto de Vercel: se llama `recetario`, pero sus dominios
+`*.vercel.app` conservan el sufijo `-36ok` porque `recetario.vercel.app` es un
+dominio global que ya estaba cogido. Renombrar el proyecto no cambia los
+dominios asignados. (Hubo un segundo proyecto duplicado apuntando al mismo
+repo, que duplicaba cada despliegue y fallaba siempre; se borró ese mismo día.)
 
 Las otras cinco (`MONGODB_URI`, `BETTER_AUTH_SECRET`, `IMAGEKIT_PRIVATE_KEY`,
 `NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY`, `NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT`) valen lo
@@ -328,7 +352,9 @@ error mucho más confuso de leer).
 
 En el plan gratuito la única salida es `0.0.0.0/0` en Atlas > Network Access; las
 IP estáticas de salida son de pago. No deja la base abierta: sigue protegida por
-usuario y contraseña, que es lo que de verdad la protege.
+usuario y contraseña, que es lo que de verdad la protege. **Ya está configurado
+así**; si algún día el despliegue empieza a fallar al conectar, es lo primero que
+hay que mirar por si se revirtió.
 
 ### Cómo comprobar que la separación quedó bien
 
@@ -361,9 +387,10 @@ MONGODB_DB=recetas_prod npm run indices -- --permitir-prod
 `scripts/` comprueban `MONGODB_DB` y se niegan a arrancar si apunta a prod:
 
 - `seed-dev.ts` **escribe**: aborta contra prod sin excepción posible.
-- `indices.ts` y `backup.ts` admiten `--permitir-prod` para el caso legítimo
-  (crear los índices en producción la primera vez, volcar producción). Hay que
-  teclearlo a mano; nunca por accidente.
+- `indices.ts`, `backup.ts` y `crear-usuario.ts` admiten `--permitir-prod` para
+  el caso legítimo (crear los índices en producción la primera vez, volcar
+  producción, dar de alta al admin real). Hay que teclearlo a mano; nunca por
+  accidente.
 
 ---
 
@@ -440,13 +467,18 @@ reales.
 
 1. ~~Repo, Next, ramas y despliegue en blanco a Vercel~~ ✅
 2. ~~Conexión a Mongo con cliente cacheado~~ ✅
-3. **Better Auth, roles y usuario admin creado a mano** ← **estamos aquí**
-4. Esquema de receta con Zod
-5. Panel: crear y editar recetas **sin imágenes** todavía
-6. ImageKit con subida firmada
-7. **Dirección de arte y sistema visual** (ver sección 14)
-8. Vistas públicas y filtro de visibilidad
-9. JSON-LD de `schema.org/Recipe`, SEO y script de backup
+3. ~~Better Auth, roles y usuario admin creado a mano~~ ✅
+4. ~~Esquema de receta con Zod~~ ✅
+5. ~~Panel: crear y editar recetas sin imágenes todavía~~ ✅
+6. ~~ImageKit con subida firmada~~ ✅
+7. ~~Dirección de arte y sistema visual~~ ✅ (lo decidido, en la sección 14)
+8. ~~Vistas públicas y filtro de visibilidad~~ ✅
+9. ~~JSON-LD de `schema.org/Recipe`, SEO y script de backup~~ ✅
+
+**Las nueve fases están completas** (24 de agosto de 2026). Lo que queda no es
+construcción sino estreno: subir `develop` a `main` por PR y, antes de la
+primera receta real, el ritual de producción de la sección 8 (índices con
+`--permitir-prod` y el usuario admin de prod con `crear-usuario`).
 
 La lógica del orden: validar el pipeline completo de despliegue cuando todavía no
 hay nada que perder, meter las imágenes tarde porque son la pieza con más partes
@@ -515,15 +547,57 @@ de tarjetas borrosas ni de «inicia sesión para ver esta receta». Eso sería u
 condicional de render, y ya viajó al navegador: contradice la regla dura de la
 sección 5 y además confirma que la receta existe.
 
-### Lo que la fase tiene que decidir
+### Lo decidido (fase cerrada el 24 de agosto de 2026)
 
-- Dos familias tipográficas y una escala; el ritmo vertical de la página.
-- La paleta, con sus dos temas si se quiere modo oscuro.
-- La tarjeta de receta de la portada.
-- La ficha: cómo conviven ingredientes y pasos, y qué manda en móvil.
-- Las fotos de paso: intercaladas con el texto o en una tira aparte.
-- El estado vacío y el 404, que en un blog de una receta semanal se ven más de lo
-  que parece.
+El estudio visual completo, con los tableros aprobados, vive en
+https://claude.ai/code/artifact/55ee468b-28d3-489c-9b44-5660d0ab45ab
+(páginas «Propuesta» y «Direcciones»). Esto es el resumen ejecutable; ante la
+duda, el lienzo manda.
+
+**Nombre del blog: «La cocina nos Une»** (con la U mayúscula tal cual).
+
+**Tipografías** (Google Fonts): Newsreader para display (títulos, números de
+paso) y Literata para el cuerpo. Cuerpo de lectura a 17–18 px.
+
+**Paleta clara**: papel `#FCFBF8`, tinta petróleo `#22333D`, celeste `#7EC8DF`
+como **único acento** (`#5FB6D2` para los números de paso sobre claro, que el
+puro no contrasta), apagados `#6C7E86` / `#7E8F96` / `#93A3AA`, filos `#E2E8E9`
+(y `#EDF0EE` el fino), relleno celeste `#DDF1F7` con borde `#BFE6F2`, enlaces
+`#3F97B4`.
+
+**Modo oscuro: automático** con `prefers-color-scheme`, sin interruptor (de
+noche en la cocina el móvil ya está en oscuro). Fondo `#141F26`, superficie
+`#1B2830`, texto hueso `#E4EAE8`, apagados `#7F949E` / `#5F7580`, filos
+`#263640` / `#1E2C34`, celeste `#7EC8DF` a pleno (de noche gana protagonismo),
+relleno `#1D3540` con borde `#2E5D6D`.
+
+**La portada es especial**: al entrar, la foto de la semana a pantalla completa
+con el nombre encima y una flecha que invita a bajar; al hacer scroll aparece lo
+demás — la receta de la semana como tarjeta de álbum (marco blanco con borde
+fino), el buscador («¿Qué te apetece cocinar?») con las categorías como
+píldoras, las recetas anteriores a dos columnas y la despedida «una receta cada
+semana, hecha con cariño». Lema bajo el nombre: «de nuestra cocina a la tuya».
+Animaciones de entrada en cascada y flecha con vaivén, en CSS y respetando
+`prefers-reduced-motion`.
+
+**La ficha**: ingredientes en filas con filo fino (nombre a la izquierda,
+cantidad en negrita a la derecha), con el escalador de raciones dentro de la
+cabecera de la lista (botones redondos de 44 px en celeste). Pasos con número
+grande en Newsreader celeste y las fotos **intercaladas** con el texto, en marco
+fino. Etiquetas de sección en versalitas espaciadas.
+
+**Estado vacío**: búsqueda sin resultados → plato vacío a línea, «De eso aún no
+tenemos.», «Pídenosla y puede que caiga la semana que viene», categorías a mano.
+Blog sin recetas → olla con vaho animado, «La primera está al fuego.»
+
+**404**: número gigante en celeste (el lenguaje de los números de paso), «Esta
+página se nos ha quemado.», texto deliberadamente ambiguo («o nunca existió, o
+ya no está») porque este mismo 404 es lo que ve un visitante ante una receta de
+solo registrados. Una acción principal: volver a la portada.
+
+**Sin corazones dibujados.** El celeste (el 🩵 de la casa) ya es el corazón:
+vive en el escalador, los números de paso, la píldora de «todas las recetas» y
+los enlaces, y en nada más. Toques de 44 px como mínimo en todo lo tocable.
 
 ---
 
@@ -539,9 +613,9 @@ No darlas por cerradas sin querer.
   que si más adelante se decide renderizarlo como Markdown **no hará falta migrar
   nada**.
 - **Dominio propio**: por ahora se usa el subdominio gratuito de Vercel.
-- **La dirección de arte**: no hay nada elegido todavía, ni paleta ni tipografías.
-  Lo que sí está fijado son las restricciones de la sección 14, que acotan el
-  terreno sin cerrar la decisión.
+
+(La dirección de arte dejó de estar abierta: se cerró en la fase 7. Ver la
+sección 14.)
 
 ---
 
@@ -556,33 +630,50 @@ recetario/
 ├─ README.md
 ├─ src/
 │  ├─ app/
+│  │  ├─ not-found.tsx               # el 404 del sistema; texto ambiguo a propósito
+│  │  ├─ sitemap.ts                  # dinámico, SIEMPRE con rol "publico"
+│  │  ├─ robots.ts
 │  │  ├─ (public)/
-│  │  │  ├─ page.tsx                 # portada
-│  │  │  └─ recetas/[slug]/page.tsx  # detalle de receta
+│  │  │  ├─ page.tsx                 # portada especial: cubierta, buscador (?q, ?categoria)
+│  │  │  └─ recetas/[slug]/page.tsx  # ficha con escalador de raciones
 │  │  ├─ (auth)/
 │  │  │  └─ login/page.tsx
 │  │  ├─ admin/
 │  │  │  ├─ layout.tsx               # guard de rol admin
 │  │  │  ├─ page.tsx                 # listado de recetas
-│  │  │  └─ recetas/[id]/editar/page.tsx
+│  │  │  └─ recetas/
+│  │  │     ├─ nueva/page.tsx        # alta
+│  │  │     └─ [id]/editar/page.tsx
 │  │  └─ api/
 │  │     ├─ auth/[...all]/route.ts   # handler de Better Auth
-│  │     ├─ recetas/route.ts
-│  │     ├─ imagenes/firma/route.ts  # firma de subida a ImageKit
+│  │     ├─ recetas/route.ts         # GET listado (por rol), POST alta
+│  │     ├─ recetas/[id]/route.ts    # PUT, DELETE con limpieza de imágenes
+│  │     ├─ imagenes/route.ts        # POST metadatos tras subir a ImageKit
+│  │     ├─ imagenes/[id]/route.ts   # DELETE: ImageKit + metadatos + referencias
+│  │     ├─ imagenes/firma/route.ts  # firma de subida (solo admin)
 │  │     └─ salud/route.ts           # ping a la base; ver sección 8
 │  ├─ lib/
 │  │  ├─ mongo.ts                    # cliente cacheado + índices
 │  │  ├─ auth.ts
 │  │  ├─ auth-client.ts
-│  │  ├─ imagekit.ts
+│  │  ├─ sesion.ts                   # sesión y rol de la petición, en servidor
+│  │  ├─ recetas.ts                  # doc ↔ receta (ObjectId ↔ hex) y publicadaEn
+│  │  ├─ imagenes.ts                 # doc ↔ imagen + urlConAncho (transformaciones)
+│  │  ├─ imagekit.ts                 # cliente de servidor: borrar por fileId
+│  │  ├─ formato.ts                  # fechas y cantidades, puro e isomorfo
 │  │  └─ visibilidad.ts              # rol → filtro de Mongo
 │  ├─ models/
 │  │  ├─ receta.ts                   # Zod, fuente de verdad
 │  │  ├─ imagen.ts
 │  │  └─ usuario.ts
 │  └─ components/
+│     ├─ formulario-receta.tsx       # crear/editar; mismo Zod que la API
+│     ├─ selector-imagen.tsx         # firma → subida directa → metadatos
+│     ├─ ingredientes-escalables.tsx # el escalador de raciones (cliente)
+│     └─ boton-salir.tsx
 ├─ scripts/
 │  ├─ indices.ts
+│  ├─ crear-usuario.ts               # única vía de alta de cuentas
 │  ├─ backup.ts
 │  └─ seed-dev.ts
 └─ tests/
@@ -605,3 +696,13 @@ Los ficheros con `// TODO(fase N)` son andamiaje: la cabecera dice qué va ahí 
 en qué fase. Muchos llevan ya la API oficial verificada en comentarios
 (Better Auth 1.7.x, ImageKit, agosto de 2026) para no tener que volver a
 investigarla.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

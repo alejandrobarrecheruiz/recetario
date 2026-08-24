@@ -14,8 +14,9 @@ import {
   recetaEntradaSchema,
   ingredienteSchema,
   pasoSchema,
+  generarSlug,
 } from "@/models/receta";
-import { imagenSchema } from "@/models/imagen";
+import { imagenSchema, imagenEntradaSchema } from "@/models/imagen";
 
 const ID = "507f1f77bcf86cd799439011";
 
@@ -156,6 +157,31 @@ describe("pasoSchema", () => {
   });
 });
 
+describe("generarSlug", () => {
+  test("lo que propone pasa la validacion de slug del esquema", () => {
+    const slugSchema = recetaSchema.shape.slug;
+    for (const titulo of [
+      "Tarta de queso",
+      "Croquetas de jamón",
+      "Ñoquis a la crema",
+      "  Pollo al ajillo (¡el bueno!)  ",
+      "Café con leche 2.0",
+    ]) {
+      const slug = generarSlug(titulo);
+      assert.ok(
+        slugSchema.safeParse(slug).success,
+        `"${titulo}" produjo el slug invalido "${slug}"`,
+      );
+    }
+  });
+
+  test("quita tildes y enes, y une con guiones", () => {
+    assert.equal(generarSlug("Croquetas de jamón"), "croquetas-de-jamon");
+    assert.equal(generarSlug("Ñoquis a la crema"), "noquis-a-la-crema");
+    assert.equal(generarSlug("  Café   con leche  "), "cafe-con-leche");
+  });
+});
+
 describe("recetaEntradaSchema", () => {
   test("lo que manda el panel no incluye _id, autorId ni actualizadaEn", () => {
     // Esos tres los decide el servidor. Si viajaran desde el formulario, el
@@ -211,5 +237,18 @@ describe("imagenSchema", () => {
 
   test("url tiene que ser una URL de verdad", () => {
     assert.equal(imagenSchema.safeParse({ ...imagenValida(), url: "/dev/tarta.jpg" }).success, false);
+  });
+
+  test("lo que manda el panel no incluye _id, subidaEn ni subidaPor", () => {
+    // Esos tres los decide el servidor, como en recetaEntradaSchema.
+    const { _id, subidaEn, subidaPor, ...entrada } = imagenValida();
+    void _id;
+    void subidaEn;
+    void subidaPor;
+
+    const resultado = imagenEntradaSchema.safeParse(entrada);
+    assert.ok(resultado.success, JSON.stringify(resultado.error?.issues));
+    assert.equal("_id" in resultado.data, false);
+    assert.equal("subidaPor" in resultado.data, false);
   });
 });

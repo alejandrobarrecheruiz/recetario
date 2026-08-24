@@ -311,8 +311,19 @@ En Vercel:
 | Entorno | `MONGODB_DB` | `IMAGEKIT_FOLDER` | `BETTER_AUTH_URL` |
 |---|---|---|---|
 | Production | `recetas_prod` | `prod` | `https://recetario-36ok.vercel.app` |
-| Preview | `recetas_dev` | `dev` | URL fija de rama de `develop` |
+| Preview | `recetas_dev` | `dev` | `https://recetario-36ok-git-develop-barrechee.vercel.app` |
 | Development | `recetas_dev` | `dev` | `http://localhost:3000` |
+
+Las tres URLs van **completas, con `https://`**. Una `BETTER_AUTH_URL` sin
+esquema no parsea y tumba el build entero al prerenderizar `/login` (error
+`Invalid base URL` en «Collecting page data»); pasó el 24 de agosto de 2026 y
+así se diagnosticó.
+
+Sobre el proyecto de Vercel: se llama `recetario`, pero sus dominios
+`*.vercel.app` conservan el sufijo `-36ok` porque `recetario.vercel.app` es un
+dominio global que ya estaba cogido. Renombrar el proyecto no cambia los
+dominios asignados. (Hubo un segundo proyecto duplicado apuntando al mismo
+repo, que duplicaba cada despliegue y fallaba siempre; se borró ese mismo día.)
 
 Las otras cinco (`MONGODB_URI`, `BETTER_AUTH_SECRET`, `IMAGEKIT_PRIVATE_KEY`,
 `NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY`, `NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT`) valen lo

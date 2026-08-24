@@ -473,7 +473,12 @@ reales.
 6. ~~ImageKit con subida firmada~~ ✅
 7. ~~Dirección de arte y sistema visual~~ ✅ (lo decidido, en la sección 14)
 8. ~~Vistas públicas y filtro de visibilidad~~ ✅
-9. **JSON-LD de `schema.org/Recipe`, SEO y script de backup** ← **estamos aquí**
+9. ~~JSON-LD de `schema.org/Recipe`, SEO y script de backup~~ ✅
+
+**Las nueve fases están completas** (24 de agosto de 2026). Lo que queda no es
+construcción sino estreno: subir `develop` a `main` por PR y, antes de la
+primera receta real, el ritual de producción de la sección 8 (índices con
+`--permitir-prod` y el usuario admin de prod con `crear-usuario`).
 
 La lógica del orden: validar el pipeline completo de despliegue cuando todavía no
 hay nada que perder, meter las imágenes tarde porque son la pieza con más partes
@@ -626,6 +631,8 @@ recetario/
 ├─ src/
 │  ├─ app/
 │  │  ├─ not-found.tsx               # el 404 del sistema; texto ambiguo a propósito
+│  │  ├─ sitemap.ts                  # dinámico, SIEMPRE con rol "publico"
+│  │  ├─ robots.ts
 │  │  ├─ (public)/
 │  │  │  ├─ page.tsx                 # portada especial: cubierta, buscador (?q, ?categoria)
 │  │  │  └─ recetas/[slug]/page.tsx  # ficha con escalador de raciones

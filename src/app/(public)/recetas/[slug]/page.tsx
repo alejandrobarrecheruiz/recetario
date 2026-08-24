@@ -1,25 +1,27 @@
+import { cache } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { obtenerColecciones } from "@/lib/mongo";
 import { conVisibilidad } from "@/lib/visibilidad";
 import { rolActual } from "@/lib/sesion";
 import { urlConAncho } from "@/lib/imagenes";
-import { fechaDePublicacion } from "@/lib/formato";
+import { fechaDePublicacion, formatearCantidad } from "@/lib/formato";
+import type { Ingrediente, RecetaDoc } from "@/models/receta";
+import type { ImagenDoc } from "@/models/imagen";
 import { IngredientesEscalables } from "@/components/ingredientes-escalables";
-
-// TODO(fase 9): JSON-LD de schema.org/Recipe y metadatos de SEO desde `seo`.
 
 // La ficha. La consulta pasa por conVisibilidad con el rol de la sesion: una
 // receta que el visitante no puede ver responde notFound(), nunca "prohibida".
-export default async function PaginaReceta({
-  params,
-}: PageProps<"/recetas/[slug]">) {
-  const { slug } = await params;
+//
+// `cache()` deduplica la consulta entre generateMetadata y la pagina: una sola
+// ida a Mongo por peticion.
+const obtenerFicha = cache(async (slug: string) => {
   const rol = await rolActual();
   const { recetas, imagenes } = await obtenerColecciones();
 
   const receta = await recetas.findOne(conVisibilidad(rol, { slug }));
-  if (!receta) notFound();
+  if (!receta) return null;
 
   const fotos = new Map(
     (await imagenes.find({ recetaId: receta._id }).toArray()).map((foto) => [
@@ -27,12 +29,102 @@ export default async function PaginaReceta({
       foto,
     ]),
   );
+  return { receta, fotos };
+});
+
+export async function generateMetadata({
+  params,
+}: PageProps<"/recetas/[slug]">): Promise<Metadata> {
+  const { slug } = await params;
+  const ficha = await obtenerFicha(slug);
+  if (!ficha) return {};
+
+  const { receta, fotos } = ficha;
+  const portada = receta.portadaId ? fotos.get(receta.portadaId.toHexString()) : undefined;
+
+  return {
+    title: receta.titulo,
+    description: receta.seo.descripcion,
+    // Un borrador solo lo ve el admin, pero por si acaso: fuera de los indices.
+    robots: receta.estado === "borrador" ? { index: false, follow: false } : undefined,
+    openGraph: {
+      title: receta.titulo,
+      description: receta.seo.descripcion,
+      type: "article",
+      images: portada ? [{ url: urlConAncho(portada.url, 1200), alt: portada.alt }] : undefined,
+    },
+  };
+}
+
+/** "150 g de harina", "6 huevo", "sal (al gusto)". Para el JSON-LD. */
+function ingredienteATexto(ingrediente: Ingrediente): string {
+  if (ingrediente.cantidad === 0) {
+    return ingrediente.nota ? `${ingrediente.nombre} (${ingrediente.nota})` : ingrediente.nombre;
+  }
+  const cantidad = formatearCantidad(ingrediente.cantidad);
+  if (ingrediente.unidad === "" || ingrediente.unidad === "unidad") {
+    return `${cantidad} ${ingrediente.nombre}`;
+  }
+  return `${cantidad} ${ingrediente.unidad} de ${ingrediente.nombre}`;
+}
+
+/** JSON-LD de schema.org/Recipe. Solo se emite para recetas publicadas. */
+function datosEstructurados(receta: RecetaDoc, fotos: Map<string, ImagenDoc>) {
+  const portada = receta.portadaId ? fotos.get(receta.portadaId.toHexString()) : undefined;
+  const pasos = [...receta.pasos].sort((a, b) => a.orden - b.orden);
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Recipe",
+    name: receta.titulo,
+    description: receta.seo.descripcion,
+    ...(portada && { image: [urlConAncho(portada.url, 1200)] }),
+    ...(receta.publicadaEn && { datePublished: receta.publicadaEn.toISOString() }),
+    author: { "@type": "Person", name: "La cocina nos Une" },
+    inLanguage: "es",
+    recipeYield: `${receta.raciones} raciones`,
+    prepTime: `PT${receta.tiempo.preparacion}M`,
+    cookTime: `PT${receta.tiempo.coccion}M`,
+    totalTime: `PT${receta.tiempo.total}M`,
+    ...(receta.categorias.length > 0 && { recipeCategory: receta.categorias }),
+    ...(receta.etiquetas.length > 0 && { keywords: receta.etiquetas.join(", ") }),
+    recipeIngredient: receta.ingredientes.map(ingredienteATexto),
+    recipeInstructions: pasos.map((paso, indice) => {
+      const foto = paso.imagenId ? fotos.get(paso.imagenId.toHexString()) : undefined;
+      return {
+        "@type": "HowToStep",
+        position: indice + 1,
+        text: paso.texto,
+        ...(foto && { image: urlConAncho(foto.url, 828) }),
+      };
+    }),
+  };
+}
+
+export default async function PaginaReceta({
+  params,
+}: PageProps<"/recetas/[slug]">) {
+  const { slug } = await params;
+  const ficha = await obtenerFicha(slug);
+  if (!ficha) notFound();
+
+  const { receta, fotos } = ficha;
   const portada = receta.portadaId ? fotos.get(receta.portadaId.toHexString()) : undefined;
   const pasos = [...receta.pasos].sort((a, b) => a.orden - b.orden);
   const fecha = fechaDePublicacion(receta.publicadaEn);
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-8 px-6 pb-16">
+      {receta.estado === "publicada" && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            // El escape de "<" evita que un texto de receta pueda cerrar el script.
+            __html: JSON.stringify(datosEstructurados(receta, fotos)).replace(/</g, "\\u003c"),
+          }}
+        />
+      )}
+
       <header className="flex flex-col items-center border-b border-filo pb-5 pt-8">
         <Link href="/" className="font-[family-name:var(--font-newsreader)] text-xl font-medium">
           La cocina nos Une

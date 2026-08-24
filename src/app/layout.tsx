@@ -16,11 +16,19 @@ const literata = Literata({
 });
 
 export const metadata: Metadata = {
+  // La URL canonica del despliegue actual; vale para que las imagenes de
+  // OpenGraph salgan absolutas. En Vercel cada entorno trae la suya.
+  metadataBase: new URL(process.env.BETTER_AUTH_URL ?? "http://localhost:3000"),
   title: {
     default: "La cocina nos Une",
     template: "%s · La cocina nos Une",
   },
   description: "Una receta cada semana, de nuestra cocina a la tuya.",
+  openGraph: {
+    siteName: "La cocina nos Une",
+    locale: "es_ES",
+    type: "website",
+  },
 };
 
 export const viewport: Viewport = {

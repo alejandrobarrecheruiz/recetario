@@ -44,7 +44,7 @@ function Logo({ enlazado = false }: { enlazado?: boolean }) {
     <img
       src="/Logo.png"
       alt="Mi libro de recetas"
-      className="h-10 w-10 rounded-full object-cover"
+      className="h-16 w-16 rounded-full object-cover"
     />
   );
   return enlazado ? (
@@ -361,27 +361,33 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
   return (
     <main className="flex flex-col overflow-x-clip">
       {/* La barra rectangular con fondo: la foto empieza debajo, y al hacer
-          scroll la barra se queda arriba. */}
-      {/* En la portada el nombre vive SOLO sobre la foto: la barra lleva el
-          logo a la izquierda y la navegación a la derecha. */}
-      <header className="sticky top-0 z-50 flex h-14 items-center justify-between gap-3 border-b border-tinta/15 bg-papel px-[clamp(16px,5vw,48px)]">
+          scroll la barra se queda arriba. En la portada el nombre vive SOLO
+          sobre la foto: la barra lleva el logo grande a la izquierda y la
+          navegación a la derecha. */}
+      <header className="sticky top-0 z-50 flex h-20 items-center justify-between gap-3 border-b border-tinta/15 bg-papel px-[clamp(16px,5vw,48px)]">
         <Logo />
         <Navegacion />
       </header>
 
-      <section className="relative flex min-h-[calc(100svh-3.5rem)] flex-col overflow-hidden">
+      {/* La cubierta dura 1,6 pantallas: es lo que da recorrido al nombre
+          pegajoso antes de que empiece el contenido. */}
+      <section className="relative flex min-h-[calc(160svh-5rem)] flex-col overflow-clip">
         <CapaParallax factor={0.18} className="absolute inset-x-0 -inset-y-[6%]">
           <ImagenDeCubierta />
         </CapaParallax>
         <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(222,230,233,0.94)_0%,rgba(222,230,233,0.6)_22%,rgba(222,230,233,0)_48%)]" />
-        <Revelado
-          orden={2}
-          className="relative z-[2] flex min-h-0 flex-1 flex-col items-center justify-center gap-3.5 px-[clamp(20px,5vw,48px)] py-[clamp(20px,4vh,44px)] text-center"
-        >
-          <h1 className="max-w-[14ch] font-[family-name:var(--font-pinyon)] text-[clamp(40px,min(8.4vw,13vh),132px)] leading-[0.84] tracking-[0.01em] [text-shadow:0_0_2px_rgba(222,230,233,1),0_1px_4px_rgba(222,230,233,1),0_2px_12px_rgba(222,230,233,1),0_0_28px_rgba(222,230,233,0.95),0_0_60px_rgba(222,230,233,0.85)]">
-            Mi libro de recetas
-          </h1>
-          <Firma />
+        <Revelado orden={2} className="relative z-[2] min-h-0 flex-1 px-[clamp(20px,5vw,48px)]">
+          {/* Pegajoso: mientras dura la imagen, el nombre se queda en el
+              centro del viewport; el borde inferior de la cubierta se lo
+              lleva al salir. */}
+          <div className="sticky top-[50svh] flex -translate-y-1/2 flex-col items-center">
+            <div className="flex flex-col items-center gap-3.5 bg-papel/30 px-[clamp(24px,6vw,64px)] py-[clamp(18px,3vh,36px)] text-center backdrop-blur-md">
+              <h1 className="max-w-[14ch] font-[family-name:var(--font-pinyon)] text-[clamp(40px,min(8.4vw,13vh),132px)] leading-[0.84] tracking-[0.01em] [text-shadow:0_0_2px_rgba(222,230,233,1),0_1px_4px_rgba(222,230,233,1),0_2px_12px_rgba(222,230,233,1),0_0_28px_rgba(222,230,233,0.95),0_0_60px_rgba(222,230,233,0.85)]">
+                Mi libro de recetas
+              </h1>
+              <Firma />
+            </div>
+          </div>
         </Revelado>
       </section>
 

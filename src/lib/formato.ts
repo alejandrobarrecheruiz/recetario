@@ -24,6 +24,17 @@ export function formatearCantidad(cantidad: number): string {
   return formatoCantidad.format(Math.round(cantidad * 100) / 100);
 }
 
+/**
+ * URL de entrega con transformacion de ImageKit: ancho fijado y compresion.
+ * Vive aqui y no en lib/imagenes.ts porque es pura e isomorfa: tambien la usa
+ * el editor del panel, que es un componente de cliente, y lib/imagenes.ts
+ * arrastra el driver de Mongo.
+ */
+export function urlConAncho(url: string, ancho: number): string {
+  const separador = url.includes("?") ? "&" : "?";
+  return `${url}${separador}tr=w-${ancho},q-80`;
+}
+
 /** "40 min", "1 h", "1 h 10". Para los rótulos de tiempo del rediseño. */
 export function duracion(minutos: number): string {
   if (minutos < 60) return `${minutos} min`;

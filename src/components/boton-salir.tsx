@@ -9,7 +9,7 @@ export function BotonSalir() {
   return (
     <button
       type="button"
-      className="text-sm underline opacity-70 hover:opacity-100"
+      className="rounded-full border border-tinta/25 px-4 py-2 font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.14em] text-tinta/70 hover:border-tinta hover:text-tinta"
       onClick={async () => {
         await signOut();
         router.push("/login");

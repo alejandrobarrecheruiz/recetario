@@ -297,7 +297,7 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
   if (buscando) {
     return (
       <main className="flex min-h-svh flex-col">
-        <header className="sticky top-0 z-50 flex h-16 items-center justify-between gap-3 border-b border-tinta/15 bg-papel px-[clamp(16px,5vw,48px)]">
+        <header className="sticky top-0 z-50 flex h-20 items-center justify-between gap-3 border-b border-tinta/15 bg-papel px-[clamp(16px,5vw,48px)]">
           <span className="flex items-center gap-3">
             <Logo enlazado />
             <Marca enlazada />

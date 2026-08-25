@@ -648,6 +648,16 @@ No darlas por cerradas sin querer.
   que si más adelante se decide renderizarlo como Markdown **no hará falta migrar
   nada**.
 - **Dominio propio**: por ahora se usa el subdominio gratuito de Vercel.
+- **Cuentas y recetas guardadas (pedido el 25 de agosto de 2026, sin fase
+  asignada)**: la figura de persona de la barra ya es la CUENTA (sin sesión →
+  /login; con sesión → salir), pero falta lo grande: que quien tiene cuenta
+  pueda **guardar recetas** — un corazón vacío junto a cada receta que se
+  rellena al tocarlo, y algún sitio donde ver las guardadas. Exige colección o
+  campo nuevo en Mongo (por usuario), API con el rol de la sesión y UI. Ojo al
+  decidirla: el registro sigue cerrado (las cuentas las crea el admin con
+  `npm run crear-usuario`); si los favoritos se quisieran para cualquier
+  visitante habría que reabrir esa decisión, que hoy protege las recetas de
+  solo registrados.
 
 (La dirección de arte dejó de estar abierta: se cerró en la fase 7 y se
 sustituyó entera en la fase 10. Ver la sección 14.)

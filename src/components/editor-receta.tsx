@@ -23,6 +23,7 @@ import {
 import type { Imagen } from "@/models/imagen";
 import { subirImagen, quitarImagen } from "@/lib/subir-imagen";
 import { urlConAncho } from "@/lib/formato";
+import { Logo } from "@/components/logo";
 
 /**
  * El editor del panel (fase 10): se escribe sobre la receta tal como se va a
@@ -450,6 +451,7 @@ export function EditorReceta({
       {/* ── Barra superior ─────────────────────────────────────────── */}
       <div className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-tinta/15 bg-superficie px-[clamp(16px,3vw,28px)] py-3">
         <div className="flex min-w-0 items-center gap-5 font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.14em]">
+          <Logo tamano={36} />
           <Link href="/admin" className="whitespace-nowrap text-tinta/65">
             ← Panel
           </Link>

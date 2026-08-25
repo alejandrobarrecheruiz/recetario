@@ -658,7 +658,20 @@ No darlas por cerradas sin querer.
   quien tiene cuenta pueda **guardar recetas** — un corazón vacío junto a
   cada receta que se rellena al tocarlo, y algún sitio donde ver las
   guardadas. Exige colección o campo nuevo en Mongo (por usuario), API con el
-  rol de la sesión y UI.
+  rol de la sesión y UI. Con ella va la **vista de usuario logueado**: su
+  cuenta con sus recetas guardadas.
+- **El login no debe redirigir nunca a `/admin`** (apuntado el 25 de agosto
+  de 2026): hoy, al entrar como admin, `/login` te manda al panel — pero un
+  admin puede estar entrando solo para leer o para ver sus guardadas, como
+  cualquier usuario. Repensar la accesibilidad del flujo de logueo: aterrizar
+  siempre como lector (portada o vuelta a donde estabas) y que el panel sea
+  un enlace que se elige, no un destino forzado.
+- **Arreglar la vista «Cocinar paso a paso»** (apuntado el 25 de agosto de
+  2026, sin concretar todavía qué está mal; preguntar antes de tocarla).
+- **Fuera el «← Volver»** (apuntado el 25 de agosto de 2026): en ninguna
+  vista debe aparecer un «← Volver» como el de la cabecera de la ficha;
+  decidir con qué se sustituye (el logo ya vuelve a la portada desde
+  cualquier sitio).
 
 (La dirección de arte dejó de estar abierta: se cerró en la fase 7 y se
 sustituyó entera en la fase 10. Ver la sección 14.)

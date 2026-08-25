@@ -16,11 +16,11 @@ import { CapaParallax } from "@/components/parallax";
 // El rol se resuelve EN EL SERVIDOR y toda consulta pasa por conVisibilidad:
 // nada de filtrar en el JSX.
 
-// La imagen fija de la cubierta vive en /public. Para probar otra opción basta
-// con cambiar aquí el nombre (Portada.png, Portada-2.png, Portada-3.png);
-// Portada-V.png es la vertical, para pantallas estrechas.
-const imagenDeCubierta = "/Portada.png";
-const imagenDeCubiertaVertical = "/Portada-V.png";
+// La imagen fija de la cubierta vive en /public, ya convertida a JPEG (los
+// PNG originales, con las opciones descartadas, quedan en el historial de
+// git). Portada-V.jpg es la vertical, para pantallas estrechas.
+const imagenDeCubierta = "/Portada.jpg";
+const imagenDeCubiertaVertical = "/Portada-V.jpg";
 
 /** La cubierta a sangre: horizontal en pantalla ancha, vertical en el móvil. */
 function ImagenDeCubierta() {

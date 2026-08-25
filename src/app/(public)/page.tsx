@@ -199,7 +199,7 @@ function TarjetaReceta({
 /** La firma «— Alejandro —» de la cubierta. */
 function Firma() {
   return (
-    <div className="flex items-center gap-4 font-[family-name:var(--font-dm-mono)] text-[clamp(9px,0.85vw,11px)] uppercase tracking-[0.44em] text-tinta/80 [text-shadow:0_1px_2px_rgba(222,230,233,0.95),0_0_14px_rgba(222,230,233,0.9)]">
+    <div className="flex items-center gap-4 font-[family-name:var(--font-dm-mono)] text-[clamp(9px,0.85vw,11px)] uppercase tracking-[0.44em] text-tinta [text-shadow:0_0_2px_rgba(222,230,233,1),0_1px_4px_rgba(222,230,233,1),0_0_12px_rgba(222,230,233,1),0_0_26px_rgba(222,230,233,0.9)]">
       <span className="h-px w-[clamp(20px,4vw,54px)] bg-tinta/45" />
       <span>Alejandro</span>
       <span className="h-px w-[clamp(20px,4vw,54px)] bg-tinta/45" />
@@ -319,7 +319,7 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
         </div>
         <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(222,230,233,0.94)_0%,rgba(222,230,233,0.6)_22%,rgba(222,230,233,0)_48%)]" />
         <div className="relative flex flex-1 flex-col items-center justify-center gap-3.5 px-8 text-center">
-          <h1 className="font-[family-name:var(--font-pinyon)] text-[clamp(40px,10vw,110px)] leading-[0.84] tracking-[0.01em] [text-shadow:0_1px_2px_rgba(222,230,233,0.95),0_2px_16px_rgba(222,230,233,0.9),0_0_44px_rgba(222,230,233,0.75)]">
+          <h1 className="font-[family-name:var(--font-pinyon)] text-[clamp(40px,10vw,110px)] leading-[0.84] tracking-[0.01em] [text-shadow:0_0_2px_rgba(222,230,233,1),0_1px_4px_rgba(222,230,233,1),0_2px_12px_rgba(222,230,233,1),0_0_28px_rgba(222,230,233,0.95),0_0_60px_rgba(222,230,233,0.85)]">
             Mi libro de recetas
           </h1>
           <Firma />
@@ -354,7 +354,7 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
           orden={2}
           className="relative z-[2] flex min-h-0 flex-1 flex-col items-center justify-center gap-3.5 px-[clamp(20px,5vw,48px)] py-[clamp(20px,4vh,44px)] text-center"
         >
-          <h1 className="max-w-[14ch] font-[family-name:var(--font-pinyon)] text-[clamp(40px,min(8.4vw,13vh),132px)] leading-[0.84] tracking-[0.01em] [text-shadow:0_1px_2px_rgba(222,230,233,0.95),0_2px_16px_rgba(222,230,233,0.9),0_0_44px_rgba(222,230,233,0.75)]">
+          <h1 className="max-w-[14ch] font-[family-name:var(--font-pinyon)] text-[clamp(40px,min(8.4vw,13vh),132px)] leading-[0.84] tracking-[0.01em] [text-shadow:0_0_2px_rgba(222,230,233,1),0_1px_4px_rgba(222,230,233,1),0_2px_12px_rgba(222,230,233,1),0_0_28px_rgba(222,230,233,0.95),0_0_60px_rgba(222,230,233,0.85)]">
             Mi libro de recetas
           </h1>
           <Firma />

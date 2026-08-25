@@ -37,11 +37,13 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    // No hay registro abierto: las recetas con visibilidad "registrada" son
-    // para gente invitada, y un alta libre en /api/auth/sign-up/email se las
-    // ensenaria a cualquiera. Las cuentas se crean con `auth.api.createUser`
-    // (scripts/crear-usuario.ts), que no pasa por el registro.
-    disableSignUp: true,
+    // Registro ABIERTO desde el 25 de agosto de 2026 (decision del dueno, al
+    // anadir el panel de cuenta): cualquiera puede crear cuenta en /login y
+    // entra con rol "registrado". Consecuencia asumida: las recetas con
+    // visibilidad "registrada" las ve cualquiera que se registre; ya no son
+    // solo para gente invitada. El admin se sigue creando con
+    // `auth.api.createUser` (scripts/crear-usuario.ts).
+    disableSignUp: false,
   },
 
   plugins: [

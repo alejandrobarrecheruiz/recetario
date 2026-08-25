@@ -6,12 +6,10 @@ import { rolActual } from "@/lib/sesion";
 import { duracion, urlConAncho } from "@/lib/formato";
 import type { RecetaDoc } from "@/models/receta";
 import type { ImagenDoc } from "@/models/imagen";
-import type { Rol } from "@/models/usuario";
 import { Revelado } from "@/components/revelado";
 import { Marquesina } from "@/components/marquesina";
 import { CapaParallax } from "@/components/parallax";
 import { Logo } from "@/components/logo";
-import { SalirNavegacion } from "@/components/boton-salir";
 
 // La portada del rediseño «Mi libro de recetas» (fase 10): cubierta a sangre
 // con el rótulo en Pinyon Script, las dos entradas grandes, la marquesina, la
@@ -59,18 +57,19 @@ function Marca({ enlazada = false }: { enlazada?: boolean }) {
 }
 
 /**
- * La navegación de la portada. En pantallas estrechas las palabras se cambian
- * por iconos (toques de 44 px). La figura de persona es la CUENTA, no «quién
- * cocina»: sin sesión lleva al login; con sesión, cierra sesión. «Quién
- * cocina» queda como enlace de texto en pantalla ancha (en el móvil se llega
- * bajando).
+ * La cabecera con sentido: «Recetas» y la figura de persona, que es la
+ * CUENTA — lleva siempre al panel de /login (entrar, crear cuenta o, con
+ * sesión, ver la cuenta y salir). La figura se ve igual en grande y en el
+ * móvil; «Recetas» cambia la palabra por su icono en pantallas estrechas.
  */
-function Navegacion({ rol }: { rol: Rol }) {
-  const claseEnlace =
-    "flex h-11 items-center justify-center rounded-full sm:h-auto sm:px-3.5 sm:py-2";
+function Navegacion() {
   return (
     <nav className="flex items-center gap-2 font-[family-name:var(--font-dm-mono)] text-xs uppercase tracking-[0.14em]">
-      <Link href="/#recetas" aria-label="Recetas" className={`${claseEnlace} w-11 sm:w-auto`}>
+      <Link
+        href="/#recetas"
+        aria-label="Recetas"
+        className="flex h-11 w-11 items-center justify-center rounded-full sm:h-auto sm:w-auto sm:px-3.5 sm:py-2"
+      >
         <svg
           width="20"
           height="20"
@@ -88,30 +87,25 @@ function Navegacion({ rol }: { rol: Rol }) {
         </svg>
         <span className="hidden sm:inline">Recetas</span>
       </Link>
-      <Link href="/#nota" className={`${claseEnlace} hidden sm:flex`}>
-        Quién cocina
+      <Link
+        href="/login"
+        aria-label="Tu cuenta"
+        className="flex h-11 w-11 items-center justify-center rounded-full"
+      >
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="8" r="3.5" />
+          <path d="M5 20c1.5-4 4-6 7-6s5.5 2 7 6" />
+        </svg>
       </Link>
-      {rol === "publico" ? (
-        <Link href="/login" aria-label="Entrar" className={`${claseEnlace} w-11 sm:w-auto`}>
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            className="sm:hidden"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="8" r="3.5" />
-            <path d="M5 20c1.5-4 4-6 7-6s5.5 2 7 6" />
-          </svg>
-          <span className="hidden sm:inline">Entrar</span>
-        </Link>
-      ) : (
-        <SalirNavegacion />
-      )}
     </nav>
   );
 }
@@ -331,7 +325,7 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
             <Logo />
             <Marca enlazada />
           </span>
-          <Navegacion rol={rol} />
+          <Navegacion />
         </header>
         <section className="mx-auto w-full max-w-[1440px] flex-1 px-[clamp(20px,5vw,48px)] pb-24 pt-[clamp(20px,3vw,40px)]">
           <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-6 border-b border-tinta/20 pb-6">
@@ -370,7 +364,7 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
       <main className="flex min-h-svh flex-col overflow-x-clip">
         <header className="sticky top-0 z-50 flex h-20 items-center justify-between gap-3 border-b border-tinta/15 bg-papel px-[clamp(16px,5vw,48px)]">
           <Logo />
-          <Navegacion rol={rol} />
+          <Navegacion />
         </header>
         <section className="relative flex min-h-[calc(100svh-5rem)] flex-col overflow-clip">
           <div className="absolute inset-0">
@@ -408,7 +402,7 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
           navegación a la derecha. */}
       <header className="sticky top-0 z-50 flex h-20 items-center justify-between gap-3 border-b border-tinta/15 bg-papel px-[clamp(16px,5vw,48px)]">
         <Logo />
-        <Navegacion rol={rol} />
+        <Navegacion />
       </header>
 
       {/* La cubierta dura 1,6 pantallas: es lo que da recorrido al nombre

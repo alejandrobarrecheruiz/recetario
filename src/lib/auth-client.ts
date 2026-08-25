@@ -11,9 +11,6 @@ import { adminClient } from "better-auth/client/plugins";
  * hace falta ninguna variable NEXT_PUBLIC_ (y BETTER_AUTH_SECRET no debe llegar
  * NUNCA al navegador).
  *
- * No se exporta `signUp`: el registro esta cerrado en el servidor
- * (`disableSignUp`) y ofrecerlo aqui solo invitaria a usarlo.
- *
  * RECORDATORIO: lo que se vea o no se vea en el panel segun el rol es cosmetica.
  * La proteccion real esta en el servidor, con `filtroVisibilidad`. Ver
  * src/lib/visibilidad.ts.
@@ -22,4 +19,4 @@ export const authClient = createAuthClient({
   plugins: [adminClient()],
 });
 
-export const { signIn, signOut, useSession } = authClient;
+export const { signIn, signUp, signOut, useSession } = authClient;

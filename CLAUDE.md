@@ -201,10 +201,13 @@ Sobre los roles (`src/models/usuario.ts`):
   configuran `defaultRole: "registrado"` y los roles del dominio, así que en la
   base solo entra lo que dice `rolAlmacenadoSchema`. `rolDeSesion()` trata
   igualmente cualquier valor desconocido con sesión válida como `registrado`.
-- **El registro público está cerrado** (`disableSignUp`). Las recetas con
-  visibilidad `registrada` son para gente invitada; un alta libre se las
-  enseñaría a cualquiera. Las cuentas (admin incluido) se crean con
-  `npm run crear-usuario`, que usa `auth.api.createUser` en servidor.
+- **El registro público está ABIERTO desde el 25 de agosto de 2026**
+  (decisión del dueño, al añadir el panel de cuenta de `/login`): cualquiera
+  puede crear cuenta con correo y contraseña y entra con rol `registrado`.
+  **Consecuencia asumida**: las recetas con visibilidad `registrada` las ve
+  cualquiera que se registre; ya no equivalen a "gente invitada". El admin se
+  sigue creando con `npm run crear-usuario -- --rol admin`
+  (`auth.api.createUser` en servidor); el registro nunca da el rol admin.
 
 ### Índices
 
@@ -648,16 +651,14 @@ No darlas por cerradas sin querer.
   que si más adelante se decide renderizarlo como Markdown **no hará falta migrar
   nada**.
 - **Dominio propio**: por ahora se usa el subdominio gratuito de Vercel.
-- **Cuentas y recetas guardadas (pedido el 25 de agosto de 2026, sin fase
-  asignada)**: la figura de persona de la barra ya es la CUENTA (sin sesión →
-  /login; con sesión → salir), pero falta lo grande: que quien tiene cuenta
-  pueda **guardar recetas** — un corazón vacío junto a cada receta que se
-  rellena al tocarlo, y algún sitio donde ver las guardadas. Exige colección o
-  campo nuevo en Mongo (por usuario), API con el rol de la sesión y UI. Ojo al
-  decidirla: el registro sigue cerrado (las cuentas las crea el admin con
-  `npm run crear-usuario`); si los favoritos se quisieran para cualquier
-  visitante habría que reabrir esa decisión, que hoy protege las recetas de
-  solo registrados.
+- **Recetas guardadas (pedido el 25 de agosto de 2026, sin fase asignada)**:
+  la parte de cuentas ya está — la figura de persona de la barra lleva al
+  panel de `/login` (entrar, crear cuenta, y con sesión ver la cuenta y
+  salir), y el registro quedó abierto (ver sección 4). Falta lo otro: que
+  quien tiene cuenta pueda **guardar recetas** — un corazón vacío junto a
+  cada receta que se rellena al tocarlo, y algún sitio donde ver las
+  guardadas. Exige colección o campo nuevo en Mongo (por usuario), API con el
+  rol de la sesión y UI.
 
 (La dirección de arte dejó de estar abierta: se cerró en la fase 7 y se
 sustituyó entera en la fase 10. Ver la sección 14.)

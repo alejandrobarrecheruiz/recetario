@@ -37,36 +37,17 @@ function escaparRegex(texto: string): string {
 }
 
 /**
- * El rótulo de la casa: el nombre en Pinyon Script y la firma debajo. Sobre la
- * foto de la cubierta va dentro de una píldora traslúcida para que se lea, y
- * en el móvil se compacta (la firma se esconde: el nombre grande ya está en el
+ * El rótulo de la casa: el nombre en Pinyon Script y la firma debajo. En el
+ * móvil se compacta (la firma se esconde: el nombre grande ya está en el
  * centro de la cubierta).
  */
-function Marca({
-  enlazada = false,
-  sobreFoto = false,
-}: {
-  enlazada?: boolean;
-  sobreFoto?: boolean;
-}) {
+function Marca({ enlazada = false }: { enlazada?: boolean }) {
   const contenido = (
-    <span
-      className={`flex flex-col gap-0.5 ${
-        sobreFoto ? "rounded-full bg-papel/85 px-4.5 py-2 backdrop-blur-md" : ""
-      }`}
-    >
-      <span
-        className={`font-[family-name:var(--font-pinyon)] leading-[0.9] tracking-[0.01em] ${
-          sobreFoto ? "text-[24px] sm:text-[31px]" : "text-[31px]"
-        }`}
-      >
+    <span className="flex flex-col gap-0.5">
+      <span className="font-[family-name:var(--font-pinyon)] text-[24px] leading-[0.9] tracking-[0.01em] sm:text-[31px]">
         Mi libro de recetas
       </span>
-      <span
-        className={`pl-0.5 font-[family-name:var(--font-dm-mono)] text-[8.5px] uppercase tracking-[0.42em] text-tinta/50 ${
-          sobreFoto ? "hidden sm:block" : ""
-        }`}
-      >
+      <span className="hidden pl-0.5 font-[family-name:var(--font-dm-mono)] text-[8.5px] uppercase tracking-[0.42em] text-tinta/50 sm:block">
         Alejandro
       </span>
     </span>
@@ -76,18 +57,13 @@ function Marca({
 
 /**
  * La navegación de la portada. En pantallas estrechas las palabras se cambian
- * por iconos (toques de 44 px); con `sobreFoto`, todo va en una píldora
- * traslúcida para leerse encima de la imagen.
+ * por iconos (toques de 44 px).
  */
-function Navegacion({ sobreFoto = false }: { sobreFoto?: boolean }) {
+function Navegacion() {
   const claseEnlace =
     "flex h-11 items-center justify-center rounded-full sm:h-auto sm:px-3.5 sm:py-2";
   return (
-    <nav
-      className={`flex items-center font-[family-name:var(--font-dm-mono)] text-xs uppercase tracking-[0.14em] ${
-        sobreFoto ? "gap-1 rounded-full bg-papel/85 p-1 backdrop-blur-md" : "gap-2"
-      }`}
-    >
+    <nav className="flex items-center gap-2 font-[family-name:var(--font-dm-mono)] text-xs uppercase tracking-[0.14em]">
       <Link href="/#recetas" aria-label="Recetas" className={`${claseEnlace} w-11 sm:w-auto`}>
         <svg
           width="20"
@@ -301,7 +277,7 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
   if (buscando) {
     return (
       <main className="flex min-h-svh flex-col">
-        <header className="flex flex-wrap items-center justify-between gap-4 px-[clamp(20px,5vw,48px)] py-[clamp(18px,3.4vw,32px)]">
+        <header className="sticky top-0 z-50 flex h-16 items-center justify-between gap-3 border-b border-tinta/15 bg-papel px-[clamp(16px,5vw,48px)]">
           <Marca enlazada />
           <Navegacion />
         </header>
@@ -361,19 +337,21 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
 
   return (
     <main className="flex flex-col overflow-x-clip">
-      <header className="absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-3 px-[clamp(16px,5vw,48px)] py-[clamp(14px,3.4vw,32px)]">
-        <Marca sobreFoto />
-        <Navegacion sobreFoto />
+      {/* La barra rectangular con fondo: la foto empieza debajo, y al hacer
+          scroll la barra se queda arriba. */}
+      <header className="sticky top-0 z-50 flex h-16 items-center justify-between gap-3 border-b border-tinta/15 bg-papel px-[clamp(16px,5vw,48px)]">
+        <Marca />
+        <Navegacion />
       </header>
 
-      <section className="relative flex min-h-svh flex-col overflow-hidden">
+      <section className="relative flex min-h-[calc(100svh-4rem)] flex-col overflow-hidden">
         <CapaParallax factor={0.18} className="absolute inset-x-0 -inset-y-[6%]">
           <ImagenDeCubierta />
         </CapaParallax>
         <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(222,230,233,0.94)_0%,rgba(222,230,233,0.6)_22%,rgba(222,230,233,0)_48%)]" />
         <Revelado
           orden={2}
-          className="relative z-[2] flex min-h-0 flex-1 flex-col items-center justify-center gap-3.5 px-[clamp(20px,5vw,48px)] pb-[clamp(14px,3vh,30px)] pt-[clamp(78px,11vh,116px)] text-center"
+          className="relative z-[2] flex min-h-0 flex-1 flex-col items-center justify-center gap-3.5 px-[clamp(20px,5vw,48px)] py-[clamp(20px,4vh,44px)] text-center"
         >
           <h1 className="max-w-[14ch] font-[family-name:var(--font-pinyon)] text-[clamp(40px,min(8.4vw,13vh),132px)] leading-[0.84] tracking-[0.01em] [text-shadow:0_2px_22px_rgba(222,230,233,0.7)]">
             Mi libro de recetas

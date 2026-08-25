@@ -36,14 +36,37 @@ function escaparRegex(texto: string): string {
   return texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/** El rótulo de la casa: el nombre en Pinyon Script y la firma debajo. */
-function Marca({ enlazada = false }: { enlazada?: boolean }) {
+/**
+ * El rótulo de la casa: el nombre en Pinyon Script y la firma debajo. Sobre la
+ * foto de la cubierta va dentro de una píldora traslúcida para que se lea, y
+ * en el móvil se compacta (la firma se esconde: el nombre grande ya está en el
+ * centro de la cubierta).
+ */
+function Marca({
+  enlazada = false,
+  sobreFoto = false,
+}: {
+  enlazada?: boolean;
+  sobreFoto?: boolean;
+}) {
   const contenido = (
-    <span className="flex flex-col gap-0.5">
-      <span className="font-[family-name:var(--font-pinyon)] text-[31px] leading-[0.9] tracking-[0.01em]">
+    <span
+      className={`flex flex-col gap-0.5 ${
+        sobreFoto ? "rounded-full bg-papel/85 px-4.5 py-2 backdrop-blur-md" : ""
+      }`}
+    >
+      <span
+        className={`font-[family-name:var(--font-pinyon)] leading-[0.9] tracking-[0.01em] ${
+          sobreFoto ? "text-[24px] sm:text-[31px]" : "text-[31px]"
+        }`}
+      >
         Mi libro de recetas
       </span>
-      <span className="pl-0.5 font-[family-name:var(--font-dm-mono)] text-[8.5px] uppercase tracking-[0.42em] text-tinta/50">
+      <span
+        className={`pl-0.5 font-[family-name:var(--font-dm-mono)] text-[8.5px] uppercase tracking-[0.42em] text-tinta/50 ${
+          sobreFoto ? "hidden sm:block" : ""
+        }`}
+      >
         Alejandro
       </span>
     </span>
@@ -51,11 +74,59 @@ function Marca({ enlazada = false }: { enlazada?: boolean }) {
   return enlazada ? <Link href="/">{contenido}</Link> : contenido;
 }
 
-function Navegacion() {
+/**
+ * La navegación de la portada. En pantallas estrechas las palabras se cambian
+ * por iconos (toques de 44 px); con `sobreFoto`, todo va en una píldora
+ * traslúcida para leerse encima de la imagen.
+ */
+function Navegacion({ sobreFoto = false }: { sobreFoto?: boolean }) {
+  const claseEnlace =
+    "flex h-11 items-center justify-center rounded-full sm:h-auto sm:px-3.5 sm:py-2";
   return (
-    <nav className="flex gap-6.5 font-[family-name:var(--font-dm-mono)] text-xs uppercase tracking-[0.14em]">
-      <Link href="/#recetas">Recetas</Link>
-      <Link href="/#nota">Quién cocina</Link>
+    <nav
+      className={`flex items-center font-[family-name:var(--font-dm-mono)] text-xs uppercase tracking-[0.14em] ${
+        sobreFoto ? "gap-1 rounded-full bg-papel/85 p-1 backdrop-blur-md" : "gap-2"
+      }`}
+    >
+      <Link href="/#recetas" aria-label="Recetas" className={`${claseEnlace} w-11 sm:w-auto`}>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          className="sm:hidden"
+          aria-hidden="true"
+        >
+          <rect x="4" y="4" width="7" height="7" />
+          <rect x="13" y="4" width="7" height="7" />
+          <rect x="4" y="13" width="7" height="7" />
+          <rect x="13" y="13" width="7" height="7" />
+        </svg>
+        <span className="hidden sm:inline">Recetas</span>
+      </Link>
+      <Link
+        href="/#nota"
+        aria-label="Quién cocina"
+        className={`${claseEnlace} w-11 sm:w-auto`}
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          className="sm:hidden"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="8" r="3.5" />
+          <path d="M5 20c1.5-4 4-6 7-6s5.5 2 7 6" />
+        </svg>
+        <span className="hidden sm:inline">Quién cocina</span>
+      </Link>
     </nav>
   );
 }
@@ -290,9 +361,9 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
 
   return (
     <main className="flex flex-col overflow-x-clip">
-      <header className="absolute inset-x-0 top-0 z-20 flex flex-wrap items-center justify-between gap-4 px-[clamp(20px,5vw,48px)] py-[clamp(18px,3.4vw,32px)]">
-        <Marca />
-        <Navegacion />
+      <header className="absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-3 px-[clamp(16px,5vw,48px)] py-[clamp(14px,3.4vw,32px)]">
+        <Marca sobreFoto />
+        <Navegacion sobreFoto />
       </header>
 
       <section className="relative flex min-h-svh flex-col overflow-hidden">

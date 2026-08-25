@@ -37,12 +37,24 @@ export default function PaginaLogin() {
     router.refresh();
   }
 
-  return (
-    <main className="mx-auto flex max-w-sm flex-col gap-4 p-8">
-      <h1 className="text-2xl font-semibold">Entrar</h1>
+  const claseEtiqueta =
+    "flex flex-col gap-2 font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.2em] text-tinta/50";
+  const claseCampo =
+    "border-b border-tinta/25 bg-transparent pb-2.5 font-[family-name:var(--font-cuerpo)] text-base normal-case tracking-normal text-tinta outline-none focus:border-tinta";
 
-      <form className="flex flex-col gap-3" onSubmit={entrar}>
-        <label className="flex flex-col gap-1 text-sm">
+  return (
+    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-8 px-8 py-16">
+      <div className="flex flex-col gap-1.5">
+        <span className="font-[family-name:var(--font-pinyon)] text-[29px] leading-[0.9]">
+          Mi libro de recetas
+        </span>
+        <h1 className="font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.3em] text-tinta/50">
+          Entrar
+        </h1>
+      </div>
+
+      <form className="flex flex-col gap-6" onSubmit={entrar}>
+        <label className={claseEtiqueta}>
           Correo
           <input
             type="email"
@@ -51,11 +63,11 @@ export default function PaginaLogin() {
             required
             value={correo}
             onChange={(evento) => setCorreo(evento.target.value)}
-            className="rounded border px-3 py-2 text-base"
+            className={claseCampo}
           />
         </label>
 
-        <label className="flex flex-col gap-1 text-sm">
+        <label className={claseEtiqueta}>
           Contrasena
           <input
             type="password"
@@ -64,16 +76,16 @@ export default function PaginaLogin() {
             required
             value={contrasena}
             onChange={(evento) => setContrasena(evento.target.value)}
-            className="rounded border px-3 py-2 text-base"
+            className={claseCampo}
           />
         </label>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-acento">{error}</p>}
 
         <button
           type="submit"
           disabled={enviando}
-          className="rounded border px-3 py-2 font-medium disabled:opacity-50"
+          className="mt-2 self-start rounded-full bg-tinta px-7 py-3.5 font-[family-name:var(--font-dm-mono)] text-[11.5px] uppercase tracking-[0.14em] text-papel hover:bg-acento disabled:opacity-50"
         >
           {enviando ? "Entrando..." : "Entrar"}
         </button>

@@ -475,10 +475,21 @@ reales.
 8. ~~Vistas públicas y filtro de visibilidad~~ ✅
 9. ~~JSON-LD de `schema.org/Recipe`, SEO y script de backup~~ ✅
 
-**Las nueve fases están completas** (24 de agosto de 2026). Lo que queda no es
-construcción sino estreno: subir `develop` a `main` por PR y, antes de la
-primera receta real, el ritual de producción de la sección 8 (índices con
-`--permitir-prod` y el usuario admin de prod con `crear-usuario`).
+**Las nueve fases están completas y el blog está estrenado** (24 de agosto de
+2026): `develop` mergeado a `main` (PR #2), índices y admin creados en
+`recetas_prod`, y el login de producción comprobado en
+`https://recetario-36ok.vercel.app`.
+
+10. **Rediseño «Mi libro de recetas»** (25 de agosto de 2026, en `develop`):
+    la identidad visual de la fase 7 se sustituyó entera por el lienzo
+    «Recetario claro» diseñado en Claude Design, y el panel ganó un editor
+    WYSIWYG con guardado automático. Ver la sección 14. El único tropiezo del estreno quedó
+documentado: el login solo funciona en el dominio canónico de cada entorno (el
+que declara `BETTER_AUTH_URL`); en las URLs de deployment con hash, Better Auth
+responde `INVALID_ORIGIN`, y es lo esperado.
+
+Desde aquí, el ritmo semanal: escribir la receta en el panel, publicarla y
+`npm run backup`.
 
 La lógica del orden: validar el pipeline completo de despliegue cuando todavía no
 hay nada que perder, meter las imágenes tarde porque son la pieza con más partes
@@ -502,15 +513,19 @@ firmar. Sin eso, cualquiera puede pedir firmas y subir a nuestra cuenta.
 
 ---
 
-## 14. La fase de diseño
+## 14. El diseño
 
-Es una fase, no una mano de pintura al final. Va la séptima, justo antes de
-construir las vistas públicas, para que las páginas nazcan ya con su cara en vez
-de retocarse después.
+> **Historia en dos actos.** La fase 7 (24 de agosto de 2026) cerró un primer
+> sistema visual, «La cocina nos Une» (Newsreader/Literata, celeste, modo
+> oscuro automático). La fase 10 (25 de agosto de 2026) lo **sustituyó
+> entero** por el que se describe abajo, copiado fielmente del lienzo
+> «Recetario claro.dc.html» del proyecto de Claude Design «Diseño blog de
+> cocina desde cero»
+> (https://claude.ai/design/p/5a5bba19-00f5-4785-aad0-ce60c03ddf0d). Ante la
+> duda visual, ese lienzo manda.
 
-**El panel no entra.** Lo usa una sola persona una vez por semana: que sea
-legible y cómodo de rellenar es suficiente. El esfuerzo de diseño va entero a la
-parte pública, que es la que se regala.
+Con la fase 10, **el panel sí entró en el diseño**: dejó de ser un formulario
+y es un editor sobre la receta tal como se ve (abajo).
 
 ### Lo que ya está cerrado
 
@@ -547,59 +562,79 @@ de tarjetas borrosas ni de «inicia sesión para ver esta receta». Eso sería u
 condicional de render, y ya viajó al navegador: contradice la regla dura de la
 sección 5 y además confirma que la receta existe.
 
-### Lo decidido (fase cerrada el 24 de agosto de 2026)
+### Lo decidido (fase 10, 25 de agosto de 2026)
 
-El estudio visual completo, con los tableros aprobados, vive en
-https://claude.ai/code/artifact/55ee468b-28d3-489c-9b44-5660d0ab45ab
-(páginas «Propuesta» y «Direcciones»). Esto es el resumen ejecutable; ante la
-duda, el lienzo manda.
+**Nombre del blog: «Mi libro de recetas»**, firmado «Alejandro». El rótulo va
+en Pinyon Script; la firma, en DM Mono con tracking muy abierto.
 
-**Nombre del blog: «La cocina nos Une»** (con la U mayúscula tal cual).
+**Tipografías** (Google Fonts, vía `next/font`): Bricolage Grotesque para
+display (títulos, números), Instrument Sans para el cuerpo, DM Mono para
+rótulos y datos (versalitas espaciadas), Pinyon Script SOLO para el nombre.
 
-**Tipografías** (Google Fonts): Newsreader para display (títulos, números de
-paso) y Literata para el cuerpo. Cuerpo de lectura a 17–18 px.
+**Paleta** (tokens en `globals.css`, y solo ahí): papel `#DEE6E9` (gris
+azulado), tinta `#0F1418`, superficie `#FFFFFF`, lateral `#CFD9DD` (barra del
+editor), rayas `#C0CCD1`/`#CCD7DB` (huecos de foto), acento
+`oklch(0.55 0.19 30)` (rojo anaranjado, ÚNICO acento) y `oklch(0.8 0.16 34)`
+para la selección. Los apagados no son tokens: son `tinta` con opacidad
+(`text-tinta/60`).
 
-**Paleta clara**: papel `#FCFBF8`, tinta petróleo `#22333D`, celeste `#7EC8DF`
-como **único acento** (`#5FB6D2` para los números de paso sobre claro, que el
-puro no contrasta), apagados `#6C7E86` / `#7E8F96` / `#93A3AA`, filos `#E2E8E9`
-(y `#EDF0EE` el fino), relleno celeste `#DDF1F7` con borde `#BFE6F2`, enlaces
-`#3F97B4`.
+**Solo existe el estilo claro.** El modo oscuro automático de la fase 7 se
+retiró a propósito (decisión del 25 de agosto de 2026): un único `themeColor`
+y ninguna media query de `prefers-color-scheme`.
 
-**Modo oscuro: automático** con `prefers-color-scheme`, sin interruptor (de
-noche en la cocina el móvil ya está en oscuro). Fondo `#141F26`, superficie
-`#1B2830`, texto hueso `#E4EAE8`, apagados `#7F949E` / `#5F7580`, filos
-`#263640` / `#1E2C34`, celeste `#7EC8DF` a pleno (de noche gana protagonismo),
-relleno `#1D3540` con borde `#2E5D6D`.
+**La portada**: cubierta a pantalla completa con la foto de la semana a sangre
+(parallax suave) y el rótulo encima; las dos entradas grandes («Lo último que
+hice» → la ficha de la última, «Todas las recetas» → ancla a la rejilla); la
+marquesina oscura ligada al scroll («Cada semana algo nuevo / Cantidades de
+verdad / Cocina de casa»); la rejilla de tarjetas 4:5 con numeración de
+cuaderno (la receta más antigua es la 01), categoría · tiempo en acento y
+píldoras de categoría como filtros; y la sección «Quién cocina aquí» con la
+cita, el hueco de gif en bucle y los dos párrafos personales. **Sin captura de
+correo**: el campo «Avísame» del lienzo se omitió a sabiendas (el blog no
+capta a nadie; regla de la sección 1).
 
-**La portada es especial**: al entrar, la foto de la semana a pantalla completa
-con el nombre encima y una flecha que invita a bajar; al hacer scroll aparece lo
-demás — la receta de la semana como tarjeta de álbum (marco blanco con borde
-fino), el buscador («¿Qué te apetece cocinar?») con las categorías como
-píldoras, las recetas anteriores a dos columnas y la despedida «una receta cada
-semana, hecha con cariño». Lema bajo el nombre: «de nuestra cocina a la tuya».
-Animaciones de entrada en cascada y flecha con vaivén, en CSS y respetando
-`prefers-reduced-motion`.
+**La ficha**: cabecera pegajosa con «← Volver» y el botón «Cocinar paso a
+paso»; cubierta 70svh con parallax y el título en Bricolage gigante;
+ingredientes en tarjeta blanca pegajosa con el escalador de raciones Y
+checklist (cada fila se tacha al tocarla, contador «n de m listos»,
+Desmarcar); pasos con número en acento y rotulillo opcional (`paso.titulo`,
+campo añadido al modelo en esta fase, opcional para no migrar nada); fotos de
+paso 16:10 intercaladas; «Nota personal» (el campo `notas`) en caja blanca con
+filo izquierdo en acento; y «Sigue por aquí» con las dos recetas publicadas
+más recientes.
 
-**La ficha**: ingredientes en filas con filo fino (nombre a la izquierda,
-cantidad en negrita a la derecha), con el escalador de raciones dentro de la
-cabecera de la lista (botones redondos de 44 px en celeste). Pasos con número
-grande en Newsreader celeste y las fotos **intercaladas** con el texto, en marco
-fino. Etiquetas de sección en versalitas espaciadas.
+**El modo cocina** («Cocinar paso a paso»): overlay a pantalla completa, un
+paso cada vez en cuerpo gigante, barra de progreso en acento, Anterior /
+Siguiente y Escape para salir. Pensado para la encimera: es la respuesta nueva
+a «se lee en la cocina» — los pasos ya no se pierden al hacer scroll.
 
-**Estado vacío**: búsqueda sin resultados → plato vacío a línea, «De eso aún no
-tenemos.», «Pídenosla y puede que caiga la semana que viene», categorías a mano.
-Blog sin recetas → olla con vaho animado, «La primera está al fuego.»
+**El panel** (también fase 10): el editor escribe sobre la receta tal como se
+va a ver. contentEditable sin control de React para título, resumen, pasos y
+nota; autoguardado con debounce y rótulo «Guardado hace Xs»; barra lateral con
+visibilidad, ficha (raciones, tiempos, dificultad), categorías y etiquetas
+como chips, y la descripción SEO; fotos de portada y de paso con subida
+directa a ImageKit; reordenado por arrastre. El alta (`/admin/recetas/nueva`)
+pide solo el título y salta al editor. Todo valida con el MISMO Zod que la
+API.
 
-**404**: número gigante en celeste (el lenguaje de los números de paso), «Esta
-página se nos ha quemado.», texto deliberadamente ambiguo («o nunca existió, o
-ya no está») porque este mismo 404 es lo que ve un visitante ante una receta de
-solo registrados. Una acción principal: volver a la portada.
+**Movimiento**: entradas en cascada (`Revelado`, IntersectionObserver),
+parallax (`CapaParallax`) y marquesina, siempre respetando
+`prefers-reduced-motion` y sin esconder nada si no hay JS. El hover solo
+decora (zoom de foto, cambio de color); nada se revela con él.
 
-**Sin corazones dibujados.** El celeste (el 🩵 de la casa) ya es el corazón:
-vive en el escalador, los números de paso, la píldora de «todas las recetas» y
-los enlaces, y en nada más. Toques de 44 px como mínimo en todo lo tocable.
+**Huecos de foto**: rayas diagonales (`.rayas` / `.rayas-finas`), nunca un
+gris plano. La foto cuadrada y el gif de «Quién cocina» siguen siendo huecos
+con rayas hasta que existan los ficheros reales.
 
----
+**Estados vacíos y 404**, reescritos en el sistema nuevo, conservan sus
+textos: «La primera está al fuego.», «De eso aún no tenemos.», «Esta página se
+nos ha quemado.» con el texto deliberadamente ambiguo (sigue siendo lo que ve
+un visitante ante una receta de solo registrados).
+
+Una concesión asumida al copiar fielmente: el escalador de raciones usa los
+botones compactos del lienzo (26 px), por debajo de la regla de toques de
+44 px de la fase 7. Las filas de ingredientes, en cambio, son tocables a toda
+anchura.
 
 ## 15. Decisiones aún abiertas
 
@@ -614,8 +649,8 @@ No darlas por cerradas sin querer.
   nada**.
 - **Dominio propio**: por ahora se usa el subdominio gratuito de Vercel.
 
-(La dirección de arte dejó de estar abierta: se cerró en la fase 7. Ver la
-sección 14.)
+(La dirección de arte dejó de estar abierta: se cerró en la fase 7 y se
+sustituyó entera en la fase 10. Ver la sección 14.)
 
 ---
 
@@ -658,18 +693,24 @@ recetario/
 │  │  ├─ auth-client.ts
 │  │  ├─ sesion.ts                   # sesión y rol de la petición, en servidor
 │  │  ├─ recetas.ts                  # doc ↔ receta (ObjectId ↔ hex) y publicadaEn
-│  │  ├─ imagenes.ts                 # doc ↔ imagen + urlConAncho (transformaciones)
+│  │  ├─ imagenes.ts                 # doc ↔ imagen (solo servidor)
 │  │  ├─ imagekit.ts                 # cliente de servidor: borrar por fileId
-│  │  ├─ formato.ts                  # fechas y cantidades, puro e isomorfo
+│  │  ├─ subir-imagen.ts             # firma → subida directa → metadatos (cliente)
+│  │  ├─ formato.ts                  # fechas, cantidades, duración y urlConAncho; puro e isomorfo
 │  │  └─ visibilidad.ts              # rol → filtro de Mongo
 │  ├─ models/
 │  │  ├─ receta.ts                   # Zod, fuente de verdad
 │  │  ├─ imagen.ts
 │  │  └─ usuario.ts
 │  └─ components/
-│     ├─ formulario-receta.tsx       # crear/editar; mismo Zod que la API
-│     ├─ selector-imagen.tsx         # firma → subida directa → metadatos
-│     ├─ ingredientes-escalables.tsx # el escalador de raciones (cliente)
+│     ├─ editor-receta.tsx           # el editor del panel: WYSIWYG + autosave; mismo Zod que la API
+│     ├─ crear-receta.tsx            # alta mínima: título y al editor
+│     ├─ cabecera-panel.tsx          # cabecera del listado y el alta
+│     ├─ ingredientes-escalables.tsx # escalador de raciones + checklist (cliente)
+│     ├─ modo-cocina.tsx             # «Cocinar paso a paso» a pantalla completa (cliente)
+│     ├─ revelado.tsx                # entrada en cascada (IntersectionObserver)
+│     ├─ marquesina.tsx              # banda de frases ligada al scroll
+│     ├─ parallax.tsx                # capa de fondo con parallax suave
 │     └─ boton-salir.tsx
 ├─ scripts/
 │  ├─ indices.ts

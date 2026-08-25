@@ -71,6 +71,8 @@ export const ingredienteSchema = z.object({
 export const pasoSchema = z.object({
   id: z.string().min(1),
   orden: z.number().int().nonnegative(),
+  /** Rotulillo opcional del paso («El sofrito»). Las recetas viejas no lo tienen. */
+  titulo: z.string().optional(),
   texto: z.string().min(1),
   imagenId: idSchema.nullable(),
 });

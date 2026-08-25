@@ -3,143 +3,226 @@ import type { Filter } from "mongodb";
 import { obtenerColecciones } from "@/lib/mongo";
 import { conVisibilidad } from "@/lib/visibilidad";
 import { rolActual } from "@/lib/sesion";
-import { urlConAncho } from "@/lib/imagenes";
-import { fechaDePublicacion } from "@/lib/formato";
+import { duracion, urlConAncho } from "@/lib/formato";
 import type { RecetaDoc } from "@/models/receta";
 import type { ImagenDoc } from "@/models/imagen";
+import { Revelado } from "@/components/revelado";
+import { Marquesina } from "@/components/marquesina";
+import { CapaParallax } from "@/components/parallax";
 
-// La portada especial (fase 7, sección 14 de CLAUDE.md): cubierta a pantalla
-// completa con la foto de la semana y, al hacer scroll, la receta, el buscador
-// y las anteriores. El rol se resuelve EN EL SERVIDOR y toda consulta pasa por
-// conVisibilidad: nada de filtrar en el JSX.
+// La portada del rediseño «Mi libro de recetas» (fase 10): cubierta a sangre
+// con el rótulo en Pinyon Script, las dos entradas grandes, la marquesina, la
+// rejilla de recetas con filtros por categoría y la nota «Quién cocina aquí».
+// El rol se resuelve EN EL SERVIDOR y toda consulta pasa por conVisibilidad:
+// nada de filtrar en el JSX.
+
+// La imagen fija de la cubierta vive en /public, ya convertida a JPEG (los
+// PNG originales, con las opciones descartadas, quedan en el historial de
+// git). Portada-V.jpg es la vertical, para pantallas estrechas.
+const imagenDeCubierta = "/Portada.jpg";
+const imagenDeCubiertaVertical = "/Portada-V.jpg";
+
+/** La cubierta a sangre: horizontal en pantalla ancha, vertical en el móvil. */
+function ImagenDeCubierta() {
+  return (
+    <picture className="block h-full w-full">
+      <source media="(max-width: 768px)" srcSet={imagenDeCubiertaVertical} />
+      <img src={imagenDeCubierta} alt="" className="h-full w-full object-cover" />
+    </picture>
+  );
+}
 
 function escaparRegex(texto: string): string {
   return texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/** Chevron que invita a bajar. */
-function FlechaAbajo() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M6 9l6 6 6-6" />
-    </svg>
+/** El logo de la casa (el gato y la mariquita cocineros), recortado en
+ * círculo para que el papel del PNG no se note sobre la barra. */
+function Logo({ enlazado = false }: { enlazado?: boolean }) {
+  const imagen = (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/Logo.png"
+      alt="Mi libro de recetas"
+      className="h-16 w-16 rounded-full object-cover"
+    />
+  );
+  return enlazado ? (
+    <Link href="/" className="shrink-0">
+      {imagen}
+    </Link>
+  ) : (
+    imagen
   );
 }
 
-function Lupa({ tamano }: { tamano: number }) {
+/**
+ * El rótulo de la casa: el nombre en Pinyon Script y la firma debajo. En el
+ * móvil se compacta (la firma se esconde: el nombre grande ya está en el
+ * centro de la cubierta).
+ */
+function Marca({ enlazada = false }: { enlazada?: boolean }) {
+  const contenido = (
+    <span className="flex flex-col gap-0.5">
+      <span className="font-[family-name:var(--font-pinyon)] text-[24px] leading-[0.9] tracking-[0.01em] sm:text-[31px]">
+        Mi libro de recetas
+      </span>
+      <span className="hidden pl-0.5 font-[family-name:var(--font-dm-mono)] text-[8.5px] uppercase tracking-[0.42em] text-tinta/50 sm:block">
+        Alejandro
+      </span>
+    </span>
+  );
+  return enlazada ? <Link href="/">{contenido}</Link> : contenido;
+}
+
+/**
+ * La navegación de la portada. En pantallas estrechas las palabras se cambian
+ * por iconos (toques de 44 px).
+ */
+function Navegacion() {
+  const claseEnlace =
+    "flex h-11 items-center justify-center rounded-full sm:h-auto sm:px-3.5 sm:py-2";
   return (
-    <svg width={tamano} height={tamano} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
-      <circle cx="11" cy="11" r="7" />
-      <path d="M20 20l-3.5-3.5" />
-    </svg>
+    <nav className="flex items-center gap-2 font-[family-name:var(--font-dm-mono)] text-xs uppercase tracking-[0.14em]">
+      <Link href="/#recetas" aria-label="Recetas" className={`${claseEnlace} w-11 sm:w-auto`}>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          className="sm:hidden"
+          aria-hidden="true"
+        >
+          <rect x="4" y="4" width="7" height="7" />
+          <rect x="13" y="4" width="7" height="7" />
+          <rect x="4" y="13" width="7" height="7" />
+          <rect x="13" y="13" width="7" height="7" />
+        </svg>
+        <span className="hidden sm:inline">Recetas</span>
+      </Link>
+      <Link
+        href="/#nota"
+        aria-label="Quién cocina"
+        className={`${claseEnlace} w-11 sm:w-auto`}
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          className="sm:hidden"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="8" r="3.5" />
+          <path d="M5 20c1.5-4 4-6 7-6s5.5 2 7 6" />
+        </svg>
+        <span className="hidden sm:inline">Quién cocina</span>
+      </Link>
+    </nav>
   );
 }
 
-function EtiquetaDeSeccion({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="border-b border-filo pb-3 text-xs font-[family-name:var(--font-literata)] uppercase tracking-[2px] text-apagado">
-      {children}
-    </h2>
-  );
-}
-
-function Buscador({
-  q,
+function Pildoras({
   categorias,
-  categoriaActiva,
-  mostrarTodas,
+  activa,
 }: {
-  q: string;
   categorias: string[];
-  categoriaActiva: string;
-  mostrarTodas: boolean;
+  activa: string;
 }) {
+  const base =
+    "rounded-full px-4 py-[9px] font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.16em]";
   return (
-    <div className="flex flex-col gap-3">
-      <form action="/" className="flex items-center gap-3 rounded-full border border-filo bg-superficie px-5 py-3.5 text-apagado-medio focus-within:border-celeste-borde">
-        <Lupa tamano={18} />
-        <input
-          type="search"
-          name="q"
-          defaultValue={q}
-          placeholder="¿Qué te apetece cocinar?"
-          className="min-w-0 flex-1 bg-transparent text-base text-tinta outline-none placeholder:text-apagado-suave"
-        />
-      </form>
-      <div className="flex flex-wrap gap-2">
-        {categorias.map((categoria) => (
-          <Link
-            key={categoria}
-            href={`/?categoria=${encodeURIComponent(categoria)}`}
-            className={
-              categoria === categoriaActiva
-                ? "rounded-full border border-celeste-borde bg-celeste-relleno px-4 py-2 text-sm text-tinta"
-                : "rounded-full border border-filo px-4 py-2 text-sm text-apagado"
-            }
-          >
-            {categoria}
-          </Link>
-        ))}
-        {mostrarTodas && (
-          <Link
-            href="/"
-            className="rounded-full border border-celeste-borde bg-celeste-relleno px-4 py-2 text-sm text-tinta"
-          >
-            todas las recetas
-          </Link>
-        )}
-      </div>
+    <div className="flex flex-wrap gap-2">
+      <Link
+        href="/#recetas"
+        className={
+          activa === ""
+            ? `${base} bg-tinta text-papel hover:text-papel`
+            : `${base} border border-tinta/20 text-tinta/60`
+        }
+      >
+        Todas
+      </Link>
+      {categorias.map((categoria) => (
+        <Link
+          key={categoria}
+          href={`/?categoria=${encodeURIComponent(categoria)}#recetas`}
+          className={
+            categoria === activa
+              ? `${base} bg-tinta text-papel hover:text-papel`
+              : `${base} border border-tinta/20 text-tinta/60`
+          }
+        >
+          {categoria}
+        </Link>
+      ))}
     </div>
   );
 }
 
-function TarjetaPequena({
+function TarjetaReceta({
   receta,
   foto,
+  numero,
 }: {
   receta: RecetaDoc;
   foto: ImagenDoc | undefined;
+  numero: string;
 }) {
-  const fecha = fechaDePublicacion(receta.publicadaEn);
   return (
-    <Link href={`/recetas/${receta.slug}`} className="flex flex-col gap-2">
+    <Link
+      href={`/recetas/${receta.slug}`}
+      className="group relative block aspect-[4/5] overflow-hidden bg-raya-clara text-tinta"
+    >
       {foto ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={urlConAncho(foto.url, 480)}
+          src={urlConAncho(foto.url, 640)}
           alt={foto.alt}
           loading="lazy"
-          className="aspect-[4/3] w-full border border-filo object-cover"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1100ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.07]"
         />
       ) : (
-        <div className="aspect-[4/3] w-full border border-filo bg-filo-fino" />
+        <div className="rayas-finas absolute inset-0 transition-transform duration-[1100ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.07]" />
       )}
-      <span className="font-[family-name:var(--font-newsreader)] text-lg font-medium leading-snug">
-        {receta.titulo}
-      </span>
-      <span className="text-[11px] uppercase tracking-[1px] text-apagado-medio">
-        {receta.estado === "borrador" ? "borrador" : fecha}
-      </span>
+      <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(222,230,233,0.96)_6%,rgba(222,230,233,0.7)_34%,rgba(222,230,233,0.04)_70%)]" />
+      <div className="absolute left-5 top-4.5 flex items-center gap-2 font-[family-name:var(--font-dm-mono)] text-[11px] tracking-[0.14em] text-tinta/50">
+        <span>{numero}</span>
+        {receta.estado === "borrador" && (
+          <span className="rounded-full border border-tinta/30 px-2 py-0.5 text-[9px] uppercase tracking-[0.14em]">
+            borrador
+          </span>
+        )}
+      </div>
+      <div className="absolute inset-x-5 bottom-5.5">
+        <div className="mb-2.5 font-[family-name:var(--font-dm-mono)] text-[10.5px] uppercase tracking-[0.18em] text-acento">
+          {receta.categorias[0] ?? "receta"} · {duracion(receta.tiempo.total)}
+        </div>
+        <div className="font-[family-name:var(--font-bricolage)] text-[29px] font-semibold leading-[1.02] tracking-[-0.032em]">
+          {receta.titulo}
+        </div>
+        {receta.resumen !== "" && (
+          <div className="mt-2 line-clamp-2 text-[14.5px] leading-[1.45] text-tinta/65">
+            {receta.resumen}
+          </div>
+        )}
+      </div>
     </Link>
   );
 }
 
-/** El arranque del blog, sin recetas todavia: la olla con su vaho. */
-function SinRecetasTodavia() {
+/** La firma «— Alejandro —» de la cubierta. */
+function Firma() {
   return (
-    <div className="flex flex-col items-center gap-4 px-8 py-16 text-center">
-      <svg width="72" height="72" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-apagado-suave" aria-hidden="true">
-        <path d="M14 36h36v8a12 12 0 0 1-12 12H26a12 12 0 0 1-12-12z" />
-        <path d="M10 36h44" />
-        <path d="M25 28c0-4 4-5 4-9" className="vaho" />
-        <path d="M35 28c0-4 4-5 4-9" className="vaho [animation-delay:0.8s]" />
-      </svg>
-      <p className="font-[family-name:var(--font-newsreader)] text-2xl font-medium">
-        La primera está al fuego.
-      </p>
-      <p className="max-w-70 text-base leading-relaxed text-apagado">
-        A partir de aquí, una receta cada semana.
-      </p>
+    <div className="flex items-center gap-4 font-[family-name:var(--font-dm-mono)] text-[clamp(9px,0.85vw,11px)] uppercase tracking-[0.44em] text-tinta [text-shadow:0_0_2px_rgba(222,230,233,1),0_1px_4px_rgba(222,230,233,1),0_0_12px_rgba(222,230,233,1),0_0_26px_rgba(222,230,233,0.9)]">
+      <span className="h-px w-[clamp(20px,4vw,54px)] bg-tinta/45" />
+      <span>Alejandro</span>
+      <span className="h-px w-[clamp(20px,4vw,54px)] bg-tinta/45" />
     </div>
   );
 }
@@ -175,6 +258,17 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
     .toArray();
   const categorias = (await recetas.distinct("categorias", conVisibilidad(rol))).sort();
 
+  // Numeración de cuaderno: la receta más antigua es la 01. Se calcula sobre
+  // todo lo visible para el rol, no sobre el subconjunto filtrado, para que
+  // una receta conserve su número también en las vistas de categoría.
+  const cronologia = await recetas
+    .find(conVisibilidad(rol), { projection: { slug: 1 } })
+    .sort({ publicadaEn: 1 })
+    .toArray();
+  const numeroDe = new Map(
+    cronologia.map((doc, indice) => [doc.slug, String(indice + 1).padStart(2, "0")]),
+  );
+
   const idsDePortada = docs.flatMap((doc) => (doc.portadaId ? [doc.portadaId] : []));
   const fotos = new Map(
     (await imagenes.find({ _id: { $in: idsDePortada } }).toArray()).map((foto) => [
@@ -185,145 +279,211 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
   const fotoDe = (receta: RecetaDoc) =>
     receta.portadaId ? fotos.get(receta.portadaId.toHexString()) : undefined;
 
-  // --- Vista de busqueda o categoria: cabecera compacta y resultados. ---
+  const rejilla = (
+    <div className="mt-0.5 grid gap-0.5 [grid-template-columns:repeat(auto-fill,minmax(320px,1fr))]">
+      {docs.map((receta) => (
+        <Revelado key={receta.slug} orden={1}>
+          <TarjetaReceta
+            receta={receta}
+            foto={fotoDe(receta)}
+            numero={numeroDe.get(receta.slug) ?? "—"}
+          />
+        </Revelado>
+      ))}
+    </div>
+  );
+
+  // --- Vista de búsqueda o categoría: cabecera estática y la rejilla. ---
   if (buscando) {
     return (
-      <main className="mx-auto flex w-full max-w-lg flex-col gap-8 px-6 pb-16">
-        <header className="flex flex-col items-center gap-1 border-b border-filo pb-6 pt-10">
-          <Link href="/" className="font-[family-name:var(--font-newsreader)] text-3xl font-medium">
-            La cocina nos Une
-          </Link>
+      <main className="flex min-h-svh flex-col">
+        <header className="sticky top-0 z-50 flex h-20 items-center justify-between gap-3 border-b border-tinta/15 bg-papel px-[clamp(16px,5vw,48px)]">
+          <span className="flex items-center gap-3">
+            <Logo enlazado />
+            <Marca enlazada />
+          </span>
+          <Navegacion />
         </header>
-
-        <Buscador q={q} categorias={categorias} categoriaActiva={categoria} mostrarTodas={true} />
-
-        {docs.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 px-4 py-10 text-center">
-            <svg width="72" height="72" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="2" className="text-apagado-suave" aria-hidden="true">
-              <circle cx="32" cy="32" r="24" />
-              <circle cx="32" cy="32" r="13" strokeDasharray="3 6" strokeLinecap="round" />
-            </svg>
-            <p className="font-[family-name:var(--font-newsreader)] text-2xl font-medium">
-              De eso aún no tenemos.
-            </p>
-            <p className="max-w-70 text-base leading-relaxed text-apagado">
-              Pídenosla y puede que caiga la semana que viene.
-            </p>
+        <section className="mx-auto w-full max-w-[1440px] flex-1 px-[clamp(20px,5vw,48px)] pb-24 pt-[clamp(20px,3vw,40px)]">
+          <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-6 border-b border-tinta/20 pb-6">
+            <h2 className="font-[family-name:var(--font-bricolage)] text-[clamp(30px,3.6vw,52px)] font-extrabold leading-[0.95] tracking-[-0.035em]">
+              Las recetas
+            </h2>
+            <Pildoras categorias={categorias} activa={categoria} />
           </div>
-        ) : (
-          <section className="grid grid-cols-2 gap-x-3 gap-y-8 sm:grid-cols-3">
-            {docs.map((receta) => (
-              <TarjetaPequena key={receta.slug} receta={receta} foto={fotoDe(receta)} />
-            ))}
-          </section>
-        )}
+          {q !== "" && (
+            <p className="mt-6 font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.16em] text-tinta/50">
+              resultados para «{q}»
+            </p>
+          )}
+          {docs.length === 0 ? (
+            <div className="flex flex-col gap-4 py-20">
+              <p className="font-[family-name:var(--font-bricolage)] text-[clamp(26px,3vw,40px)] font-semibold leading-tight tracking-[-0.035em]">
+                De eso aún no tenemos.
+              </p>
+              <p className="max-w-[44ch] text-[17px] leading-relaxed text-tinta/65">
+                Pídenosla y puede que caiga la semana que viene.
+              </p>
+            </div>
+          ) : (
+            rejilla
+          )}
+        </section>
       </main>
     );
   }
 
-  // --- El blog recien nacido, sin nada publicado. ---
+  // --- El blog recién nacido, sin nada publicado. ---
   if (docs.length === 0) {
     return (
-      <main className="mx-auto flex w-full max-w-lg flex-col px-6">
-        <header className="flex flex-col items-center gap-2 border-b border-filo pb-8 pt-14 text-center">
-          <h1 className="font-[family-name:var(--font-newsreader)] text-4xl font-medium">
-            La cocina nos Une
+      <main className="relative flex min-h-svh flex-col overflow-hidden">
+        <div className="absolute inset-0">
+          <ImagenDeCubierta />
+        </div>
+        <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(222,230,233,0.94)_0%,rgba(222,230,233,0.6)_22%,rgba(222,230,233,0)_48%)]" />
+        <div className="relative flex flex-1 flex-col items-center justify-center gap-3.5 px-8 text-center">
+          <h1 className="font-[family-name:var(--font-pinyon)] text-[clamp(40px,10vw,110px)] leading-[0.84] tracking-[0.01em] [text-shadow:0_0_2px_rgba(222,230,233,1),0_1px_4px_rgba(222,230,233,1),0_2px_12px_rgba(222,230,233,1),0_0_28px_rgba(222,230,233,0.95),0_0_60px_rgba(222,230,233,0.85)]">
+            Mi libro de recetas
           </h1>
-          <p className="font-[family-name:var(--font-newsreader)] italic text-apagado">
-            de nuestra cocina a la tuya
+          <Firma />
+          <p className="mt-10 font-[family-name:var(--font-bricolage)] text-[26px] font-semibold tracking-[-0.03em]">
+            La primera está al fuego.
           </p>
-        </header>
-        <SinRecetasTodavia />
+          <p className="text-[16px] text-tinta/65">A partir de aquí, una receta cada semana.</p>
+        </div>
       </main>
     );
   }
 
-  // --- La portada completa: cubierta y, al bajar, el contenido. ---
+  // --- La portada completa. ---
   const semana = docs[0];
-  const anteriores = docs.slice(1);
-  const fotoDeSemana = fotoDe(semana);
 
   return (
-    <main className="flex flex-col">
-      <section className="relative flex min-h-svh flex-col items-center justify-end overflow-hidden bg-[#22333d]">
-        {fotoDeSemana && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={urlConAncho(fotoDeSemana.url, 1080)}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        )}
-        <div className="absolute inset-0 bg-linear-to-b from-black/0 via-black/20 to-black/60" />
-        <div className="aparece relative flex flex-col items-center gap-3 px-8 pb-28 text-center">
-          <h1 className="font-[family-name:var(--font-newsreader)] text-[40px] font-medium leading-tight text-[#fcfbf8]">
-            La cocina nos Une
-          </h1>
-          <p className="font-[family-name:var(--font-newsreader)] italic text-[17px] text-[#fcfbf8]/75">
-            de nuestra cocina a la tuya
-          </p>
-        </div>
-        <a
-          href="#semana"
-          aria-label="Bajar al contenido"
-          className="invita-a-bajar absolute bottom-6 flex h-11 w-11 items-center justify-center text-[#fcfbf8]"
-        >
-          <FlechaAbajo />
-        </a>
+    <main className="flex flex-col overflow-x-clip">
+      {/* La barra rectangular con fondo: la foto empieza debajo, y al hacer
+          scroll la barra se queda arriba. En la portada el nombre vive SOLO
+          sobre la foto: la barra lleva el logo grande a la izquierda y la
+          navegación a la derecha. */}
+      <header className="sticky top-0 z-50 flex h-20 items-center justify-between gap-3 border-b border-tinta/15 bg-papel px-[clamp(16px,5vw,48px)]">
+        <Logo />
+        <Navegacion />
+      </header>
+
+      {/* La cubierta dura 1,6 pantallas: es lo que da recorrido al nombre
+          pegajoso antes de que empiece el contenido. */}
+      <section className="relative flex min-h-[calc(160svh-5rem)] flex-col overflow-clip">
+        <CapaParallax factor={0.18} className="absolute inset-x-0 -inset-y-[6%]">
+          <ImagenDeCubierta />
+        </CapaParallax>
+        <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(222,230,233,0.94)_0%,rgba(222,230,233,0.6)_22%,rgba(222,230,233,0)_48%)]" />
+        <Revelado orden={2} className="relative z-[2] min-h-0 flex-1 px-[clamp(20px,5vw,48px)]">
+          {/* Pegajoso: mientras dura la imagen, el nombre se queda en el
+              centro del viewport; el borde inferior de la cubierta se lo
+              lleva al salir. */}
+          <div className="sticky top-[50svh] flex -translate-y-1/2 flex-col items-center">
+            <div className="flex flex-col items-center gap-3.5 bg-papel/30 px-[clamp(24px,6vw,64px)] py-[clamp(18px,3vh,36px)] text-center backdrop-blur-md">
+              <h1 className="max-w-[14ch] font-[family-name:var(--font-pinyon)] text-[clamp(40px,min(8.4vw,13vh),132px)] leading-[0.84] tracking-[0.01em] [text-shadow:0_0_2px_rgba(222,230,233,1),0_1px_4px_rgba(222,230,233,1),0_2px_12px_rgba(222,230,233,1),0_0_28px_rgba(222,230,233,0.95),0_0_60px_rgba(222,230,233,0.85)]">
+                Mi libro de recetas
+              </h1>
+              <Firma />
+            </div>
+          </div>
+        </Revelado>
       </section>
 
-      <div className="mx-auto flex w-full max-w-lg flex-col gap-10 px-6 pb-16 pt-10">
-        <section id="semana" className="flex flex-col gap-4 scroll-mt-6">
-          <EtiquetaDeSeccion>La receta de esta semana</EtiquetaDeSeccion>
+      <section className="mx-auto flex w-full max-w-[1440px] flex-wrap items-stretch justify-between gap-[clamp(24px,4vw,56px)] px-[clamp(20px,5vw,48px)] pb-[clamp(36px,6vw,68px)] pt-[clamp(28px,5vw,56px)]">
+        <Revelado orden={1} className="min-w-0 flex-1 basis-[320px]">
           <Link
             href={`/recetas/${semana.slug}`}
-            className="flex flex-col gap-4 border border-filo bg-superficie p-3 pb-5"
+            className="flex items-start gap-5 border-t-2 border-tinta py-[clamp(20px,2.4vw,30px)] text-tinta hover:opacity-60"
           >
-            {fotoDeSemana && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={urlConAncho(fotoDeSemana.url, 828)}
-                alt={fotoDeSemana.alt}
-                className="aspect-[4/3] w-full object-cover"
-              />
-            )}
-            <div className="flex flex-col gap-2 px-2">
-              <span className="font-[family-name:var(--font-newsreader)] text-[27px] font-semibold leading-tight">
-                {semana.titulo}
+            <span className="mt-1 h-8.5 w-8.5 shrink-0 rounded-full bg-acento" />
+            <span className="flex min-w-0 flex-col gap-2">
+              <span className="font-[family-name:var(--font-bricolage)] text-[clamp(24px,2.6vw,36px)] font-extrabold leading-[1.02] tracking-[-0.038em]">
+                Lo último que hice
               </span>
-              <span className="text-base leading-relaxed text-apagado">{semana.resumen}</span>
-              <span className="mt-1 text-xs uppercase tracking-[1.5px] text-apagado-medio">
-                {semana.tiempo.total} min · {semana.dificultad}
-                {semana.estado === "borrador"
-                  ? " · borrador"
-                  : ` · ${fechaDePublicacion(semana.publicadaEn)}`}
+              <span className="max-w-[34ch] text-[15.5px] leading-[1.55] text-tinta/60">
+                La receta de esta semana, entera: cantidades, pasos y las fotos que salieron.
               </span>
-            </div>
+            </span>
           </Link>
-        </section>
+        </Revelado>
+        <Revelado orden={2} className="min-w-0 flex-1 basis-[320px]">
+          <a
+            href="#recetas"
+            className="flex items-start gap-5 border-t-2 border-tinta/20 py-[clamp(20px,2.4vw,30px)] text-tinta hover:opacity-60"
+          >
+            <span className="mt-1 grid shrink-0 grid-cols-2 gap-1">
+              <span className="h-[15px] w-[15px] bg-tinta" />
+              <span className="h-[15px] w-[15px] bg-tinta/30" />
+              <span className="h-[15px] w-[15px] bg-tinta/30" />
+              <span className="h-[15px] w-[15px] bg-tinta" />
+            </span>
+            <span className="flex min-w-0 flex-col gap-2">
+              <span className="font-[family-name:var(--font-bricolage)] text-[clamp(24px,2.6vw,36px)] font-extrabold leading-[1.02] tracking-[-0.038em]">
+                Todas las recetas
+              </span>
+              <span className="max-w-[34ch] text-[15.5px] leading-[1.55] text-tinta/60">
+                Las {docs.length} que hay hasta hoy, de la más nueva a la primera.
+              </span>
+            </span>
+          </a>
+        </Revelado>
+      </section>
 
-        <section id="buscar" className="flex flex-col gap-4 scroll-mt-6">
-          <EtiquetaDeSeccion>O busca entre las nuestras</EtiquetaDeSeccion>
-          <Buscador q="" categorias={categorias} categoriaActiva="" mostrarTodas={false} />
-        </section>
+      <Marquesina
+        frases={["Cada semana algo nuevo", "Cantidades de verdad", "Cocina de casa"]}
+      />
 
-        {anteriores.length > 0 && (
-          <section className="flex flex-col gap-4">
-            <EtiquetaDeSeccion>Las anteriores</EtiquetaDeSeccion>
-            <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:grid-cols-3">
-              {anteriores.map((receta) => (
-                <TarjetaPequena key={receta.slug} receta={receta} foto={fotoDe(receta)} />
-              ))}
+      <section
+        id="recetas"
+        className="mx-auto w-full max-w-[1440px] scroll-mt-6 px-[clamp(20px,5vw,48px)] pb-10 pt-[clamp(56px,9vw,104px)]"
+      >
+        <Revelado
+          orden={1}
+          className="flex flex-wrap items-end justify-between gap-x-8 gap-y-6 border-b border-tinta/20 pb-6"
+        >
+          <h2 className="font-[family-name:var(--font-bricolage)] text-[clamp(30px,3.6vw,52px)] font-extrabold leading-[0.95] tracking-[-0.035em]">
+            Las recetas
+          </h2>
+          <Pildoras categorias={categorias} activa="" />
+        </Revelado>
+        {rejilla}
+      </section>
+
+      <section
+        id="nota"
+        className="mx-auto w-full max-w-[1440px] scroll-mt-6 px-[clamp(20px,5vw,48px)] pb-[clamp(72px,10vw,130px)] pt-[clamp(64px,9vw,118px)]"
+      >
+        <div className="flex flex-wrap items-center gap-[clamp(28px,4vw,60px)]">
+          <Revelado orden={1} className="relative aspect-square min-w-0 flex-1 basis-[340px]">
+            <div className="rayas absolute inset-0" />
+            <div className="absolute inset-x-0 bottom-0 bg-papel/90 p-6 font-[family-name:var(--font-bricolage)] text-xl font-semibold leading-[1.25] tracking-[-0.025em] backdrop-blur-lg">
+              Cocinar para alguien es la forma más lenta de decir algo.
             </div>
-          </section>
-        )}
-
-        <footer className="border-t border-filo pt-6 text-center">
-          <p className="font-[family-name:var(--font-newsreader)] italic text-apagado">
-            una receta cada semana, hecha con cariño
-          </p>
-        </footer>
-      </div>
+          </Revelado>
+          <Revelado orden={2} className="min-w-0 flex-1 basis-[380px]">
+            <div className="mb-5.5 font-[family-name:var(--font-dm-mono)] text-[11.5px] uppercase tracking-[0.2em] text-acento">
+              Quién cocina aquí
+            </div>
+            <p className="font-[family-name:var(--font-bricolage)] text-[clamp(22px,2.4vw,33px)] leading-[1.3] tracking-[-0.03em] [text-wrap:pretty]">
+              Esto no es una revista. Es un cuaderno: subo una receta cuando la hago, con la
+              foto que salga y las cantidades que uso de verdad. Si algo sale mal, también lo
+              cuento.
+            </p>
+            <div className="relative mt-7 aspect-video overflow-hidden bg-raya-clara">
+              <div className="rayas-finas deriva absolute -inset-[6%]" />
+              <div className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-tinta/90 px-3 py-1.5 font-[family-name:var(--font-dm-mono)] text-[9.5px] uppercase tracking-[0.18em] text-papel">
+                <span className="parpadea h-1.5 w-1.5 rounded-full bg-acento" />
+                gif · bucle
+              </div>
+            </div>
+            <p className="mt-6.5 max-w-[48ch] text-[17px] leading-[1.65] text-tinta/65">
+              Empecé esto por una persona concreta. Ella ya sabe cuál es la receta 01.
+            </p>
+          </Revelado>
+        </div>
+      </section>
     </main>
   );
 }

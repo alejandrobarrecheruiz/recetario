@@ -36,6 +36,26 @@ function escaparRegex(texto: string): string {
   return texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/** El logo de la casa (el gato y la mariquita cocineros), recortado en
+ * círculo para que el papel del PNG no se note sobre la barra. */
+function Logo({ enlazado = false }: { enlazado?: boolean }) {
+  const imagen = (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/Logo.png"
+      alt="Mi libro de recetas"
+      className="h-10 w-10 rounded-full object-cover"
+    />
+  );
+  return enlazado ? (
+    <Link href="/" className="shrink-0">
+      {imagen}
+    </Link>
+  ) : (
+    imagen
+  );
+}
+
 /**
  * El rótulo de la casa: el nombre en Pinyon Script y la firma debajo. En el
  * móvil se compacta (la firma se esconde: el nombre grande ya está en el
@@ -278,7 +298,10 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
     return (
       <main className="flex min-h-svh flex-col">
         <header className="sticky top-0 z-50 flex h-16 items-center justify-between gap-3 border-b border-tinta/15 bg-papel px-[clamp(16px,5vw,48px)]">
-          <Marca enlazada />
+          <span className="flex items-center gap-3">
+            <Logo enlazado />
+            <Marca enlazada />
+          </span>
           <Navegacion />
         </header>
         <section className="mx-auto w-full max-w-[1440px] flex-1 px-[clamp(20px,5vw,48px)] pb-24 pt-[clamp(20px,3vw,40px)]">
@@ -339,9 +362,10 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
     <main className="flex flex-col overflow-x-clip">
       {/* La barra rectangular con fondo: la foto empieza debajo, y al hacer
           scroll la barra se queda arriba. */}
-      {/* En la portada el nombre vive SOLO sobre la foto: la barra no lo
-          repite, es únicamente la navegación. */}
-      <header className="sticky top-0 z-50 flex h-14 items-center justify-end border-b border-tinta/15 bg-papel px-[clamp(16px,5vw,48px)]">
+      {/* En la portada el nombre vive SOLO sobre la foto: la barra lleva el
+          logo a la izquierda y la navegación a la derecha. */}
+      <header className="sticky top-0 z-50 flex h-14 items-center justify-between gap-3 border-b border-tinta/15 bg-papel px-[clamp(16px,5vw,48px)]">
+        <Logo />
         <Navegacion />
       </header>
 

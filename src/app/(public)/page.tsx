@@ -16,6 +16,22 @@ import { CapaParallax } from "@/components/parallax";
 // El rol se resuelve EN EL SERVIDOR y toda consulta pasa por conVisibilidad:
 // nada de filtrar en el JSX.
 
+// La imagen fija de la cubierta vive en /public. Para probar otra opción basta
+// con cambiar aquí el nombre (Portada.png, Portada-2.png, Portada-3.png);
+// Portada-V.png es la vertical, para pantallas estrechas.
+const imagenDeCubierta = "/Portada.png";
+const imagenDeCubiertaVertical = "/Portada-V.png";
+
+/** La cubierta a sangre: horizontal en pantalla ancha, vertical en el móvil. */
+function ImagenDeCubierta() {
+  return (
+    <picture className="block h-full w-full">
+      <source media="(max-width: 768px)" srcSet={imagenDeCubiertaVertical} />
+      <img src={imagenDeCubierta} alt="" className="h-full w-full object-cover" />
+    </picture>
+  );
+}
+
 function escaparRegex(texto: string): string {
   return texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -251,7 +267,9 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
   if (docs.length === 0) {
     return (
       <main className="relative flex min-h-svh flex-col overflow-hidden">
-        <div className="rayas absolute inset-0" />
+        <div className="absolute inset-0">
+          <ImagenDeCubierta />
+        </div>
         <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(222,230,233,0.94)_0%,rgba(222,230,233,0.6)_22%,rgba(222,230,233,0)_48%)]" />
         <div className="relative flex flex-1 flex-col items-center justify-center gap-3.5 px-8 text-center">
           <h1 className="font-[family-name:var(--font-pinyon)] text-[clamp(40px,10vw,110px)] leading-[0.84] tracking-[0.01em] [text-shadow:0_2px_22px_rgba(222,230,233,0.7)]">
@@ -269,7 +287,6 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
 
   // --- La portada completa. ---
   const semana = docs[0];
-  const fotoDeSemana = fotoDe(semana);
 
   return (
     <main className="flex flex-col overflow-x-clip">
@@ -280,16 +297,7 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
 
       <section className="relative flex min-h-svh flex-col overflow-hidden">
         <CapaParallax factor={0.18} className="absolute inset-x-0 -inset-y-[6%]">
-          {fotoDeSemana ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={urlConAncho(fotoDeSemana.url, 1600)}
-              alt=""
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="rayas h-full w-full" />
-          )}
+          <ImagenDeCubierta />
         </CapaParallax>
         <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(222,230,233,0.94)_0%,rgba(222,230,233,0.6)_22%,rgba(222,230,233,0)_48%)]" />
         <Revelado

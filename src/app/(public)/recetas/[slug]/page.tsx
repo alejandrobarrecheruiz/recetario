@@ -6,16 +6,22 @@ import { obtenerColecciones } from "@/lib/mongo";
 import { conVisibilidad } from "@/lib/visibilidad";
 import { rolActual } from "@/lib/sesion";
 import { urlConAncho } from "@/lib/imagenes";
-import { fechaDePublicacion, formatearCantidad } from "@/lib/formato";
+import { duracion, fechaDePublicacion, formatearCantidad } from "@/lib/formato";
 import type { Ingrediente, RecetaDoc } from "@/models/receta";
 import type { ImagenDoc } from "@/models/imagen";
 import { IngredientesEscalables } from "@/components/ingredientes-escalables";
+import { ModoCocina } from "@/components/modo-cocina";
+import { Revelado } from "@/components/revelado";
+import { CapaParallax } from "@/components/parallax";
 
-// La ficha. La consulta pasa por conVisibilidad con el rol de la sesion: una
-// receta que el visitante no puede ver responde notFound(), nunca "prohibida".
+// La ficha del rediseño (fase 10): cubierta con parallax, ingredientes en
+// tarjeta pegajosa con checklist y escalador, pasos con rotulillo, nota
+// personal y «Sigue por aquí». La consulta pasa por conVisibilidad con el rol
+// de la sesión: una receta que el visitante no puede ver responde notFound(),
+// nunca "prohibida".
 //
-// `cache()` deduplica la consulta entre generateMetadata y la pagina: una sola
-// ida a Mongo por peticion.
+// `cache()` deduplica la consulta entre generateMetadata y la página: una sola
+// ida a Mongo por petición.
 const obtenerFicha = cache(async (slug: string) => {
   const rol = await rolActual();
   const { recetas, imagenes } = await obtenerColecciones();
@@ -80,7 +86,7 @@ function datosEstructurados(receta: RecetaDoc, fotos: Map<string, ImagenDoc>) {
     description: receta.seo.descripcion,
     ...(portada && { image: [urlConAncho(portada.url, 1200)] }),
     ...(receta.publicadaEn && { datePublished: receta.publicadaEn.toISOString() }),
-    author: { "@type": "Person", name: "La cocina nos Une" },
+    author: { "@type": "Person", name: "Alejandro" },
     inLanguage: "es",
     recipeYield: `${receta.raciones} raciones`,
     prepTime: `PT${receta.tiempo.preparacion}M`,
@@ -94,6 +100,7 @@ function datosEstructurados(receta: RecetaDoc, fotos: Map<string, ImagenDoc>) {
       return {
         "@type": "HowToStep",
         position: indice + 1,
+        ...(paso.titulo && { name: paso.titulo }),
         text: paso.texto,
         ...(foto && { image: urlConAncho(foto.url, 828) }),
       };
@@ -109,12 +116,35 @@ export default async function PaginaReceta({
   if (!ficha) notFound();
 
   const { receta, fotos } = ficha;
+  const rol = await rolActual();
+  const { recetas } = await obtenerColecciones();
+
   const portada = receta.portadaId ? fotos.get(receta.portadaId.toHexString()) : undefined;
   const pasos = [...receta.pasos].sort((a, b) => a.orden - b.orden);
   const fecha = fechaDePublicacion(receta.publicadaEn);
 
+  // «Sigue por aquí»: las dos publicadas más recientes que no son esta.
+  const siguientes = await recetas
+    .find(conVisibilidad(rol, { slug: { $ne: slug }, estado: "publicada" }))
+    .sort({ publicadaEn: -1 })
+    .limit(2)
+    .toArray();
+  const idsDeSiguientes = siguientes.flatMap((doc) => (doc.portadaId ? [doc.portadaId] : []));
+  const { imagenes } = await obtenerColecciones();
+  const fotosDeSiguientes = new Map(
+    (await imagenes.find({ _id: { $in: idsDeSiguientes } }).toArray()).map((foto) => [
+      foto._id.toHexString(),
+      foto,
+    ]),
+  );
+
+  const pasosSerializables = pasos.map((paso) => ({
+    ...paso,
+    imagenId: paso.imagenId === null ? null : paso.imagenId.toHexString(),
+  }));
+
   return (
-    <main className="mx-auto flex w-full max-w-lg flex-col gap-8 px-6 pb-16">
+    <main className="flex flex-col overflow-x-clip">
       {receta.estado === "publicada" && (
         <script
           type="application/ld+json"
@@ -125,92 +155,155 @@ export default async function PaginaReceta({
         />
       )}
 
-      <header className="flex flex-col items-center border-b border-filo pb-5 pt-8">
-        <Link href="/" className="font-[family-name:var(--font-newsreader)] text-xl font-medium">
-          La cocina nos Une
+      <header className="sticky top-0 z-40 flex items-center justify-between gap-4 border-b border-tinta/15 bg-papel/85 px-[clamp(20px,5vw,48px)] py-[15px] font-[family-name:var(--font-dm-mono)] text-[11.5px] uppercase tracking-[0.16em] backdrop-blur-xl">
+        <Link href="/" className="whitespace-nowrap text-tinta/70">
+          ← Volver
         </Link>
+        <ModoCocina
+          titulo={receta.titulo}
+          pasos={pasosSerializables}
+          raciones={receta.raciones}
+          minutos={receta.tiempo.total}
+        />
       </header>
 
-      {portada && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={urlConAncho(portada.url, 828)}
-          alt={portada.alt}
-          className="aspect-[4/3] w-full border border-filo object-cover"
-        />
-      )}
-
-      <section className="flex flex-col gap-3">
-        {receta.estado === "borrador" && (
-          <span className="self-start rounded-full border border-filo px-3 py-1 text-xs uppercase tracking-[1.5px] text-apagado-medio">
-            borrador · solo lo ves tú
-          </span>
-        )}
-        <h1 className="font-[family-name:var(--font-newsreader)] text-[31px] font-semibold leading-tight">
-          {receta.titulo}
-        </h1>
-        <p className="text-base leading-relaxed text-apagado">{receta.resumen}</p>
-        <p className="text-xs uppercase tracking-[1.5px] text-apagado-medio">
-          {receta.tiempo.preparacion} min de preparación · {receta.tiempo.coccion} de cocción ·{" "}
-          {receta.dificultad}
-          {fecha && ` · ${fecha}`}
-        </p>
-      </section>
-
-      <IngredientesEscalables
-        ingredientes={receta.ingredientes}
-        racionesBase={receta.raciones}
-      />
-
-      <section className="flex flex-col gap-6">
-        <h2 className="border-b border-filo pb-3 text-xs uppercase tracking-[2px] text-apagado">
-          Pasos
-        </h2>
-        {pasos.map((paso, indice) => {
-          const foto = paso.imagenId ? fotos.get(paso.imagenId.toHexString()) : undefined;
-          return (
-            <div key={paso.id} className="flex flex-col gap-3.5">
-              <div className="flex gap-4">
-                <span className="font-[family-name:var(--font-newsreader)] text-[46px] font-medium leading-none text-celeste-numero">
-                  {indice + 1}
-                </span>
-                <p className="pt-2 text-lg leading-relaxed">{paso.texto}</p>
-              </div>
-              {foto && (
-                <div className="ml-10.5 border border-filo bg-superficie p-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={urlConAncho(foto.url, 828)}
-                    alt={foto.alt}
-                    loading="lazy"
-                    className="w-full object-cover"
-                  />
-                </div>
-              )}
+      <section className="relative flex h-[70svh] min-h-[440px] items-end overflow-hidden">
+        <CapaParallax factor={0.3} className="absolute inset-x-0 -inset-y-[10%]">
+          {portada ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={urlConAncho(portada.url, 1600)}
+              alt={portada.alt}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="rayas h-full w-full" />
+          )}
+        </CapaParallax>
+        <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(222,230,233,0.96)_0%,rgba(222,230,233,0.7)_26%,rgba(222,230,233,0.14)_60%,rgba(222,230,233,0.45)_100%)]" />
+        <div className="relative max-w-[1200px] px-[clamp(20px,5vw,48px)] pb-[clamp(36px,5vw,60px)]">
+          {receta.estado === "borrador" && (
+            <span className="mb-4 inline-block rounded-full border border-tinta/30 px-3.5 py-1.5 font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.18em] text-tinta/60">
+              borrador · solo lo ves tú
+            </span>
+          )}
+          <Revelado orden={1}>
+            <h1 className="max-w-[15ch] font-[family-name:var(--font-bricolage)] text-[clamp(46px,7.4vw,118px)] font-extrabold leading-[0.87] tracking-[-0.045em]">
+              {receta.titulo}
+            </h1>
+          </Revelado>
+          <Revelado orden={2}>
+            {receta.resumen !== "" && (
+              <p className="mt-5.5 max-w-[44ch] text-[clamp(16px,1.5vw,19px)] leading-[1.6] text-tinta/70">
+                {receta.resumen}
+              </p>
+            )}
+            <div className="mt-6 flex flex-wrap gap-x-8 gap-y-4 font-[family-name:var(--font-dm-mono)] text-[11.5px] uppercase tracking-[0.16em] text-tinta/65">
+              <span>
+                {duracion(receta.tiempo.total)} · {receta.tiempo.preparacion} prep
+              </span>
+              <span>{receta.dificultad}</span>
+              <span>{receta.raciones} raciones</span>
+              {fecha && <span className="text-acento">{fecha}</span>}
             </div>
-          );
-        })}
+          </Revelado>
+        </div>
       </section>
 
-      {receta.notas && (
-        <section className="flex flex-col gap-3">
-          <h2 className="border-b border-filo pb-3 text-xs uppercase tracking-[2px] text-apagado">
-            Notas
-          </h2>
-          <p className="font-[family-name:var(--font-newsreader)] italic text-[17px] leading-relaxed text-apagado">
-            {receta.notas}
-          </p>
+      <section className="mx-auto flex w-full max-w-[1440px] flex-wrap items-start gap-[clamp(32px,4vw,76px)] px-[clamp(20px,5vw,48px)] pb-[clamp(72px,9vw,116px)] pt-[clamp(44px,6vw,68px)]">
+        <Revelado
+          orden={1}
+          className="sticky top-[92px] min-w-0 max-w-[420px] flex-1 basis-[300px] border border-tinta/15 bg-superficie p-6.5"
+        >
+          <IngredientesEscalables
+            ingredientes={receta.ingredientes}
+            racionesBase={receta.raciones}
+          />
+        </Revelado>
+
+        <div className="flex min-w-0 flex-1 basis-[480px] flex-col gap-[clamp(40px,5vw,60px)]">
+          {pasos.map((paso, indice) => {
+            const foto = paso.imagenId ? fotos.get(paso.imagenId.toHexString()) : undefined;
+            return (
+              <Revelado key={paso.id} orden={1} className="flex flex-col gap-3.5">
+                <div className="flex items-center gap-3.5 border-b border-tinta/15 pb-3">
+                  <span className="font-[family-name:var(--font-bricolage)] text-[26px] font-extrabold leading-none tracking-[-0.04em] text-acento">
+                    {String(indice + 1).padStart(2, "0")}
+                  </span>
+                  <span className="font-[family-name:var(--font-dm-mono)] text-[10.5px] uppercase tracking-[0.2em] text-tinta/60">
+                    {paso.titulo ?? `Paso ${indice + 1}`}
+                  </span>
+                </div>
+                <div>
+                  <p className="max-w-[58ch] text-[clamp(17px,1.35vw,20px)] leading-[1.68] text-tinta/85 [text-wrap:pretty]">
+                    {paso.texto}
+                  </p>
+                  {foto && (
+                    <div className="relative mt-6 aspect-[16/10] overflow-hidden bg-raya-clara">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={urlConAncho(foto.url, 1024)}
+                        alt={foto.alt}
+                        loading="lazy"
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
+              </Revelado>
+            );
+          })}
+
+          {receta.notas && (
+            <Revelado orden={1} className="border-l-2 border-acento bg-superficie px-9.5 py-8.5">
+              <div className="mb-3.5 font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.2em] text-acento">
+                Nota personal
+              </div>
+              <p className="max-w-[52ch] font-[family-name:var(--font-bricolage)] text-[23px] leading-[1.35] tracking-[-0.03em]">
+                {receta.notas}
+              </p>
+            </Revelado>
+          )}
+        </div>
+      </section>
+
+      {siguientes.length > 0 && (
+        <section className="mx-auto w-full max-w-[1440px] border-t border-tinta/15 px-[clamp(20px,5vw,48px)] pb-[clamp(80px,10vw,124px)] pt-[clamp(44px,6vw,66px)]">
+          <div className="mb-7 font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.2em] text-tinta/50">
+            Sigue por aquí
+          </div>
+          <div className="grid gap-0.5 [grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))]">
+            {siguientes.map((otra) => {
+              const fotoDeOtra = otra.portadaId
+                ? fotosDeSiguientes.get(otra.portadaId.toHexString())
+                : undefined;
+              return (
+                <Link
+                  key={otra.slug}
+                  href={`/recetas/${otra.slug}`}
+                  className="group relative block aspect-video overflow-hidden bg-raya-clara text-tinta"
+                >
+                  {fotoDeOtra ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={urlConAncho(fotoDeOtra.url, 828)}
+                      alt={fotoDeOtra.alt}
+                      loading="lazy"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06]"
+                    />
+                  ) : (
+                    <div className="rayas-finas absolute inset-0 transition-transform duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06]" />
+                  )}
+                  <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(222,230,233,0.95),rgba(222,230,233,0.5)_42%,transparent_76%)]" />
+                  <div className="absolute bottom-6 left-6.5 font-[family-name:var(--font-bricolage)] text-3xl font-semibold tracking-[-0.035em]">
+                    {otra.titulo}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
         </section>
       )}
-
-      <footer className="flex flex-col items-center gap-4 border-t border-filo pt-6 text-center">
-        <p className="font-[family-name:var(--font-newsreader)] italic text-apagado">
-          una receta cada semana, hecha con cariño
-        </p>
-        <Link href="/" className="text-[15px] text-enlace">
-          Volver a la portada
-        </Link>
-      </footer>
     </main>
   );
 }

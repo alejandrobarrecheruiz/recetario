@@ -1,124 +1,111 @@
 @import "tailwindcss";
 
 /*
- * Tokens del sistema visual (fase 7, sección 14 de CLAUDE.md). Se definen UNA
- * vez aquí y todo lo demás los usa; nada de valores sueltos por los componentes.
+ * Tokens del sistema visual (fase 10, rediseño «Mi libro de recetas»).
+ * Se definen UNA vez aquí y todo lo demás los usa; nada de valores sueltos
+ * por los componentes.
  *
- * El modo oscuro es automático con prefers-color-scheme, sin interruptor: los
- * tokens cambian de valor y las clases de Tailwind (bg-papel, text-tinta...)
- * siguen valiendo tal cual.
+ * Solo existe el estilo claro: el modo oscuro automático se retiró con el
+ * rediseño (decisión del 25 de agosto de 2026). El lienzo de referencia es
+ * «Recetario claro.dc.html» del proyecto de Claude Design.
  */
 :root {
-  --papel: #fcfbf8;
+  --papel: #dee6e9; /* el gris azulado de fondo */
+  --tinta: #0f1418;
   --superficie: #ffffff;
-  --tinta: #22333d;
-  --apagado: #6c7e86;
-  --apagado-medio: #7e8f96;
-  --apagado-suave: #93a3aa;
-  --filo: #e2e8e9;
-  --filo-fino: #edf0ee;
-  --celeste: #7ec8df;
-  --celeste-numero: #5fb6d2;
-  --celeste-relleno: #ddf1f7;
-  --celeste-borde: #bfe6f2;
-  --enlace: #3f97b4;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --papel: #141f26;
-    --superficie: #1b2830;
-    --tinta: #e4eae8;
-    --apagado: #7f949e;
-    --apagado-medio: #7f949e;
-    --apagado-suave: #5f7580;
-    --filo: #263640;
-    --filo-fino: #1e2c34;
-    /* De noche el celeste gana protagonismo: numeros a pleno color. */
-    --celeste: #7ec8df;
-    --celeste-numero: #7ec8df;
-    --celeste-relleno: #1d3540;
-    --celeste-borde: #2e5d6d;
-    --enlace: #7ec8df;
-  }
+  --lateral: #cfd9dd; /* barra lateral del editor del panel */
+  --raya-clara: #ccd7db; /* las rayas de los huecos de foto */
+  --raya-oscura: #c0ccd1;
+  --acento: oklch(0.55 0.19 30); /* el rojo anaranjado, único acento */
+  --acento-claro: oklch(0.8 0.16 34);
 }
 
 @theme inline {
   --color-papel: var(--papel);
-  --color-superficie: var(--superficie);
   --color-tinta: var(--tinta);
-  --color-apagado: var(--apagado);
-  --color-apagado-medio: var(--apagado-medio);
-  --color-apagado-suave: var(--apagado-suave);
-  --color-filo: var(--filo);
-  --color-filo-fino: var(--filo-fino);
-  --color-celeste: var(--celeste);
-  --color-celeste-numero: var(--celeste-numero);
-  --color-celeste-relleno: var(--celeste-relleno);
-  --color-celeste-borde: var(--celeste-borde);
-  --color-enlace: var(--enlace);
-  --font-display: var(--font-newsreader);
-  --font-cuerpo: var(--font-literata);
+  --color-superficie: var(--superficie);
+  --color-lateral: var(--lateral);
+  --color-raya-clara: var(--raya-clara);
+  --color-raya-oscura: var(--raya-oscura);
+  --color-acento: var(--acento);
+  --color-acento-claro: var(--acento-claro);
+  --font-display: var(--font-bricolage);
+  --font-cuerpo: var(--font-instrument);
+  --font-rotulo: var(--font-dm-mono);
+  --font-script: var(--font-pinyon);
 }
 
 body {
   background: var(--papel);
   color: var(--tinta);
-  font-family: var(--font-literata), Georgia, serif;
+  font-family: var(--font-instrument), system-ui, sans-serif;
 }
 
-/* Animaciones de la portada. Solo entrada y vaivenes suaves. */
-@keyframes aparecer {
+/* En @layer base para que cualquier utilidad de color de Tailwind las gane. */
+@layer base {
+  a {
+    color: var(--tinta);
+  }
+
+  a:hover {
+    color: var(--acento);
+  }
+}
+
+::selection {
+  background: var(--acento-claro);
+  color: var(--tinta);
+}
+
+/* Las rayas diagonales que ocupan el sitio de una foto que aún no está. */
+.rayas {
+  background-image: repeating-linear-gradient(
+    122deg,
+    var(--raya-oscura) 0 14px,
+    var(--raya-clara) 14px 28px
+  );
+}
+
+.rayas-finas {
+  background-image: repeating-linear-gradient(
+    122deg,
+    var(--raya-oscura) 0 12px,
+    var(--raya-clara) 12px 24px
+  );
+}
+
+/* La deriva lenta de los huecos de gif y el parpadeo del punto rojo. */
+@keyframes deriva {
   from {
-    opacity: 0;
-    transform: translateY(18px);
+    transform: scale(1.06) translateY(0);
   }
   to {
+    transform: scale(1.13) translateY(-2%);
+  }
+}
+
+.deriva {
+  animation: deriva 24s ease-in-out infinite alternate;
+}
+
+@keyframes parpadeo {
+  0%,
+  49% {
     opacity: 1;
-    transform: translateY(0);
   }
-}
-
-@keyframes bajar {
-  0%,
+  50%,
   100% {
-    transform: translateY(0);
-    opacity: 0.9;
-  }
-  50% {
-    transform: translateY(8px);
-    opacity: 0.5;
+    opacity: 0;
   }
 }
 
-@keyframes vaho {
-  0%,
-  100% {
-    opacity: 0.35;
-    transform: translateY(0);
-  }
-  50% {
-    opacity: 0.9;
-    transform: translateY(-3px);
-  }
-}
-
-.aparece {
-  animation: aparecer 0.9s ease-out both;
-}
-
-.invita-a-bajar {
-  animation: bajar 1.8s ease-in-out infinite;
-}
-
-.vaho {
-  animation: vaho 2.4s ease-in-out infinite;
+.parpadea {
+  animation: parpadeo 1.6s steps(1, end) infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .aparece,
-  .invita-a-bajar,
-  .vaho {
+  .deriva,
+  .parpadea {
     animation: none;
   }
 }

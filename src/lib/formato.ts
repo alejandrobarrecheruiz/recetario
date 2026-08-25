@@ -23,3 +23,11 @@ export function fechaDePublicacion(fecha: Date | null): string | null {
 export function formatearCantidad(cantidad: number): string {
   return formatoCantidad.format(Math.round(cantidad * 100) / 100);
 }
+
+/** "40 min", "1 h", "1 h 10". Para los rótulos de tiempo del rediseño. */
+export function duracion(minutos: number): string {
+  if (minutos < 60) return `${minutos} min`;
+  const horas = Math.floor(minutos / 60);
+  const resto = minutos % 60;
+  return resto === 0 ? `${horas} h` : `${horas} h ${resto}`;
+}

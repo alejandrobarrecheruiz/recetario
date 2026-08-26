@@ -129,7 +129,7 @@ export function ModoCocina({
           setVerIngredientes(false);
           setAbierto(true);
         }}
-        className="whitespace-nowrap rounded-full bg-tinta px-5 py-2.75 font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.14em] text-papel hover:bg-acento"
+        className="whitespace-nowrap rounded-full bg-tinta px-4 py-2.75 font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.12em] text-papel hover:bg-acento sm:px-5 sm:text-[11px] sm:tracking-[0.14em]"
       >
         Cocinar paso a paso
       </button>

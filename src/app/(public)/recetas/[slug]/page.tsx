@@ -218,9 +218,11 @@ export default async function PaginaReceta({
       </section>
 
       <section className="mx-auto flex w-full max-w-[1440px] flex-wrap items-start gap-[clamp(32px,4vw,76px)] px-[clamp(20px,5vw,48px)] pb-[clamp(72px,9vw,116px)] pt-[clamp(44px,6vw,68px)]">
+        {/* Pegajosa SOLO con dos columnas: en columna única (móvil) una tarjeta
+            sticky se desliza sobre los pasos y los tapa con su fondo blanco. */}
         <Revelado
           orden={1}
-          className="sticky top-[92px] min-w-0 max-w-[420px] flex-1 basis-[300px] border border-tinta/15 bg-superficie p-6.5"
+          className="min-w-0 max-w-[420px] flex-1 basis-[300px] border border-tinta/15 bg-superficie p-6.5 lg:sticky lg:top-[92px]"
         >
           <IngredientesEscalables
             ingredientes={receta.ingredientes}

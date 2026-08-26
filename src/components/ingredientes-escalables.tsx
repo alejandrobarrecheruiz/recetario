@@ -29,9 +29,11 @@ export function IngredientesEscalables({
   const claseBotonEscala =
     "flex h-6.5 w-6.5 items-center justify-center rounded-full text-base leading-none text-tinta hover:bg-tinta/10 disabled:opacity-40";
 
-  function medidaDe(ingrediente: Ingrediente): string {
-    if (ingrediente.cantidad === 0) return "al gusto";
-    return `${formatearCantidad(ingrediente.cantidad * factor)} ${ingrediente.unidad}`.trim();
+  /** "150 g", "1,5" (la unidad "unidad" no se escribe), o null para "al gusto". */
+  function medidaDe(ingrediente: Ingrediente): string | null {
+    if (ingrediente.cantidad === 0) return null;
+    const unidad = ingrediente.unidad === "unidad" ? "" : ingrediente.unidad;
+    return `${formatearCantidad(ingrediente.cantidad * factor)} ${unidad}`.trim();
   }
 
   return (
@@ -90,12 +92,19 @@ export function IngredientesEscalables({
                     hecho ? "line-through opacity-40" : ""
                   }`}
                 >
-                  <span className="font-semibold [font-variant-numeric:tabular-nums]">
-                    {medidaDe(ingrediente)}
-                  </span>{" "}
+                  {medidaDe(ingrediente) && (
+                    <>
+                      <span className="font-semibold [font-variant-numeric:tabular-nums]">
+                        {medidaDe(ingrediente)}
+                      </span>{" "}
+                    </>
+                  )}
                   {ingrediente.nombre}
                   {ingrediente.nota && (
                     <span className="text-tinta/45"> — {ingrediente.nota}</span>
+                  )}
+                  {!ingrediente.nota && ingrediente.cantidad === 0 && (
+                    <span className="text-tinta/45"> — al gusto</span>
                   )}
                 </span>
               </button>

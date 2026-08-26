@@ -461,6 +461,10 @@ no hay JS. El hover solo decora.
 plano. La foto cuadrada y el gif de «Quién cocina» siguen siendo huecos hasta
 que existan los ficheros reales.
 
+**El pie** (solo páginas públicas, vía `(public)/layout.tsx`): deliberadamente
+mínimo — el nombre en Pinyon y «Una receta a la semana · desde 2026». Sin
+redes, sin newsletter, sin columnas de enlaces (regla de la sección 1).
+
 **Estados vacíos y 404**: «La primera está al fuego.», «De eso aún no
 tenemos.», «Esta página se nos ha quemado.» — el 404 deliberadamente ambiguo
 (es lo que ve un visitante ante una receta de solo registrados).
@@ -526,6 +530,7 @@ recetario/
 │  │  ├─ sitemap.ts                  # dinámico, SIEMPRE con rol "publico"
 │  │  ├─ robots.ts
 │  │  ├─ (public)/
+│  │  │  ├─ layout.tsx               # añade el pie a las páginas públicas
 │  │  │  ├─ page.tsx                 # portada: cubierta, buscador (?q, ?categoria)
 │  │  │  └─ recetas/[slug]/page.tsx  # ficha con escalador de raciones
 │  │  ├─ (auth)/
@@ -569,6 +574,7 @@ recetario/
 │     ├─ corazon-guardar.tsx         # el corazón de guardar
 │     ├─ lista-guardadas.tsx         # la lista de /cuenta, con quitar
 │     ├─ persona-cuenta.tsx          # la figura de persona → /cuenta
+│     ├─ pie-de-pagina.tsx           # pie mínimo de las páginas públicas
 │     ├─ cabecera-panel.tsx
 │     ├─ ingredientes-escalables.tsx # escalador de raciones + checklist
 │     ├─ modo-cocina.tsx             # «Cocinar paso a paso»

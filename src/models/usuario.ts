@@ -2,24 +2,12 @@ import { z } from "zod";
 import type { ObjectId } from "mongodb";
 
 /**
- * Roles y forma del usuario.
+ * Roles y forma del usuario. Las colecciones de auth las crea y migra el
+ * adaptador de Better Auth; aqui solo vive el vocabulario de roles del dominio.
  *
- * Better Auth es el dueno de las colecciones `user`, `session`, `account` y
- * `verification`: las crea y las migra el propio adaptador de MongoDB, aqui no
- * se declaran esquemas de escritura para ellas. Lo que si vive aqui es el
- * vocabulario de roles del dominio, que es nuestro.
- *
- * Distincion importante:
- *
- *   - `publico` NO es un rol almacenado. Es la ausencia de sesion. Nadie tiene
- *     `role: "publico"` en la base de datos.
- *   - En `user.role` (campo que anade el plugin `admin` de Better Auth) solo se
- *     guarda `admin` o `registrado`.
- *   - El plugin `admin` pondria `"user"` por defecto en los usuarios nuevos; en
- *     src/lib/auth.ts se le configura `defaultRole: ROL_POR_DEFECTO` para que
- *     no lo haga. `rolDeSesion` trata igualmente cualquier valor desconocido
- *     con sesion valida como `registrado`, por si algun documento viejo o
- *     tocado a mano lo trae.
+ *   - `publico` NO es un rol almacenado: es la ausencia de sesion.
+ *   - En `user.role` solo se guarda `admin` o `registrado`.
+ *   - Cualquier valor desconocido con sesion valida cuenta como `registrado`.
  */
 
 /** Rol efectivo en tiempo de ejecucion. Es lo que consume `filtroVisibilidad`. */
@@ -34,22 +22,12 @@ export type RolAlmacenado = z.infer<typeof rolAlmacenadoSchema>;
 export const ROL_POR_DEFECTO: RolAlmacenado = "registrado";
 
 /**
- * Traduce lo que hay en la sesion al rol efectivo.
+ * Traduce lo que hay en la sesion al rol efectivo: sin valor -> `publico`,
+ * `"admin"` -> `admin`, cualquier otra cosa -> `registrado`.
  *
- * Sin sesion -> `publico`. Con sesion y `role: "admin"` -> `admin`. Con sesion y
- * cualquier otra cosa (incluido el `"user"` que pone Better Auth por defecto)
- * -> `registrado`.
- *
- * Esta funcion recibe el rol, no la sesion, asi que NO distingue "no hay
- * sesion" de "hay sesion pero el documento de usuario no tiene campo `role`".
- * Los dos casos llegan aqui como `null` o `undefined` y los dos devuelven
- * `publico`.
- *
- * Decision de la fase 3: se queda asi. Todas las altas pasan por
- * `auth.api.createUser` (scripts/crear-usuario.ts), que siempre escribe `role`,
- * y el plugin lleva `defaultRole: ROL_POR_DEFECTO` por si acaso; el documento
- * sin campo `role` solo puede salir de tocar la base a mano. Y si sale, falla
- * cerrado: ese usuario ve de menos, nunca de mas.
+ * Recibe el rol, no la sesion, asi que un usuario con sesion pero sin campo
+ * `role` (solo posible tocando la base a mano) cae en `publico`: falla cerrado,
+ * ve de menos, nunca de mas.
  */
 export function rolDeSesion(rolGuardado: string | null | undefined): Rol {
   if (rolGuardado === undefined || rolGuardado === null) return "publico";

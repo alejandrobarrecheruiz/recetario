@@ -1,24 +1,25 @@
 import Link from "next/link";
-import type { Filter } from "mongodb";
+import { ObjectId, type Filter } from "mongodb";
 import { obtenerColecciones } from "@/lib/mongo";
 import { conVisibilidad } from "@/lib/visibilidad";
-import { rolActual } from "@/lib/sesion";
+import { rolActual, sesionActual } from "@/lib/sesion";
 import { duracion, urlConAncho } from "@/lib/formato";
 import type { RecetaDoc } from "@/models/receta";
 import type { ImagenDoc } from "@/models/imagen";
+import { CorazonGuardar } from "@/components/corazon-guardar";
 import { Revelado } from "@/components/revelado";
 import { Marquesina } from "@/components/marquesina";
 import { CapaParallax } from "@/components/parallax";
+import { Logo } from "@/components/logo";
 
-// La portada del rediseño «Mi libro de recetas» (fase 10): cubierta a sangre
+// La portada de «Mi libro de recetas»: cubierta a sangre
 // con el rótulo en Pinyon Script, las dos entradas grandes, la marquesina, la
 // rejilla de recetas con filtros por categoría y la nota «Quién cocina aquí».
 // El rol se resuelve EN EL SERVIDOR y toda consulta pasa por conVisibilidad:
 // nada de filtrar en el JSX.
 
-// La imagen fija de la cubierta vive en /public, ya convertida a JPEG (los
-// PNG originales, con las opciones descartadas, quedan en el historial de
-// git). Portada-V.jpg es la vertical, para pantallas estrechas.
+// La imagen fija de la cubierta vive en /public; Portada-V.jpg es la
+// vertical, para pantallas estrechas.
 const imagenDeCubierta = "/Portada.jpg";
 const imagenDeCubiertaVertical = "/Portada-V.jpg";
 
@@ -34,26 +35,6 @@ function ImagenDeCubierta() {
 
 function escaparRegex(texto: string): string {
   return texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-/** El logo de la casa (el gato y la mariquita cocineros), recortado en
- * círculo para que el papel del PNG no se note sobre la barra. */
-function Logo({ enlazado = false }: { enlazado?: boolean }) {
-  const imagen = (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src="/Logo.png"
-      alt="Mi libro de recetas"
-      className="h-16 w-16 rounded-full object-cover"
-    />
-  );
-  return enlazado ? (
-    <Link href="/" className="shrink-0">
-      {imagen}
-    </Link>
-  ) : (
-    imagen
-  );
 }
 
 /**
@@ -76,15 +57,19 @@ function Marca({ enlazada = false }: { enlazada?: boolean }) {
 }
 
 /**
- * La navegación de la portada. En pantallas estrechas las palabras se cambian
- * por iconos (toques de 44 px).
+ * La cabecera con sentido: «Recetas» y la figura de persona, que es la
+ * CUENTA — lleva siempre al panel de /login (entrar, crear cuenta o, con
+ * sesión, ver la cuenta y salir). La figura se ve igual en grande y en el
+ * móvil; «Recetas» cambia la palabra por su icono en pantallas estrechas.
  */
 function Navegacion() {
-  const claseEnlace =
-    "flex h-11 items-center justify-center rounded-full sm:h-auto sm:px-3.5 sm:py-2";
   return (
     <nav className="flex items-center gap-2 font-[family-name:var(--font-dm-mono)] text-xs uppercase tracking-[0.14em]">
-      <Link href="/#recetas" aria-label="Recetas" className={`${claseEnlace} w-11 sm:w-auto`}>
+      <Link
+        href="/#recetas"
+        aria-label="Recetas"
+        className="flex h-11 w-11 items-center justify-center rounded-full sm:h-auto sm:w-auto sm:px-3.5 sm:py-2"
+      >
         <svg
           width="20"
           height="20"
@@ -103,25 +88,23 @@ function Navegacion() {
         <span className="hidden sm:inline">Recetas</span>
       </Link>
       <Link
-        href="/#nota"
-        aria-label="Quién cocina"
-        className={`${claseEnlace} w-11 sm:w-auto`}
+        href="/login"
+        aria-label="Tu cuenta"
+        className="flex h-11 w-11 items-center justify-center rounded-full"
       >
         <svg
-          width="20"
-          height="20"
+          width="22"
+          height="22"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.6"
           strokeLinecap="round"
-          className="sm:hidden"
           aria-hidden="true"
         >
           <circle cx="12" cy="8" r="3.5" />
           <path d="M5 20c1.5-4 4-6 7-6s5.5 2 7 6" />
         </svg>
-        <span className="hidden sm:inline">Quién cocina</span>
       </Link>
     </nav>
   );
@@ -169,50 +152,109 @@ function TarjetaReceta({
   receta,
   foto,
   numero,
+  guardada,
+  haySesion,
+  volverA,
 }: {
   receta: RecetaDoc;
   foto: ImagenDoc | undefined;
   numero: string;
+  guardada: boolean;
+  haySesion: boolean;
+  volverA: string;
 }) {
   return (
-    <Link
-      href={`/recetas/${receta.slug}`}
-      className="group relative block aspect-[4/5] overflow-hidden bg-raya-clara text-tinta"
-    >
-      {foto ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={urlConAncho(foto.url, 640)}
-          alt={foto.alt}
-          loading="lazy"
-          className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1100ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.07]"
+    <div className="relative">
+      {/* El corazon es hermano del enlace, no hijo: un boton dentro de un
+          enlace navegaria al tocarlo. */}
+      <div className="absolute right-2 top-2 z-10">
+        <CorazonGuardar
+          recetaId={receta._id.toHexString()}
+          guardada={guardada}
+          haySesion={haySesion}
+          volverA={volverA}
+          conFondo
         />
-      ) : (
-        <div className="rayas-finas absolute inset-0 transition-transform duration-[1100ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.07]" />
-      )}
-      <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(222,230,233,0.96)_6%,rgba(222,230,233,0.7)_34%,rgba(222,230,233,0.04)_70%)]" />
-      <div className="absolute left-5 top-4.5 flex items-center gap-2 font-[family-name:var(--font-dm-mono)] text-[11px] tracking-[0.14em] text-tinta/50">
-        <span>{numero}</span>
-        {receta.estado === "borrador" && (
-          <span className="rounded-full border border-tinta/30 px-2 py-0.5 text-[9px] uppercase tracking-[0.14em]">
-            borrador
-          </span>
-        )}
       </div>
-      <div className="absolute inset-x-5 bottom-5.5">
-        <div className="mb-2.5 font-[family-name:var(--font-dm-mono)] text-[10.5px] uppercase tracking-[0.18em] text-acento">
-          {receta.categorias[0] ?? "receta"} · {duracion(receta.tiempo.total)}
+      <Link
+        href={`/recetas/${receta.slug}`}
+        className="group relative block aspect-[4/5] overflow-hidden bg-raya-clara text-tinta"
+      >
+        {foto ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={urlConAncho(foto.url, 640)}
+            alt={foto.alt}
+            loading="lazy"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1100ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.07]"
+          />
+        ) : (
+          <div className="rayas-finas absolute inset-0 transition-transform duration-[1100ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.07]" />
+        )}
+        <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(222,230,233,0.96)_6%,rgba(222,230,233,0.7)_34%,rgba(222,230,233,0.04)_70%)]" />
+        <div className="absolute left-5 top-4.5 flex items-center gap-2 font-[family-name:var(--font-dm-mono)] text-[11px] tracking-[0.14em] text-tinta/50">
+          <span>{numero}</span>
+          {receta.estado === "borrador" && (
+            <span className="rounded-full border border-tinta/30 px-2 py-0.5 text-[9px] uppercase tracking-[0.14em]">
+              borrador
+            </span>
+          )}
         </div>
-        <div className="font-[family-name:var(--font-bricolage)] text-[29px] font-semibold leading-[1.02] tracking-[-0.032em]">
-          {receta.titulo}
-        </div>
-        {receta.resumen !== "" && (
-          <div className="mt-2 line-clamp-2 text-[14.5px] leading-[1.45] text-tinta/65">
-            {receta.resumen}
+        <div className="absolute inset-x-5 bottom-5.5">
+          <div className="mb-2.5 font-[family-name:var(--font-dm-mono)] text-[10.5px] uppercase tracking-[0.18em] text-acento">
+            {receta.categorias[0] ?? "receta"} · {duracion(receta.tiempo.total)}
           </div>
-        )}
+          <div className="font-[family-name:var(--font-bricolage)] text-[29px] font-semibold leading-[1.02] tracking-[-0.032em]">
+            {receta.titulo}
+          </div>
+          {receta.resumen !== "" && (
+            <div className="mt-2 line-clamp-2 text-[14.5px] leading-[1.45] text-tinta/65">
+              {receta.resumen}
+            </div>
+          )}
+        </div>
+      </Link>
+    </div>
+  );
+}
+
+/** «Quién cocina aquí»: vive en la portada completa Y en el blog recién
+ * nacido — la presentación no depende de que haya recetas. */
+function SeccionQuien() {
+  return (
+    <section
+      id="nota"
+      className="mx-auto w-full max-w-[1440px] scroll-mt-6 px-[clamp(20px,5vw,48px)] pb-[clamp(72px,10vw,130px)] pt-[clamp(64px,9vw,118px)]"
+    >
+      <div className="flex flex-wrap items-center gap-[clamp(28px,4vw,60px)]">
+        <Revelado orden={1} className="relative aspect-square min-w-0 flex-1 basis-[340px]">
+          <div className="rayas absolute inset-0" />
+          <div className="absolute inset-x-0 bottom-0 bg-papel/90 p-6 font-[family-name:var(--font-bricolage)] text-xl font-semibold leading-[1.25] tracking-[-0.025em] backdrop-blur-lg">
+            Cocinar para alguien es la forma más lenta de decir algo.
+          </div>
+        </Revelado>
+        <Revelado orden={2} className="min-w-0 flex-1 basis-[380px]">
+          <div className="mb-5.5 font-[family-name:var(--font-dm-mono)] text-[11.5px] uppercase tracking-[0.2em] text-acento">
+            Quién cocina aquí
+          </div>
+          <p className="font-[family-name:var(--font-bricolage)] text-[clamp(22px,2.4vw,33px)] leading-[1.3] tracking-[-0.03em] [text-wrap:pretty]">
+            Esto no es una revista. Es un cuaderno: subo una receta cuando la hago, con la
+            foto que salga y las cantidades que uso de verdad. Si algo sale mal, también lo
+            cuento.
+          </p>
+          <div className="relative mt-7 aspect-video overflow-hidden bg-raya-clara">
+            <div className="rayas-finas deriva absolute -inset-[6%]" />
+            <div className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-tinta/90 px-3 py-1.5 font-[family-name:var(--font-dm-mono)] text-[9.5px] uppercase tracking-[0.18em] text-papel">
+              <span className="parpadea h-1.5 w-1.5 rounded-full bg-acento" />
+              gif · bucle
+            </div>
+          </div>
+          <p className="mt-6.5 max-w-[48ch] text-[17px] leading-[1.65] text-tinta/65">
+            Empecé esto por una persona concreta. Ella ya sabe cuál es la receta 01.
+          </p>
+        </Revelado>
       </div>
-    </Link>
+    </section>
   );
 }
 
@@ -234,7 +276,25 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
   const buscando = q !== "" || categoria !== "";
 
   const rol = await rolActual();
-  const { recetas, imagenes } = await obtenerColecciones();
+  const sesion = await sesionActual();
+  const { recetas, imagenes, guardadas } = await obtenerColecciones();
+
+  // Ids de las recetas guardadas de la sesion, para pintar cada corazon.
+  const guardadasDelUsuario = sesion
+    ? new Set(
+        (
+          await guardadas
+            .find({ usuarioId: new ObjectId(sesion.user.id) }, { projection: { recetaId: 1 } })
+            .toArray()
+        ).map((doc) => doc.recetaId.toHexString()),
+      )
+    : new Set<string>();
+
+  // A donde vuelve quien toca un corazon sin sesion, despues de entrar.
+  const parametrosDeVuelta = new URLSearchParams();
+  if (q !== "") parametrosDeVuelta.set("q", q);
+  if (categoria !== "") parametrosDeVuelta.set("categoria", categoria);
+  const rutaActual = buscando ? `/?${parametrosDeVuelta.toString()}` : "/";
 
   let filtroPropio: Filter<RecetaDoc> = {};
   if (q !== "") {
@@ -287,6 +347,9 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
             receta={receta}
             foto={fotoDe(receta)}
             numero={numeroDe.get(receta.slug) ?? "—"}
+            guardada={guardadasDelUsuario.has(receta._id.toHexString())}
+            haySesion={sesion !== null}
+            volverA={rutaActual}
           />
         </Revelado>
       ))}
@@ -299,7 +362,7 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
       <main className="flex min-h-svh flex-col">
         <header className="sticky top-0 z-50 flex h-20 items-center justify-between gap-3 border-b border-tinta/15 bg-papel px-[clamp(16px,5vw,48px)]">
           <span className="flex items-center gap-3">
-            <Logo enlazado />
+            <Logo />
             <Marca enlazada />
           </span>
           <Navegacion />
@@ -333,24 +396,37 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
     );
   }
 
-  // --- El blog recién nacido, sin nada publicado. ---
+  // --- El blog recién nacido, sin nada publicado. La cabecera y «Quién
+  // cocina aquí» están igualmente: la casa se presenta aunque la primera
+  // receta siga al fuego. ---
   if (docs.length === 0) {
     return (
-      <main className="relative flex min-h-svh flex-col overflow-hidden">
-        <div className="absolute inset-0">
-          <ImagenDeCubierta />
-        </div>
-        <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(222,230,233,0.94)_0%,rgba(222,230,233,0.6)_22%,rgba(222,230,233,0)_48%)]" />
-        <div className="relative flex flex-1 flex-col items-center justify-center gap-3.5 px-8 text-center">
-          <h1 className="font-[family-name:var(--font-pinyon)] text-[clamp(40px,10vw,110px)] leading-[0.84] tracking-[0.01em] [text-shadow:0_0_2px_rgba(222,230,233,1),0_1px_4px_rgba(222,230,233,1),0_2px_12px_rgba(222,230,233,1),0_0_28px_rgba(222,230,233,0.95),0_0_60px_rgba(222,230,233,0.85)]">
-            Mi libro de recetas
-          </h1>
-          <Firma />
-          <p className="mt-10 font-[family-name:var(--font-bricolage)] text-[26px] font-semibold tracking-[-0.03em]">
-            La primera está al fuego.
-          </p>
-          <p className="text-[16px] text-tinta/65">A partir de aquí, una receta cada semana.</p>
-        </div>
+      <main className="flex min-h-svh flex-col overflow-x-clip">
+        <header className="sticky top-0 z-50 flex h-20 items-center justify-between gap-3 border-b border-tinta/15 bg-papel px-[clamp(16px,5vw,48px)]">
+          <Logo />
+          <Navegacion />
+        </header>
+        <section className="relative flex min-h-[calc(100svh-5rem)] flex-col overflow-clip">
+          <div className="absolute inset-0">
+            <ImagenDeCubierta />
+          </div>
+          <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(222,230,233,0.94)_0%,rgba(222,230,233,0.6)_22%,rgba(222,230,233,0)_48%)]" />
+          <div className="relative flex flex-1 flex-col items-center justify-center px-[clamp(20px,5vw,48px)] text-center">
+            <div className="flex flex-col items-center gap-3.5 bg-papel/30 px-[clamp(24px,6vw,64px)] py-[clamp(18px,3vh,36px)] backdrop-blur-md">
+              <h1 className="font-[family-name:var(--font-pinyon)] text-[clamp(40px,10vw,110px)] leading-[0.84] tracking-[0.01em] [text-shadow:0_0_2px_rgba(222,230,233,1),0_1px_4px_rgba(222,230,233,1),0_2px_12px_rgba(222,230,233,1),0_0_28px_rgba(222,230,233,0.95),0_0_60px_rgba(222,230,233,0.85)]">
+                Mi libro de recetas
+              </h1>
+              <Firma />
+              <p className="mt-8 font-[family-name:var(--font-bricolage)] text-[26px] font-semibold tracking-[-0.03em]">
+                La primera está al fuego.
+              </p>
+              <p className="text-[16px] text-tinta/65">
+                A partir de aquí, una receta cada semana.
+              </p>
+            </div>
+          </div>
+        </section>
+        <SeccionQuien />
       </main>
     );
   }
@@ -451,39 +527,7 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
         {rejilla}
       </section>
 
-      <section
-        id="nota"
-        className="mx-auto w-full max-w-[1440px] scroll-mt-6 px-[clamp(20px,5vw,48px)] pb-[clamp(72px,10vw,130px)] pt-[clamp(64px,9vw,118px)]"
-      >
-        <div className="flex flex-wrap items-center gap-[clamp(28px,4vw,60px)]">
-          <Revelado orden={1} className="relative aspect-square min-w-0 flex-1 basis-[340px]">
-            <div className="rayas absolute inset-0" />
-            <div className="absolute inset-x-0 bottom-0 bg-papel/90 p-6 font-[family-name:var(--font-bricolage)] text-xl font-semibold leading-[1.25] tracking-[-0.025em] backdrop-blur-lg">
-              Cocinar para alguien es la forma más lenta de decir algo.
-            </div>
-          </Revelado>
-          <Revelado orden={2} className="min-w-0 flex-1 basis-[380px]">
-            <div className="mb-5.5 font-[family-name:var(--font-dm-mono)] text-[11.5px] uppercase tracking-[0.2em] text-acento">
-              Quién cocina aquí
-            </div>
-            <p className="font-[family-name:var(--font-bricolage)] text-[clamp(22px,2.4vw,33px)] leading-[1.3] tracking-[-0.03em] [text-wrap:pretty]">
-              Esto no es una revista. Es un cuaderno: subo una receta cuando la hago, con la
-              foto que salga y las cantidades que uso de verdad. Si algo sale mal, también lo
-              cuento.
-            </p>
-            <div className="relative mt-7 aspect-video overflow-hidden bg-raya-clara">
-              <div className="rayas-finas deriva absolute -inset-[6%]" />
-              <div className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-tinta/90 px-3 py-1.5 font-[family-name:var(--font-dm-mono)] text-[9.5px] uppercase tracking-[0.18em] text-papel">
-                <span className="parpadea h-1.5 w-1.5 rounded-full bg-acento" />
-                gif · bucle
-              </div>
-            </div>
-            <p className="mt-6.5 max-w-[48ch] text-[17px] leading-[1.65] text-tinta/65">
-              Empecé esto por una persona concreta. Ella ya sabe cuál es la receta 01.
-            </p>
-          </Revelado>
-        </div>
-      </section>
+      <SeccionQuien />
     </main>
   );
 }

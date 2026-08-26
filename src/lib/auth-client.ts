@@ -4,22 +4,12 @@ import { createAuthClient } from "better-auth/react";
 import { adminClient } from "better-auth/client/plugins";
 
 /**
- * Cliente de Better Auth para el navegador. Lo consumen el formulario de login
- * y el panel.
- *
- * Sin `baseURL`: el cliente y /api/auth/* viven en el mismo origen, asi que no
- * hace falta ninguna variable NEXT_PUBLIC_ (y BETTER_AUTH_SECRET no debe llegar
- * NUNCA al navegador).
- *
- * No se exporta `signUp`: el registro esta cerrado en el servidor
- * (`disableSignUp`) y ofrecerlo aqui solo invitaria a usarlo.
- *
- * RECORDATORIO: lo que se vea o no se vea en el panel segun el rol es cosmetica.
- * La proteccion real esta en el servidor, con `filtroVisibilidad`. Ver
- * src/lib/visibilidad.ts.
+ * Cliente de Better Auth para el navegador. Sin `baseURL`: el cliente y
+ * /api/auth/* viven en el mismo origen, asi que no hace falta ninguna variable
+ * NEXT_PUBLIC_ (y BETTER_AUTH_SECRET no debe llegar NUNCA al navegador).
  */
 export const authClient = createAuthClient({
   plugins: [adminClient()],
 });
 
-export const { signIn, signOut, useSession } = authClient;
+export const { signIn, signUp, signOut, useSession } = authClient;

@@ -7,7 +7,7 @@ import {
 } from "next/font/google";
 import "./globals.css";
 
-// Las cuatro familias del sistema (fase 10): Bricolage Grotesque para display,
+// Las cuatro familias del sistema: Bricolage Grotesque para display,
 // Instrument Sans para el cuerpo, DM Mono para rótulos y datos, y Pinyon
 // Script solo para el nombre del blog. Variables CSS que globals.css mapea a
 // font-display/font-cuerpo/font-rotulo/font-script.
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  // Solo estilo claro (fase 10): un unico themeColor, sin variante oscura.
+  // Solo estilo claro: un unico themeColor, sin variante oscura.
   themeColor: "#dee6e9",
 };
 

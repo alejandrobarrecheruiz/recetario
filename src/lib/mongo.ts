@@ -1,28 +1,21 @@
 import { MongoClient, type Collection, type Db } from "mongodb";
 import type { RecetaDoc } from "@/models/receta";
 import type { ImagenDoc } from "@/models/imagen";
+import type { GuardadaDoc } from "@/models/guardada";
 
 /**
- * Cliente de MongoDB cacheado en una variable global.
+ * Cliente de MongoDB cacheado en `globalThis`: en serverless el modulo se puede
+ * reevaluar y sin cache cada invocacion abriria una conexion nueva contra el
+ * limite del cluster gratuito. Se cachea la PROMESA, no el cliente conectado,
+ * para que dos peticiones simultaneas esperen el mismo `connect()`.
  *
- * POR QUE LA GLOBAL: en Vercel cada invocacion en caliente reutiliza el mismo
- * proceso de Node, pero el modulo se puede reevaluar. Si el cliente se crea en
- * el ambito del modulo sin cachear, cada invocacion abre una conexion nueva y el
- * cluster gratuito de Atlas (M0, 500 conexiones) se agota en cuanto hay algo de
- * trafico o un par de despliegues seguidos. Guardarlo en `globalThis` hace que
- * sobreviva entre invocaciones y que el pool se reutilice. Es el fallo clasico
- * de Mongo + serverless.
- *
- * Se cachea la PROMESA, no el cliente ya conectado: si llegan dos peticiones a
- * la vez antes de que termine el primer `connect()`, ambas esperan la misma
- * promesa en lugar de abrir dos conexiones.
- *
- * Este modulo es solo de servidor. No importarlo desde componentes de cliente.
+ * Solo de servidor. No importarlo desde componentes de cliente.
  */
 
 const COLECCIONES = {
   recetas: "recipes",
   imagenes: "images",
+  guardadas: "saves",
 } as const;
 
 const globalConCache = globalThis as typeof globalThis & {
@@ -74,11 +67,13 @@ export async function obtenerDb(): Promise<Db> {
 export async function obtenerColecciones(): Promise<{
   recetas: Collection<RecetaDoc>;
   imagenes: Collection<ImagenDoc>;
+  guardadas: Collection<GuardadaDoc>;
 }> {
   const db = await obtenerDb();
   return {
     recetas: db.collection<RecetaDoc>(COLECCIONES.recetas),
     imagenes: db.collection<ImagenDoc>(COLECCIONES.imagenes),
+    guardadas: db.collection<GuardadaDoc>(COLECCIONES.guardadas),
   };
 }
 
@@ -101,13 +96,9 @@ export function esBaseDeProduccion(): boolean {
   return process.env.MONGODB_DB === BASE_PRODUCCION;
 }
 
-/**
- * Crea los indices. Es idempotente: `createIndex` no hace nada si el indice ya
- * existe con la misma definicion, asi que se puede llamar tantas veces como
- * haga falta. Se ejecuta con `npm run indices`.
- */
+/** Crea los indices. Idempotente; se ejecuta con `npm run indices`. */
 export async function crearIndices(): Promise<string[]> {
-  const { recetas, imagenes } = await obtenerColecciones();
+  const { recetas, imagenes, guardadas } = await obtenerColecciones();
 
   const creados = await Promise.all([
     // El slug es la URL: tiene que ser unico.
@@ -119,6 +110,11 @@ export async function crearIndices(): Promise<string[]> {
     ),
     // Para resolver las imagenes de una receta de una sola pasada.
     imagenes.createIndex({ recetaId: 1 }, { name: "recetaId" }),
+    // Guardar dos veces no duplica; cubre tambien "las guardadas de este usuario".
+    guardadas.createIndex(
+      { usuarioId: 1, recetaId: 1 },
+      { unique: true, name: "usuario_receta_unico" },
+    ),
   ]);
 
   return creados;

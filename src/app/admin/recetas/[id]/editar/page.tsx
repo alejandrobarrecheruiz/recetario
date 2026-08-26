@@ -8,7 +8,7 @@ import { rolActual } from "@/lib/sesion";
 import { idSchema } from "@/models/receta";
 import { EditorReceta } from "@/components/editor-receta";
 
-// El editor de una receta (fase 10): se escribe sobre la receta tal como se va
+// El editor de una receta: se escribe sobre la receta tal como se va
 // a ver. La consulta pasa por `conVisibilidad` con el rol de la sesion, como
 // todas: para cualquiera que no sea admin, un borrador es inexistente
 // (notFound), no prohibido. Guardar y borrar van contra /api/recetas/[id], que

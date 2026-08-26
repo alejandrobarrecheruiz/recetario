@@ -2,18 +2,21 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ObjectId } from "mongodb";
 import { obtenerColecciones } from "@/lib/mongo";
 import { conVisibilidad } from "@/lib/visibilidad";
-import { rolActual } from "@/lib/sesion";
+import { rolActual, sesionActual } from "@/lib/sesion";
 import { duracion, fechaDePublicacion, formatearCantidad, urlConAncho } from "@/lib/formato";
 import type { Ingrediente, RecetaDoc } from "@/models/receta";
 import type { ImagenDoc } from "@/models/imagen";
+import { CorazonGuardar } from "@/components/corazon-guardar";
 import { IngredientesEscalables } from "@/components/ingredientes-escalables";
+import { Logo } from "@/components/logo";
 import { ModoCocina } from "@/components/modo-cocina";
 import { Revelado } from "@/components/revelado";
 import { CapaParallax } from "@/components/parallax";
 
-// La ficha del rediseño (fase 10): cubierta con parallax, ingredientes en
+// La ficha: cubierta con parallax, ingredientes en
 // tarjeta pegajosa con checklist y escalador, pasos con rotulillo, nota
 // personal y «Sigue por aquí». La consulta pasa por conVisibilidad con el rol
 // de la sesión: una receta que el visitante no puede ver responde notFound(),
@@ -116,7 +119,15 @@ export default async function PaginaReceta({
 
   const { receta, fotos } = ficha;
   const rol = await rolActual();
-  const { recetas } = await obtenerColecciones();
+  const sesion = await sesionActual();
+  const { recetas, guardadas } = await obtenerColecciones();
+
+  const laTieneGuardada =
+    sesion !== null &&
+    (await guardadas.findOne(
+      { usuarioId: new ObjectId(sesion.user.id), recetaId: receta._id },
+      { projection: { _id: 1 } },
+    )) !== null;
 
   const portada = receta.portadaId ? fotos.get(receta.portadaId.toHexString()) : undefined;
   const pasos = [...receta.pasos].sort((a, b) => a.orden - b.orden);
@@ -137,10 +148,18 @@ export default async function PaginaReceta({
     ]),
   );
 
-  const pasosSerializables = pasos.map((paso) => ({
-    ...paso,
-    imagenId: paso.imagenId === null ? null : paso.imagenId.toHexString(),
-  }));
+  // El modo cocina es un componente de cliente: recibe los pasos ya resueltos
+  // (URL de foto en vez de imagenId) y los ingredientes para tenerlos a mano.
+  const pasosDeCocina = pasos.map((paso) => {
+    const foto = paso.imagenId ? fotos.get(paso.imagenId.toHexString()) : undefined;
+    return {
+      id: paso.id,
+      titulo: paso.titulo,
+      texto: paso.texto,
+      fotoUrl: foto ? urlConAncho(foto.url, 828) : null,
+      fotoAlt: foto?.alt ?? "",
+    };
+  });
 
   return (
     <main className="flex flex-col overflow-x-clip">
@@ -154,16 +173,23 @@ export default async function PaginaReceta({
         />
       )}
 
-      <header className="sticky top-0 z-40 flex items-center justify-between gap-4 border-b border-tinta/15 bg-papel/85 px-[clamp(20px,5vw,48px)] py-[15px] font-[family-name:var(--font-dm-mono)] text-[11.5px] uppercase tracking-[0.16em] backdrop-blur-xl">
-        <Link href="/" className="whitespace-nowrap text-tinta/70">
-          ← Volver
-        </Link>
-        <ModoCocina
-          titulo={receta.titulo}
-          pasos={pasosSerializables}
-          raciones={receta.raciones}
-          minutos={receta.tiempo.total}
-        />
+      <header className="sticky top-0 z-40 flex items-center justify-between gap-4 border-b border-tinta/15 bg-papel/85 px-[clamp(20px,5vw,48px)] py-2.5 font-[family-name:var(--font-dm-mono)] text-[11.5px] uppercase tracking-[0.16em] backdrop-blur-xl">
+        <Logo tamano={40} />
+        <div className="flex items-center gap-1">
+          <CorazonGuardar
+            recetaId={receta._id.toHexString()}
+            guardada={laTieneGuardada}
+            haySesion={sesion !== null}
+            volverA={`/recetas/${receta.slug}`}
+          />
+          <ModoCocina
+            titulo={receta.titulo}
+            pasos={pasosDeCocina}
+            ingredientes={receta.ingredientes}
+            raciones={receta.raciones}
+            minutos={receta.tiempo.total}
+          />
+        </div>
       </header>
 
       <section className="relative flex h-[70svh] min-h-[440px] items-end overflow-hidden">
@@ -210,9 +236,11 @@ export default async function PaginaReceta({
       </section>
 
       <section className="mx-auto flex w-full max-w-[1440px] flex-wrap items-start gap-[clamp(32px,4vw,76px)] px-[clamp(20px,5vw,48px)] pb-[clamp(72px,9vw,116px)] pt-[clamp(44px,6vw,68px)]">
+        {/* Pegajosa SOLO con dos columnas: en columna única (móvil) una tarjeta
+            sticky se desliza sobre los pasos y los tapa con su fondo blanco. */}
         <Revelado
           orden={1}
-          className="sticky top-[92px] min-w-0 max-w-[420px] flex-1 basis-[300px] border border-tinta/15 bg-superficie p-6.5"
+          className="min-w-0 max-w-[420px] flex-1 basis-[300px] border border-tinta/15 bg-superficie p-6.5 lg:sticky lg:top-[92px]"
         >
           <IngredientesEscalables
             ingredientes={receta.ingredientes}

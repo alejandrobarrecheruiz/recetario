@@ -25,13 +25,24 @@ export function Revelado({
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const retardo = orden * 90;
-    elemento.style.opacity = "0";
-    elemento.style.transform = "translateY(26px)";
-    elemento.style.transition = `opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1) ${retardo}ms, transform 1.1s cubic-bezier(0.16, 1, 0.3, 1) ${retardo}ms`;
-
+    // El primer aviso del observer dice si el bloque YA esta en el viewport
+    // (carga con scroll restaurado, anclas): entonces no se toca nada. Solo lo
+    // que queda fuera se esconde, y entra animado al llegar a el.
+    let primerAviso = true;
     const observador = new IntersectionObserver(
       (entradas) => {
         for (const entrada of entradas) {
+          if (primerAviso) {
+            primerAviso = false;
+            if (entrada.isIntersecting) {
+              observador.disconnect();
+              return;
+            }
+            elemento.style.opacity = "0";
+            elemento.style.transform = "translateY(26px)";
+            elemento.style.transition = `opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1) ${retardo}ms, transform 1.1s cubic-bezier(0.16, 1, 0.3, 1) ${retardo}ms`;
+            continue;
+          }
           if (entrada.isIntersecting) {
             elemento.style.opacity = "1";
             elemento.style.transform = "none";

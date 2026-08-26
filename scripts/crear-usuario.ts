@@ -1,9 +1,9 @@
 /**
- * Da de alta un usuario. Es la unica via de alta: el registro publico esta
- * cerrado (`disableSignUp` en src/lib/auth.ts).
+ * Da de alta un usuario. Es la UNICA via que da el rol admin: el registro
+ * publico de /login existe, pero siempre asigna "registrado".
  *
  *   npm run crear-usuario                  # rol "registrado"
- *   npm run crear-usuario -- --rol admin   # el admin de la fase 3
+ *   npm run crear-usuario -- --rol admin   # el admin
  *
  * Usa `auth.api.createUser` del plugin `admin` de Better Auth, que llamado en
  * servidor y sin cabeceras no exige sesion (verificado en 1.7.1: solo lanza

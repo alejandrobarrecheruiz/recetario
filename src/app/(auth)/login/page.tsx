@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn, signUp, signOut, useSession } from "@/lib/auth-client";
@@ -48,6 +48,15 @@ function destinoTrasEntrar(): string {
   return "/";
 }
 
+/** Lo que devuelve GET /api/guardadas para cada receta guardada. */
+type RecetaGuardada = {
+  recetaId: string;
+  slug: string;
+  titulo: string;
+  categoria: string;
+  tiempo: string;
+};
+
 export default function PaginaCuenta() {
   const router = useRouter();
   const { data: sesion, isPending } = useSession();
@@ -58,6 +67,34 @@ export default function PaginaCuenta() {
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+
+  // Con sesión, la cuenta enseña las recetas guardadas (null = cargando).
+  const [recetasGuardadas, setRecetasGuardadas] = useState<RecetaGuardada[] | null>(null);
+  const usuarioId = sesion?.user.id;
+  useEffect(() => {
+    if (!usuarioId) return;
+    let cancelado = false;
+    fetch("/api/guardadas")
+      .then((respuesta) => (respuesta.ok ? respuesta.json() : []))
+      .then((lista: RecetaGuardada[]) => {
+        if (!cancelado) setRecetasGuardadas(lista);
+      })
+      .catch(() => {
+        if (!cancelado) setRecetasGuardadas([]);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [usuarioId]);
+
+  async function quitarGuardada(recetaId: string) {
+    const respuesta = await fetch(`/api/guardadas/${recetaId}`, { method: "DELETE" });
+    if (respuesta.ok) {
+      setRecetasGuardadas((lista) =>
+        lista === null ? null : lista.filter((receta) => receta.recetaId !== recetaId),
+      );
+    }
+  }
 
   async function enviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -129,6 +166,55 @@ export default function PaginaCuenta() {
               {rol}
             </span>
           </div>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <h2 className="mb-2 font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.24em] text-acento">
+            Tus recetas guardadas
+          </h2>
+          {recetasGuardadas === null ? (
+            <p className="text-sm text-tinta/50">Un momento...</p>
+          ) : recetasGuardadas.length === 0 ? (
+            <p className="max-w-[36ch] text-[14px] leading-relaxed text-tinta/55">
+              Aún no has guardado ninguna. El corazón que hay junto a cada receta
+              las trae aquí.
+            </p>
+          ) : (
+            <ul className="flex flex-col">
+              {recetasGuardadas.map((receta) => (
+                <li
+                  key={receta.recetaId}
+                  className="flex items-center gap-3 border-t border-tinta/10 py-2"
+                >
+                  <Link href={`/recetas/${receta.slug}`} className="min-w-0 flex-1 py-1">
+                    <span className="block truncate text-[15px]">{receta.titulo}</span>
+                    <span className="block font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.16em] text-tinta/45">
+                      {receta.categoria} · {receta.tiempo}
+                    </span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => quitarGuardada(receta.recetaId)}
+                    aria-label={`Quitar «${receta.titulo}» de guardadas`}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-acento hover:text-tinta"
+                  >
+                    <svg
+                      width="19"
+                      height="19"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 20.5C7.2 16.7 3.5 13.5 3.5 9.8 3.5 7.1 5.5 5 8 5c1.6 0 3.1.9 4 2.2C12.9 5.9 14.4 5 16 5c2.5 0 4.5 2.1 4.5 4.8 0 3.7-3.7 6.9-8.5 10.7Z" />
+                    </svg>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-3">

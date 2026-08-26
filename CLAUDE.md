@@ -85,8 +85,8 @@ Cuando algo «no va» y no se sabe si es el código o el entorno, lo primero es
 
 ## 4. Modelo de datos
 
-Colecciones: `recipes`, `images`, y las de Better Auth (`user`, `session`,
-`account`, `verification`).
+Colecciones: `recipes`, `images`, `saves`, y las de Better Auth (`user`,
+`session`, `account`, `verification`).
 
 Los **nombres de colección van en inglés** y los **campos en español**
 (inconsistencia heredada; los índices ya están definidos así).
@@ -154,6 +154,15 @@ permite reutilizar imágenes entre recetas y detectar huérfanas. **`fileId` es
 obligatorio**: sin él, al borrar una receta la foto quedaría en ImageKit para
 siempre y sin forma de localizarla.
 
+### `saves`
+
+Una receta guardada por un usuario: `{ _id, usuarioId, recetaId, guardadaEn }`
+(`src/models/guardada.ts`). Documento propio por (usuario, receta) con índice
+único compuesto: guardar dos veces no duplica y quitar es borrar un documento.
+Guarda el **id** de la receta, nunca una copia: el listado de guardadas filtra
+con el rol de la sesión como cualquier otra consulta, así que una guardada que
+deja de ser visible simplemente no aparece.
+
 ### Colecciones de Better Auth
 
 Las crea y migra el adaptador; **no se declaran esquemas**. El plugin `admin`
@@ -181,7 +190,11 @@ Definidos en `crearIndices()` de `src/lib/mongo.ts`, aplicados con
 db.recipes.createIndex({ slug: 1 }, { unique: true })
 db.recipes.createIndex({ estado: 1, visibilidad: 1, publicadaEn: -1 })  // la consulta de la portada
 db.images.createIndex({ recetaId: 1 })
+db.saves.createIndex({ usuarioId: 1, recetaId: 1 }, { unique: true })
 ```
+
+Al añadir un índice, recordar prod: `npm run indices -- --permitir-prod` con
+`MONGODB_DB=recetas_prod`, antes de mergear a `main`.
 
 ---
 
@@ -397,8 +410,8 @@ y los dos párrafos personales. **Sin captura de correo**: el campo «Avísame»
 del lienzo se omitió a sabiendas (regla de la sección 1).
 
 **La ficha**: cabecera pegajosa con el logo (la vuelta universal a la
-portada; no existe ningún «← Volver» en el sitio, a propósito) y el botón
-«Cocinar paso a paso»; cubierta 70svh con parallax y
+portada; no existe ningún «← Volver» en el sitio, a propósito), el corazón de
+guardar y el botón «Cocinar paso a paso»; cubierta 70svh con parallax y
 título en Bricolage gigante; ingredientes en tarjeta blanca pegajosa con
 escalador de raciones Y checklist (cada fila se tacha al tocarla, contador
 «n de m listos», Desmarcar); pasos con número en acento y rotulillo opcional
@@ -420,6 +433,14 @@ y rótulo «Guardado hace Xs»; barra lateral con visibilidad, ficha, categoría
 y etiquetas como chips, y la descripción SEO; fotos con subida directa a
 ImageKit; reordenado por arrastre. El alta (`/admin/recetas/nueva`) pide solo
 el título y salta al editor. Todo valida con el MISMO Zod que la API.
+
+**Las guardadas**: un corazón vacío junto a cada receta (en la cabecera de la
+ficha y sobre cada tarjeta de la rejilla) que se rellena al tocarlo
+(`corazon-guardar.tsx`, estado optimista). Sin sesión no alterna: lleva a
+`/login?volver=` a donde estabas. La lista vive en la vista de cuenta de
+`/login`, con enlace a cada receta y quitar en el sitio. La API
+(`/api/guardadas`) comprueba la sesión por su cuenta y trata una receta no
+visible para el rol como inexistente (404), también al guardarla.
 
 **Movimiento**: entradas en cascada (`Revelado`), parallax (`CapaParallax`) y
 marquesina, siempre respetando `prefers-reduced-motion` y sin esconder nada si
@@ -456,13 +477,9 @@ No darlas por cerradas sin querer.
   plano ya es Markdown válido, renderizarlo como Markdown más adelante no
   exigiría migrar nada.
 - **Dominio propio**: por ahora, el subdominio gratuito de Vercel.
-- **Recetas guardadas** (pedido el 25 de agosto de 2026): la parte de cuentas
-  ya está (la figura de persona lleva al panel de `/login`; registro abierto).
-  Falta que quien tiene cuenta pueda **guardar recetas**: un corazón vacío
-  junto a cada receta que se rellena al tocarlo, y un sitio donde ver las
-  guardadas. Exige colección o campo nuevo en Mongo (por usuario), API con el
-  rol de la sesión y UI. Con ella va la **vista de usuario logueado**: su
-  cuenta con sus recetas guardadas.
+
+(Las **recetas guardadas** — pedidas el 25 de agosto — están hechas: ver la
+sección 4, colección `saves`, y la sección 13, «Las guardadas».)
 
 Y dos que se cerraron el 26 de agosto de 2026, para no reabrirlas:
 
@@ -503,6 +520,8 @@ recetario/
 │  │     ├─ auth/[...all]/route.ts   # handler de Better Auth
 │  │     ├─ recetas/route.ts         # GET listado (por rol), POST alta
 │  │     ├─ recetas/[id]/route.ts    # PUT, DELETE con limpieza de imágenes
+│  │     ├─ guardadas/route.ts       # GET: las guardadas de la sesión
+│  │     ├─ guardadas/[recetaId]/route.ts  # POST guarda, DELETE quita
 │  │     ├─ imagenes/route.ts        # POST metadatos tras subir a ImageKit
 │  │     ├─ imagenes/[id]/route.ts   # DELETE: ImageKit + metadatos + referencias
 │  │     ├─ imagenes/firma/route.ts  # firma de subida (solo admin)
@@ -521,10 +540,12 @@ recetario/
 │  ├─ models/
 │  │  ├─ receta.ts                   # Zod, fuente de verdad
 │  │  ├─ imagen.ts
+│  │  ├─ guardada.ts                 # receta guardada por un usuario
 │  │  └─ usuario.ts
 │  └─ components/
 │     ├─ editor-receta.tsx           # editor del panel: WYSIWYG + autosave
 │     ├─ crear-receta.tsx            # alta mínima
+│     ├─ corazon-guardar.tsx         # el corazón de guardar
 │     ├─ cabecera-panel.tsx
 │     ├─ ingredientes-escalables.tsx # escalador de raciones + checklist
 │     ├─ modo-cocina.tsx             # «Cocinar paso a paso»

@@ -1,11 +1,12 @@
 import Link from "next/link";
-import type { Filter } from "mongodb";
+import { ObjectId, type Filter } from "mongodb";
 import { obtenerColecciones } from "@/lib/mongo";
 import { conVisibilidad } from "@/lib/visibilidad";
-import { rolActual } from "@/lib/sesion";
+import { rolActual, sesionActual } from "@/lib/sesion";
 import { duracion, urlConAncho } from "@/lib/formato";
 import type { RecetaDoc } from "@/models/receta";
 import type { ImagenDoc } from "@/models/imagen";
+import { CorazonGuardar } from "@/components/corazon-guardar";
 import { Revelado } from "@/components/revelado";
 import { Marquesina } from "@/components/marquesina";
 import { CapaParallax } from "@/components/parallax";
@@ -151,50 +152,69 @@ function TarjetaReceta({
   receta,
   foto,
   numero,
+  guardada,
+  haySesion,
+  volverA,
 }: {
   receta: RecetaDoc;
   foto: ImagenDoc | undefined;
   numero: string;
+  guardada: boolean;
+  haySesion: boolean;
+  volverA: string;
 }) {
   return (
-    <Link
-      href={`/recetas/${receta.slug}`}
-      className="group relative block aspect-[4/5] overflow-hidden bg-raya-clara text-tinta"
-    >
-      {foto ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={urlConAncho(foto.url, 640)}
-          alt={foto.alt}
-          loading="lazy"
-          className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1100ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.07]"
+    <div className="relative">
+      {/* El corazon es hermano del enlace, no hijo: un boton dentro de un
+          enlace navegaria al tocarlo. */}
+      <div className="absolute right-2 top-2 z-10">
+        <CorazonGuardar
+          recetaId={receta._id.toHexString()}
+          guardada={guardada}
+          haySesion={haySesion}
+          volverA={volverA}
+          conFondo
         />
-      ) : (
-        <div className="rayas-finas absolute inset-0 transition-transform duration-[1100ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.07]" />
-      )}
-      <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(222,230,233,0.96)_6%,rgba(222,230,233,0.7)_34%,rgba(222,230,233,0.04)_70%)]" />
-      <div className="absolute left-5 top-4.5 flex items-center gap-2 font-[family-name:var(--font-dm-mono)] text-[11px] tracking-[0.14em] text-tinta/50">
-        <span>{numero}</span>
-        {receta.estado === "borrador" && (
-          <span className="rounded-full border border-tinta/30 px-2 py-0.5 text-[9px] uppercase tracking-[0.14em]">
-            borrador
-          </span>
-        )}
       </div>
-      <div className="absolute inset-x-5 bottom-5.5">
-        <div className="mb-2.5 font-[family-name:var(--font-dm-mono)] text-[10.5px] uppercase tracking-[0.18em] text-acento">
-          {receta.categorias[0] ?? "receta"} · {duracion(receta.tiempo.total)}
+      <Link
+        href={`/recetas/${receta.slug}`}
+        className="group relative block aspect-[4/5] overflow-hidden bg-raya-clara text-tinta"
+      >
+        {foto ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={urlConAncho(foto.url, 640)}
+            alt={foto.alt}
+            loading="lazy"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1100ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.07]"
+          />
+        ) : (
+          <div className="rayas-finas absolute inset-0 transition-transform duration-[1100ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.07]" />
+        )}
+        <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(222,230,233,0.96)_6%,rgba(222,230,233,0.7)_34%,rgba(222,230,233,0.04)_70%)]" />
+        <div className="absolute left-5 top-4.5 flex items-center gap-2 font-[family-name:var(--font-dm-mono)] text-[11px] tracking-[0.14em] text-tinta/50">
+          <span>{numero}</span>
+          {receta.estado === "borrador" && (
+            <span className="rounded-full border border-tinta/30 px-2 py-0.5 text-[9px] uppercase tracking-[0.14em]">
+              borrador
+            </span>
+          )}
         </div>
-        <div className="font-[family-name:var(--font-bricolage)] text-[29px] font-semibold leading-[1.02] tracking-[-0.032em]">
-          {receta.titulo}
-        </div>
-        {receta.resumen !== "" && (
-          <div className="mt-2 line-clamp-2 text-[14.5px] leading-[1.45] text-tinta/65">
-            {receta.resumen}
+        <div className="absolute inset-x-5 bottom-5.5">
+          <div className="mb-2.5 font-[family-name:var(--font-dm-mono)] text-[10.5px] uppercase tracking-[0.18em] text-acento">
+            {receta.categorias[0] ?? "receta"} · {duracion(receta.tiempo.total)}
           </div>
-        )}
-      </div>
-    </Link>
+          <div className="font-[family-name:var(--font-bricolage)] text-[29px] font-semibold leading-[1.02] tracking-[-0.032em]">
+            {receta.titulo}
+          </div>
+          {receta.resumen !== "" && (
+            <div className="mt-2 line-clamp-2 text-[14.5px] leading-[1.45] text-tinta/65">
+              {receta.resumen}
+            </div>
+          )}
+        </div>
+      </Link>
+    </div>
   );
 }
 
@@ -256,7 +276,25 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
   const buscando = q !== "" || categoria !== "";
 
   const rol = await rolActual();
-  const { recetas, imagenes } = await obtenerColecciones();
+  const sesion = await sesionActual();
+  const { recetas, imagenes, guardadas } = await obtenerColecciones();
+
+  // Ids de las recetas guardadas de la sesion, para pintar cada corazon.
+  const guardadasDelUsuario = sesion
+    ? new Set(
+        (
+          await guardadas
+            .find({ usuarioId: new ObjectId(sesion.user.id) }, { projection: { recetaId: 1 } })
+            .toArray()
+        ).map((doc) => doc.recetaId.toHexString()),
+      )
+    : new Set<string>();
+
+  // A donde vuelve quien toca un corazon sin sesion, despues de entrar.
+  const parametrosDeVuelta = new URLSearchParams();
+  if (q !== "") parametrosDeVuelta.set("q", q);
+  if (categoria !== "") parametrosDeVuelta.set("categoria", categoria);
+  const rutaActual = buscando ? `/?${parametrosDeVuelta.toString()}` : "/";
 
   let filtroPropio: Filter<RecetaDoc> = {};
   if (q !== "") {
@@ -309,6 +347,9 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
             receta={receta}
             foto={fotoDe(receta)}
             numero={numeroDe.get(receta.slug) ?? "—"}
+            guardada={guardadasDelUsuario.has(receta._id.toHexString())}
+            haySesion={sesion !== null}
+            volverA={rutaActual}
           />
         </Revelado>
       ))}

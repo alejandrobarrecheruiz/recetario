@@ -1,6 +1,7 @@
 import { MongoClient, type Collection, type Db } from "mongodb";
 import type { RecetaDoc } from "@/models/receta";
 import type { ImagenDoc } from "@/models/imagen";
+import type { GuardadaDoc } from "@/models/guardada";
 
 /**
  * Cliente de MongoDB cacheado en `globalThis`: en serverless el modulo se puede
@@ -14,6 +15,7 @@ import type { ImagenDoc } from "@/models/imagen";
 const COLECCIONES = {
   recetas: "recipes",
   imagenes: "images",
+  guardadas: "saves",
 } as const;
 
 const globalConCache = globalThis as typeof globalThis & {
@@ -65,11 +67,13 @@ export async function obtenerDb(): Promise<Db> {
 export async function obtenerColecciones(): Promise<{
   recetas: Collection<RecetaDoc>;
   imagenes: Collection<ImagenDoc>;
+  guardadas: Collection<GuardadaDoc>;
 }> {
   const db = await obtenerDb();
   return {
     recetas: db.collection<RecetaDoc>(COLECCIONES.recetas),
     imagenes: db.collection<ImagenDoc>(COLECCIONES.imagenes),
+    guardadas: db.collection<GuardadaDoc>(COLECCIONES.guardadas),
   };
 }
 
@@ -94,7 +98,7 @@ export function esBaseDeProduccion(): boolean {
 
 /** Crea los indices. Idempotente; se ejecuta con `npm run indices`. */
 export async function crearIndices(): Promise<string[]> {
-  const { recetas, imagenes } = await obtenerColecciones();
+  const { recetas, imagenes, guardadas } = await obtenerColecciones();
 
   const creados = await Promise.all([
     // El slug es la URL: tiene que ser unico.
@@ -106,6 +110,11 @@ export async function crearIndices(): Promise<string[]> {
     ),
     // Para resolver las imagenes de una receta de una sola pasada.
     imagenes.createIndex({ recetaId: 1 }, { name: "recetaId" }),
+    // Guardar dos veces no duplica; cubre tambien "las guardadas de este usuario".
+    guardadas.createIndex(
+      { usuarioId: 1, recetaId: 1 },
+      { unique: true, name: "usuario_receta_unico" },
+    ),
   ]);
 
   return creados;

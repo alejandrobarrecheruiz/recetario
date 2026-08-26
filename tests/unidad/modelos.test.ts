@@ -17,6 +17,7 @@ import {
   generarSlug,
 } from "@/models/receta";
 import { imagenSchema, imagenEntradaSchema } from "@/models/imagen";
+import { guardadaSchema } from "@/models/guardada";
 
 const ID = "507f1f77bcf86cd799439011";
 
@@ -250,5 +251,37 @@ describe("imagenSchema", () => {
     assert.ok(resultado.success, JSON.stringify(resultado.error?.issues));
     assert.equal("_id" in resultado.data, false);
     assert.equal("subidaPor" in resultado.data, false);
+  });
+});
+
+describe("guardadaSchema", () => {
+  function guardadaValida() {
+    return {
+      _id: ID,
+      usuarioId: "68a0000000000000000000b1",
+      recetaId: "68a0000000000000000000b2",
+      guardadaEn: "2026-08-26T10:00:00.000Z",
+    };
+  }
+
+  test("acepta una guardada completa y coacciona la fecha a Date", () => {
+    const guardada = guardadaSchema.parse(guardadaValida());
+    assert.ok(guardada.guardadaEn instanceof Date);
+  });
+
+  test("guarda el id de la receta, nunca una copia ni un slug", () => {
+    assert.equal(
+      guardadaSchema.safeParse({ ...guardadaValida(), recetaId: "gazpacho-andaluz" }).success,
+      false,
+    );
+  });
+
+  test("usuarioId y recetaId son obligatorios", () => {
+    const { usuarioId, ...sinUsuario } = guardadaValida();
+    void usuarioId;
+    assert.equal(guardadaSchema.safeParse(sinUsuario).success, false);
+    const { recetaId, ...sinReceta } = guardadaValida();
+    void recetaId;
+    assert.equal(guardadaSchema.safeParse(sinReceta).success, false);
   });
 });

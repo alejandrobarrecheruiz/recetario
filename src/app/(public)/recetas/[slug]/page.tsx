@@ -2,12 +2,14 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ObjectId } from "mongodb";
 import { obtenerColecciones } from "@/lib/mongo";
 import { conVisibilidad } from "@/lib/visibilidad";
-import { rolActual } from "@/lib/sesion";
+import { rolActual, sesionActual } from "@/lib/sesion";
 import { duracion, fechaDePublicacion, formatearCantidad, urlConAncho } from "@/lib/formato";
 import type { Ingrediente, RecetaDoc } from "@/models/receta";
 import type { ImagenDoc } from "@/models/imagen";
+import { CorazonGuardar } from "@/components/corazon-guardar";
 import { IngredientesEscalables } from "@/components/ingredientes-escalables";
 import { Logo } from "@/components/logo";
 import { ModoCocina } from "@/components/modo-cocina";
@@ -117,7 +119,15 @@ export default async function PaginaReceta({
 
   const { receta, fotos } = ficha;
   const rol = await rolActual();
-  const { recetas } = await obtenerColecciones();
+  const sesion = await sesionActual();
+  const { recetas, guardadas } = await obtenerColecciones();
+
+  const laTieneGuardada =
+    sesion !== null &&
+    (await guardadas.findOne(
+      { usuarioId: new ObjectId(sesion.user.id), recetaId: receta._id },
+      { projection: { _id: 1 } },
+    )) !== null;
 
   const portada = receta.portadaId ? fotos.get(receta.portadaId.toHexString()) : undefined;
   const pasos = [...receta.pasos].sort((a, b) => a.orden - b.orden);
@@ -165,13 +175,21 @@ export default async function PaginaReceta({
 
       <header className="sticky top-0 z-40 flex items-center justify-between gap-4 border-b border-tinta/15 bg-papel/85 px-[clamp(20px,5vw,48px)] py-2.5 font-[family-name:var(--font-dm-mono)] text-[11.5px] uppercase tracking-[0.16em] backdrop-blur-xl">
         <Logo tamano={40} />
-        <ModoCocina
-          titulo={receta.titulo}
-          pasos={pasosDeCocina}
-          ingredientes={receta.ingredientes}
-          raciones={receta.raciones}
-          minutos={receta.tiempo.total}
-        />
+        <div className="flex items-center gap-1">
+          <CorazonGuardar
+            recetaId={receta._id.toHexString()}
+            guardada={laTieneGuardada}
+            haySesion={sesion !== null}
+            volverA={`/recetas/${receta.slug}`}
+          />
+          <ModoCocina
+            titulo={receta.titulo}
+            pasos={pasosDeCocina}
+            ingredientes={receta.ingredientes}
+            raciones={receta.raciones}
+            minutos={receta.tiempo.total}
+          />
+        </div>
       </header>
 
       <section className="relative flex h-[70svh] min-h-[440px] items-end overflow-hidden">

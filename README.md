@@ -7,7 +7,7 @@ Next.js (App Router) + TypeScript + Tailwind, MongoDB Atlas, Better Auth e
 ImageKit. Desplegado en Vercel.
 
 > El contexto completo del proyecto — modelo de datos, reglas de visibilidad,
-> convenciones y orden de construcción — está en **[CLAUDE.md](./CLAUDE.md)**.
+> convenciones y decisiones cerradas — está en **[CLAUDE.md](./CLAUDE.md)**.
 > Este README es solo el arranque rápido.
 
 ## Arranque
@@ -32,7 +32,11 @@ npm run dev                           # http://localhost:3000
 | `npm run build` | Build de producción |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | `tsc --noEmit` |
+| `npm run test` | Pruebas puras (visibilidad y esquemas), sin red |
+| `npm run test:entorno` | Comprueba `.env.local` contra Atlas e ImageKit de verdad |
+| `npm run test:todo` | Las dos anteriores |
 | `npm run indices` | Crea los índices de MongoDB (idempotente) |
+| `npm run crear-usuario` | Alta de usuario (`-- --rol admin` para el admin) |
 | `npm run seed:dev` | Datos de ejemplo (solo `recetas_dev`) |
 | `npm run backup` | Volcado manual de la base |
 
@@ -55,6 +59,7 @@ fijo.
 
 ## Estado
 
-Fase 1 de 8: andamiaje. Todavía no hay funcionalidad. Los ficheros marcados con
-`// TODO(fase N)` indican qué va en cada sitio y cuándo. Ver el orden de
-construcción en [CLAUDE.md](./CLAUDE.md).
+El blog está estrenado y en producción desde el 24 de agosto de 2026. El ritmo
+es semanal: escribir la receta en el panel, publicarla y `npm run backup`. Los
+pendientes viven en la sección de decisiones abiertas de
+[CLAUDE.md](./CLAUDE.md).

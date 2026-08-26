@@ -9,6 +9,7 @@ import { duracion, fechaDePublicacion, formatearCantidad, urlConAncho } from "@/
 import type { Ingrediente, RecetaDoc } from "@/models/receta";
 import type { ImagenDoc } from "@/models/imagen";
 import { IngredientesEscalables } from "@/components/ingredientes-escalables";
+import { Logo } from "@/components/logo";
 import { ModoCocina } from "@/components/modo-cocina";
 import { Revelado } from "@/components/revelado";
 import { CapaParallax } from "@/components/parallax";
@@ -162,10 +163,8 @@ export default async function PaginaReceta({
         />
       )}
 
-      <header className="sticky top-0 z-40 flex items-center justify-between gap-4 border-b border-tinta/15 bg-papel/85 px-[clamp(20px,5vw,48px)] py-[15px] font-[family-name:var(--font-dm-mono)] text-[11.5px] uppercase tracking-[0.16em] backdrop-blur-xl">
-        <Link href="/" className="whitespace-nowrap text-tinta/70">
-          ← Volver
-        </Link>
+      <header className="sticky top-0 z-40 flex items-center justify-between gap-4 border-b border-tinta/15 bg-papel/85 px-[clamp(20px,5vw,48px)] py-2.5 font-[family-name:var(--font-dm-mono)] text-[11.5px] uppercase tracking-[0.16em] backdrop-blur-xl">
+        <Logo tamano={40} />
         <ModoCocina
           titulo={receta.titulo}
           pasos={pasosDeCocina}

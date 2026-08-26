@@ -396,8 +396,9 @@ de categoría como filtros; y «Quién cocina aquí» con la cita, el hueco de g
 y los dos párrafos personales. **Sin captura de correo**: el campo «Avísame»
 del lienzo se omitió a sabiendas (regla de la sección 1).
 
-**La ficha**: cabecera pegajosa con «← Volver» (pendiente de quitar, ver
-sección 14) y el botón «Cocinar paso a paso»; cubierta 70svh con parallax y
+**La ficha**: cabecera pegajosa con el logo (la vuelta universal a la
+portada; no existe ningún «← Volver» en el sitio, a propósito) y el botón
+«Cocinar paso a paso»; cubierta 70svh con parallax y
 título en Bricolage gigante; ingredientes en tarjeta blanca pegajosa con
 escalador de raciones Y checklist (cada fila se tacha al tocarla, contador
 «n de m listos», Desmarcar); pasos con número en acento y rotulillo opcional
@@ -405,9 +406,13 @@ escalador de raciones Y checklist (cada fila se tacha al tocarla, contador
 `notas`) en caja blanca con filo izquierdo en acento; y «Sigue por aquí» con
 las dos publicadas más recientes.
 
-**El modo cocina** («Cocinar paso a paso»): overlay a pantalla completa, un
-paso cada vez en cuerpo gigante, barra de progreso en acento, Anterior /
-Siguiente y Escape. Es la respuesta a «se lee en la cocina».
+**El modo cocina** («Cocinar paso a paso»): overlay a pantalla completa (en
+portal sobre `body`: el backdrop-blur de la cabecera crearía un contexto de
+contención que atraparía el `fixed`), un paso cada vez en cuerpo gigante con
+su foto si la tiene, barra de progreso en acento, los ingredientes a mano en
+un panel propio, y página con botones, deslizando el dedo o con las flechas
+(Escape sale). Pide wake lock para que el móvil no se apague cocinando. Es la
+respuesta a «se lee en la cocina».
 
 **El panel**: editor sobre la receta tal como se ve. contentEditable sin
 control de React para título, resumen, pasos y nota; autoguardado con debounce
@@ -458,15 +463,14 @@ No darlas por cerradas sin querer.
   guardadas. Exige colección o campo nuevo en Mongo (por usuario), API con el
   rol de la sesión y UI. Con ella va la **vista de usuario logueado**: su
   cuenta con sus recetas guardadas.
-- **El login no debe redirigir nunca a `/admin`**: hoy, al entrar como admin,
-  `/login` manda al panel, pero un admin puede entrar solo a leer. Aterrizar
-  siempre como lector (portada o vuelta a donde estabas) y que el panel sea un
-  enlace que se elige, no un destino forzado.
-- **Arreglar la vista «Cocinar paso a paso»** (sin concretar qué está mal;
-  preguntar antes de tocarla).
-- **Fuera el «← Volver»**: en ninguna vista debe aparecer uno como el de la
-  cabecera de la ficha; decidir con qué se sustituye (el logo ya vuelve a la
-  portada desde cualquier sitio).
+
+Y dos que se cerraron el 26 de agosto de 2026, para no reabrirlas:
+
+- **El login aterriza siempre como lector**: portada, o la ruta interna de
+  `?volver=` si el login interceptó la navegación (la pone el guard de
+  `/admin`). El panel es el enlace «Ir al panel» de la vista de cuenta, nunca
+  un destino forzado por rol.
+- **No existe ningún «← Volver»**: la vuelta es siempre el logo.
 
 ---
 

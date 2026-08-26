@@ -137,10 +137,18 @@ export default async function PaginaReceta({
     ]),
   );
 
-  const pasosSerializables = pasos.map((paso) => ({
-    ...paso,
-    imagenId: paso.imagenId === null ? null : paso.imagenId.toHexString(),
-  }));
+  // El modo cocina es un componente de cliente: recibe los pasos ya resueltos
+  // (URL de foto en vez de imagenId) y los ingredientes para tenerlos a mano.
+  const pasosDeCocina = pasos.map((paso) => {
+    const foto = paso.imagenId ? fotos.get(paso.imagenId.toHexString()) : undefined;
+    return {
+      id: paso.id,
+      titulo: paso.titulo,
+      texto: paso.texto,
+      fotoUrl: foto ? urlConAncho(foto.url, 828) : null,
+      fotoAlt: foto?.alt ?? "",
+    };
+  });
 
   return (
     <main className="flex flex-col overflow-x-clip">
@@ -160,7 +168,8 @@ export default async function PaginaReceta({
         </Link>
         <ModoCocina
           titulo={receta.titulo}
-          pasos={pasosSerializables}
+          pasos={pasosDeCocina}
+          ingredientes={receta.ingredientes}
           raciones={receta.raciones}
           minutos={receta.tiempo.total}
         />

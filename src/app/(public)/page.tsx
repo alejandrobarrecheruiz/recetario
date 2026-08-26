@@ -7,6 +7,7 @@ import { duracion, urlConAncho } from "@/lib/formato";
 import type { RecetaDoc } from "@/models/receta";
 import type { ImagenDoc } from "@/models/imagen";
 import { CorazonGuardar } from "@/components/corazon-guardar";
+import { PersonaCuenta } from "@/components/persona-cuenta";
 import { Revelado } from "@/components/revelado";
 import { Marquesina } from "@/components/marquesina";
 import { CapaParallax } from "@/components/parallax";
@@ -58,9 +59,9 @@ function Marca({ enlazada = false }: { enlazada?: boolean }) {
 
 /**
  * La cabecera con sentido: «Recetas» y la figura de persona, que es la
- * CUENTA — lleva siempre al panel de /login (entrar, crear cuenta o, con
- * sesión, ver la cuenta y salir). La figura se ve igual en grande y en el
- * móvil; «Recetas» cambia la palabra por su icono en pantallas estrechas.
+ * CUENTA — lleva siempre a /cuenta (y sin sesión, de camino, a entrar). La
+ * figura se ve igual en grande y en el móvil; «Recetas» cambia la palabra por
+ * su icono en pantallas estrechas.
  */
 function Navegacion() {
   return (
@@ -87,25 +88,7 @@ function Navegacion() {
         </svg>
         <span className="hidden sm:inline">Recetas</span>
       </Link>
-      <Link
-        href="/login"
-        aria-label="Tu cuenta"
-        className="flex h-11 w-11 items-center justify-center rounded-full"
-      >
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="8" r="3.5" />
-          <path d="M5 20c1.5-4 4-6 7-6s5.5 2 7 6" />
-        </svg>
-      </Link>
+      <PersonaCuenta />
     </nav>
   );
 }

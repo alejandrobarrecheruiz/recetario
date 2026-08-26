@@ -437,10 +437,21 @@ el título y salta al editor. Todo valida con el MISMO Zod que la API.
 **Las guardadas**: un corazón vacío junto a cada receta (en la cabecera de la
 ficha y sobre cada tarjeta de la rejilla) que se rellena al tocarlo
 (`corazon-guardar.tsx`, estado optimista). Sin sesión no alterna: lleva a
-`/login?volver=` a donde estabas. La lista vive en la vista de cuenta de
-`/login`, con enlace a cada receta y quitar en el sitio. La API
-(`/api/guardadas`) comprueba la sesión por su cuenta y trata una receta no
-visible para el rol como inexistente (404), también al guardarla.
+`/login?volver=` a donde estabas. La API (`/api/guardadas/[recetaId]`)
+comprueba la sesión por su cuenta y trata una receta no visible para el rol
+como inexistente (404), también al guardarla.
+
+**La cuenta** («Tu cuaderno», `/cuenta`): página de servidor que abre con las
+guardadas —lista con miniatura de portada, enlace y quitar en el sitio
+(`lista-guardadas.tsx`)—, saluda por el nombre y deja el correo y «Salir»
+como pie discreto. **El rol no se enseña nunca, se nota**: si eres admin
+existe «Ir al panel», y esa es toda la señal (nada de chips de tipo de
+cuenta). Sin sesión reenvía a `/login?volver=/cuenta`. `/login` solo contiene
+entrar y crear cuenta; con sesión reenvía a `/cuenta` (lo que además corta el
+bucle del guard de `/admin` para quien no es admin). «Salir» responde al
+toque («Saliendo...») y aterriza siempre en la portada, ya como público. La
+figura de persona vive en todas las cabeceras públicas (`persona-cuenta.tsx`)
+y lleva siempre a `/cuenta`: ningún salto frecuente cuesta más de un toque.
 
 **Movimiento**: entradas en cascada (`Revelado`), parallax (`CapaParallax`) y
 marquesina, siempre respetando `prefers-reduced-motion` y sin esconder nada si
@@ -477,17 +488,26 @@ No darlas por cerradas sin querer.
   plano ya es Markdown válido, renderizarlo como Markdown más adelante no
   exigiría migrar nada.
 - **Dominio propio**: por ahora, el subdominio gratuito de Vercel.
+- **Transiciones de página suaves** (View Transitions): decidido NO hacerlas
+  todavía — primero que el mapa de saltos asiente. Si algún día se hacen,
+  respetando `prefers-reduced-motion`.
 
 (Las **recetas guardadas** — pedidas el 25 de agosto — están hechas: ver la
 sección 4, colección `saves`, y la sección 13, «Las guardadas».)
 
-Y dos que se cerraron el 26 de agosto de 2026, para no reabrirlas:
+Y cuatro que se cerraron el 26 de agosto de 2026, para no reabrirlas:
 
 - **El login aterriza siempre como lector**: portada, o la ruta interna de
-  `?volver=` si el login interceptó la navegación (la pone el guard de
-  `/admin`). El panel es el enlace «Ir al panel» de la vista de cuenta, nunca
-  un destino forzado por rol.
+  `?volver=` si el login interceptó la navegación (el guard de `/admin`, la
+  persona sin sesión). El panel es el enlace «Ir al panel» de `/cuenta`,
+  nunca un destino forzado por rol.
 - **No existe ningún «← Volver»**: la vuelta es siempre el logo.
+- **La cuenta vive en `/cuenta`** y son tus recetas, no tus datos: las
+  guardadas abren la página y lo administrativo es el pie. `/login` solo
+  entra y crea cuentas.
+- **El rol no se enseña, se nota**: quien puede hacer algo ve el botón para
+  hacerlo; quien no, no ve nada. Y **cada toque responde al instante**: el
+  estado cambia al momento (corazón, Salir) y la red se resuelve por detrás.
 
 ---
 
@@ -509,7 +529,8 @@ recetario/
 │  │  │  ├─ page.tsx                 # portada: cubierta, buscador (?q, ?categoria)
 │  │  │  └─ recetas/[slug]/page.tsx  # ficha con escalador de raciones
 │  │  ├─ (auth)/
-│  │  │  └─ login/page.tsx           # panel de cuenta: entrar, registrarse, salir
+│  │  │  ├─ login/page.tsx           # entrar y crear cuenta; con sesión → /cuenta
+│  │  │  └─ cuenta/page.tsx          # tu cuaderno: guardadas, panel (admin), salir
 │  │  ├─ admin/
 │  │  │  ├─ layout.tsx               # guard de rol admin (navegación, no datos)
 │  │  │  ├─ page.tsx                 # listado de recetas
@@ -520,7 +541,6 @@ recetario/
 │  │     ├─ auth/[...all]/route.ts   # handler de Better Auth
 │  │     ├─ recetas/route.ts         # GET listado (por rol), POST alta
 │  │     ├─ recetas/[id]/route.ts    # PUT, DELETE con limpieza de imágenes
-│  │     ├─ guardadas/route.ts       # GET: las guardadas de la sesión
 │  │     ├─ guardadas/[recetaId]/route.ts  # POST guarda, DELETE quita
 │  │     ├─ imagenes/route.ts        # POST metadatos tras subir a ImageKit
 │  │     ├─ imagenes/[id]/route.ts   # DELETE: ImageKit + metadatos + referencias
@@ -532,6 +552,7 @@ recetario/
 │  │  ├─ auth-client.ts
 │  │  ├─ sesion.ts                   # sesión y rol de la petición, en servidor
 │  │  ├─ recetas.ts                  # doc ↔ receta (ObjectId ↔ hex) y publicadaEn
+│  │  ├─ guardadas.ts                # las guardadas de un usuario, con miniatura
 │  │  ├─ imagenes.ts                 # doc ↔ imagen (solo servidor)
 │  │  ├─ imagekit.ts                 # cliente de servidor: borrar por fileId
 │  │  ├─ subir-imagen.ts             # firma → subida directa → metadatos (cliente)
@@ -546,6 +567,8 @@ recetario/
 │     ├─ editor-receta.tsx           # editor del panel: WYSIWYG + autosave
 │     ├─ crear-receta.tsx            # alta mínima
 │     ├─ corazon-guardar.tsx         # el corazón de guardar
+│     ├─ lista-guardadas.tsx         # la lista de /cuenta, con quitar
+│     ├─ persona-cuenta.tsx          # la figura de persona → /cuenta
 │     ├─ cabecera-panel.tsx
 │     ├─ ingredientes-escalables.tsx # escalador de raciones + checklist
 │     ├─ modo-cocina.tsx             # «Cocinar paso a paso»

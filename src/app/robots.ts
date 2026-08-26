@@ -7,8 +7,8 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        // El panel y la API no pintan nada en un indice.
-        disallow: ["/admin", "/api/", "/login"],
+        // El panel, la API y las paginas de cuenta no pintan nada en un indice.
+        disallow: ["/admin", "/api/", "/login", "/cuenta"],
       },
     ],
     sitemap: `${base}/sitemap.xml`,

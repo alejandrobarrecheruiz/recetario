@@ -11,7 +11,9 @@ import { rolActual } from "@/lib/sesion";
 // El layout no pinta cromo: el editor ocupa la pantalla entera con su propia
 // barra, y el listado y el alta traen su cabecera (CabeceraPanel).
 export default async function LayoutAdmin({ children }: LayoutProps<"/admin">) {
-  if ((await rolActual()) !== "admin") redirect("/login");
+  // `volver` es la excepcion a "el login aterriza en la portada": quien tecleo
+  // /admin a proposito vuelve aqui tras identificarse.
+  if ((await rolActual()) !== "admin") redirect("/login?volver=/admin");
 
   return <>{children}</>;
 }

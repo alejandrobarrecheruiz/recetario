@@ -11,6 +11,11 @@ import { Logo } from "@/components/logo";
  * El panel de cuenta: iniciar sesión, crear cuenta (el registro está abierto)
  * y, con sesión, ver la cuenta y salir. La figura de persona de la cabecera
  * trae siempre aquí.
+ *
+ * Tras entrar se aterriza SIEMPRE como lector, sea cual sea el rol: la
+ * portada, o la ruta interna de `?volver=` si el login interceptó la
+ * navegación (el guard de /admin). El panel nunca es un destino forzado:
+ * es el enlace «Ir al panel» de la vista de cuenta.
  */
 
 const claseEtiqueta =
@@ -36,6 +41,13 @@ function traducirFallo(mensaje: string | undefined, creando: boolean): string {
       "No se pudo entrar. Revisa el correo y la contraseña.";
 }
 
+/** Solo rutas internas: un `?volver=` con URL absoluta o `//` no redirige fuera. */
+function destinoTrasEntrar(): string {
+  const volver = new URLSearchParams(window.location.search).get("volver");
+  if (volver !== null && volver.startsWith("/") && !volver.startsWith("//")) return volver;
+  return "/";
+}
+
 export default function PaginaCuenta() {
   const router = useRouter();
   const { data: sesion, isPending } = useSession();
@@ -53,7 +65,7 @@ export default function PaginaCuenta() {
     setEnviando(true);
 
     if (modo === "entrar") {
-      const { data, error: fallo } = await signIn.email({
+      const { error: fallo } = await signIn.email({
         email: correo,
         password: contrasena,
       });
@@ -62,8 +74,7 @@ export default function PaginaCuenta() {
         setEnviando(false);
         return;
       }
-      const rol = (data?.user as { role?: string | null } | undefined)?.role;
-      router.push(rol === "admin" ? "/admin" : "/");
+      router.push(destinoTrasEntrar());
       router.refresh();
       return;
     }
@@ -140,12 +151,6 @@ export default function PaginaCuenta() {
           >
             Salir
           </button>
-          <Link
-            href="/"
-            className="font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.14em] text-tinta/50"
-          >
-            ← Portada
-          </Link>
         </div>
       </main>
     );

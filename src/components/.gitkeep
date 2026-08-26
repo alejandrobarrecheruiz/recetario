@@ -1,4 +1,0 @@
-# Componentes compartidos.
-#
-# Todavia no hay ninguno: las vistas llegan en las fases 5 y 7. Este fichero solo
-# existe para que git conserve la carpeta. Borrarlo al anadir el primer componente.

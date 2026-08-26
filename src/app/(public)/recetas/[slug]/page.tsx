@@ -13,7 +13,7 @@ import { ModoCocina } from "@/components/modo-cocina";
 import { Revelado } from "@/components/revelado";
 import { CapaParallax } from "@/components/parallax";
 
-// La ficha del rediseño (fase 10): cubierta con parallax, ingredientes en
+// La ficha: cubierta con parallax, ingredientes en
 // tarjeta pegajosa con checklist y escalador, pasos con rotulillo, nota
 // personal y «Sigue por aquí». La consulta pasa por conVisibilidad con el rol
 // de la sesión: una receta que el visitante no puede ver responde notFound(),

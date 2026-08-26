@@ -3,21 +3,12 @@ import type { RecetaDoc } from "@/models/receta";
 import type { ImagenDoc } from "@/models/imagen";
 
 /**
- * Cliente de MongoDB cacheado en una variable global.
+ * Cliente de MongoDB cacheado en `globalThis`: en serverless el modulo se puede
+ * reevaluar y sin cache cada invocacion abriria una conexion nueva contra el
+ * limite del cluster gratuito. Se cachea la PROMESA, no el cliente conectado,
+ * para que dos peticiones simultaneas esperen el mismo `connect()`.
  *
- * POR QUE LA GLOBAL: en Vercel cada invocacion en caliente reutiliza el mismo
- * proceso de Node, pero el modulo se puede reevaluar. Si el cliente se crea en
- * el ambito del modulo sin cachear, cada invocacion abre una conexion nueva y el
- * cluster gratuito de Atlas (M0, 500 conexiones) se agota en cuanto hay algo de
- * trafico o un par de despliegues seguidos. Guardarlo en `globalThis` hace que
- * sobreviva entre invocaciones y que el pool se reutilice. Es el fallo clasico
- * de Mongo + serverless.
- *
- * Se cachea la PROMESA, no el cliente ya conectado: si llegan dos peticiones a
- * la vez antes de que termine el primer `connect()`, ambas esperan la misma
- * promesa en lugar de abrir dos conexiones.
- *
- * Este modulo es solo de servidor. No importarlo desde componentes de cliente.
+ * Solo de servidor. No importarlo desde componentes de cliente.
  */
 
 const COLECCIONES = {
@@ -101,11 +92,7 @@ export function esBaseDeProduccion(): boolean {
   return process.env.MONGODB_DB === BASE_PRODUCCION;
 }
 
-/**
- * Crea los indices. Es idempotente: `createIndex` no hace nada si el indice ya
- * existe con la misma definicion, asi que se puede llamar tantas veces como
- * haga falta. Se ejecuta con `npm run indices`.
- */
+/** Crea los indices. Idempotente; se ejecuta con `npm run indices`. */
 export async function crearIndices(): Promise<string[]> {
   const { recetas, imagenes } = await obtenerColecciones();
 

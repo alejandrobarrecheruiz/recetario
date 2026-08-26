@@ -26,7 +26,7 @@ import { urlConAncho } from "@/lib/formato";
 import { Logo } from "@/components/logo";
 
 /**
- * El editor del panel (fase 10): se escribe sobre la receta tal como se va a
+ * El editor del panel: se escribe sobre la receta tal como se va a
  * ver, con guardado automático. Valida con `recetaEntradaSchema`, el MISMO
  * esquema que usa /api/recetas: un solo Zod para los dos lados.
  *

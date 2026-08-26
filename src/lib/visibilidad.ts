@@ -3,28 +3,14 @@ import type { RecetaDoc } from "@/models/receta";
 import type { Rol } from "@/models/usuario";
 
 /**
- * REGLA DURA DEL PROYECTO
- * ----------------------
- * El rol se traduce SIEMPRE a un filtro de consulta, NUNCA a un condicional en
- * el render.
- *
- * Si se oculta contenido con `{rol === "registrado" && <Receta/>}` en el JSX,
- * ese contenido ya ha viajado al navegador dentro del payload de React y se ve
- * abriendo las herramientas de desarrollo. No es una proteccion, es un adorno.
- *
- * Toda consulta a `recipes` pasa por aqui. Si escribes una consulta de recetas
- * que no incluye `filtroVisibilidad(rol)`, esta mal.
- *
- * | Rol         | Ve                                                     |
- * |-------------|--------------------------------------------------------|
- * | publico     | estado: publicada + visibilidad: publica                |
- * | registrado  | lo anterior mas visibilidad: registrada                 |
- * | admin       | todo, incluidos borradores                             |
+ * REGLA DURA: el rol se traduce SIEMPRE a un filtro de consulta, NUNCA a un
+ * condicional en el render (lo condicionado en JSX ya viajo al navegador).
+ * Toda consulta a `recipes` pasa por aqui; si no incluye `filtroVisibilidad(rol)`,
+ * esta mal. Ver CLAUDE.md, seccion 5.
  */
 export function filtroVisibilidad(rol: Rol): Filter<RecetaDoc> {
   switch (rol) {
     case "admin":
-      // Sin restricciones: ve borradores y todo lo demas.
       return {};
 
     case "registrado":

@@ -37,12 +37,8 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    // Registro ABIERTO desde el 25 de agosto de 2026 (decision del dueno, al
-    // anadir el panel de cuenta): cualquiera puede crear cuenta en /login y
-    // entra con rol "registrado". Consecuencia asumida: las recetas con
-    // visibilidad "registrada" las ve cualquiera que se registre; ya no son
-    // solo para gente invitada. El admin se sigue creando con
-    // `auth.api.createUser` (scripts/crear-usuario.ts).
+    // Registro abierto: cualquiera crea cuenta en /login y entra como
+    // "registrado". El rol admin solo se da por scripts/crear-usuario.ts.
     disableSignUp: false,
   },
 
@@ -51,8 +47,6 @@ export const auth = betterAuth({
       ac: control,
       roles,
       // Sin esto el plugin pondria `role: "user"`, que no es un rol del dominio.
-      // `rolDeSesion` lo trataria igual como "registrado", pero mejor que en la
-      // base solo haya lo que dice rolAlmacenadoSchema.
       defaultRole: ROL_POR_DEFECTO,
     }),
   ],

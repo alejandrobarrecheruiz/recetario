@@ -37,7 +37,7 @@ const IDS = {
 function recetas(autorId: string): Receta[] {
   const base = {
     autorId,
-    portadaId: null, // Las imagenes llegan en la fase 6.
+    portadaId: null,
     actualizadaEn: new Date("2026-08-24T12:00:00.000Z"),
   };
 

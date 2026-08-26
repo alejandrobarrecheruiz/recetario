@@ -8,14 +8,10 @@ import type { ObjectId } from "mongodb";
  * nunca al reves. El mismo esquema lo usan las rutas de API y los formularios
  * del panel.
  *
- * Sobre los identificadores: aqui se validan como cadena hexadecimal de 24
- * caracteres, no como `ObjectId`. Motivo: este fichero lo importan tambien los
- * formularios del panel, que son componentes de cliente, y `z.instanceof(ObjectId)`
- * arrastraria el driver de MongoDB al bundle del navegador. La forma que se
- * guarda realmente en Mongo se describe al final en `RecetaDoc`, con un import
- * de solo tipo que TypeScript borra al compilar.
- *
- * Convencion: todo el vocabulario del dominio va en espanol. Ver CLAUDE.md.
+ * Los identificadores se validan como hex de 24 caracteres, no como `ObjectId`:
+ * este fichero lo importan componentes de cliente y `z.instanceof(ObjectId)`
+ * arrastraria el driver de Mongo al bundle del navegador. La forma real en Mongo
+ * es `RecetaDoc`, al final, con un import de solo tipo.
  */
 
 /** Identificador de MongoDB en su forma serializable (hex de 24 caracteres). */
@@ -23,15 +19,11 @@ export const idSchema = z
   .string()
   .regex(/^[0-9a-f]{24}$/, "Identificador de MongoDB no valido");
 
-/**
- * Propone un slug a partir del titulo: minusculas, sin tildes y con guiones.
- * Lo usa el formulario del panel; el resultado sigue pasando por `recetaSchema`,
- * que es quien manda.
- */
+/** Propone un slug a partir del titulo; el resultado sigue validando `recetaSchema`. */
 export function generarSlug(titulo: string): string {
   return titulo
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // fuera tildes y virgulillas
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
@@ -46,10 +38,8 @@ export const visibilidadSchema = z.enum(["publica", "registrada"]);
 export const dificultadSchema = z.enum(["facil", "media", "dificil"]);
 
 /**
- * `cantidad`, `unidad` y `nombre` van SEPARADOS a proposito: es lo que permite
- * escalar raciones multiplicando numeros. Nunca guardar "600 g de queso crema"
- * como una sola cadena.
- *
+ * `cantidad`, `unidad` y `nombre` van SEPARADOS: es lo que permite escalar
+ * raciones. Nunca guardar "600 g de queso crema" como una sola cadena.
  * `id` es propio y estable, para reordenar en el panel con keys fiables.
  */
 export const ingredienteSchema = z.object({
@@ -62,11 +52,9 @@ export const ingredienteSchema = z.object({
 });
 
 /**
- * `texto` se guarda como string plano (decision abierta: texto plano vs Markdown;
- * el texto plano ya es Markdown valido, asi que cambiar de idea no exige migrar).
- *
- * `imagenId` referencia la coleccion `images`, NUNCA una URL: si se cambia de
- * proveedor de imagenes solo se toca esa coleccion.
+ * `texto` es string plano (ya es Markdown valido si algun dia se renderiza asi).
+ * `imagenId` referencia la coleccion `images`, NUNCA una URL: cambiar de
+ * proveedor de imagenes solo toca esa coleccion.
  */
 export const pasoSchema = z.object({
   id: z.string().min(1),

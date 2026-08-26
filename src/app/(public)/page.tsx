@@ -11,15 +11,14 @@ import { Marquesina } from "@/components/marquesina";
 import { CapaParallax } from "@/components/parallax";
 import { Logo } from "@/components/logo";
 
-// La portada del rediseño «Mi libro de recetas» (fase 10): cubierta a sangre
+// La portada de «Mi libro de recetas»: cubierta a sangre
 // con el rótulo en Pinyon Script, las dos entradas grandes, la marquesina, la
 // rejilla de recetas con filtros por categoría y la nota «Quién cocina aquí».
 // El rol se resuelve EN EL SERVIDOR y toda consulta pasa por conVisibilidad:
 // nada de filtrar en el JSX.
 
-// La imagen fija de la cubierta vive en /public, ya convertida a JPEG (los
-// PNG originales, con las opciones descartadas, quedan en el historial de
-// git). Portada-V.jpg es la vertical, para pantallas estrechas.
+// La imagen fija de la cubierta vive en /public; Portada-V.jpg es la
+// vertical, para pantallas estrechas.
 const imagenDeCubierta = "/Portada.jpg";
 const imagenDeCubiertaVertical = "/Portada-V.jpg";
 

@@ -1,6 +1,6 @@
 /**
  * Comprueba que las credenciales de ImageKit valen contra la API real y que la
- * firma de subida (fase 6) se puede emitir con ellas.
+ * firma de subida se puede emitir con ellas.
  *
  *   npm run test:entorno
  *
@@ -8,7 +8,7 @@
  *
  * OJO CON EL PAQUETE QUE SE IMPORTA AQUI. La firma se calcula con
  * `@imagekit/nodejs` (cliente de servidor) y no con `getUploadAuthParams` de
- * `@imagekit/next/server`, que es lo que usara la ruta de la fase 6. Motivo:
+ * `@imagekit/next/server`, que es lo que usa /api/imagenes/firma. Motivo:
  * `@imagekit/next` declara su subpath ./server con las claves "main" y "module"
  * dentro del campo "exports", y esas no son condiciones que Node entienda, asi
  * que desde Node plano (estas pruebas y cualquier script de scripts/) el import
@@ -59,7 +59,7 @@ describe("credenciales de ImageKit", () => {
   });
 });
 
-describe("firma de subida (la que emitira /api/imagenes/firma en la fase 6)", () => {
+describe("firma de subida (la que emite /api/imagenes/firma)", () => {
   test("se puede emitir con la clave privada del entorno", () => {
     const { token, expire, signature } = clientePrivado().helper.getAuthenticationParameters();
 
@@ -77,14 +77,14 @@ describe("firma de subida (la que emitira /api/imagenes/firma en la fase 6)", ()
   });
 
   test("firmar sin clave privada falla, no devuelve una firma vacia", () => {
-    // Si la ruta de la fase 6 se despliega sin IMAGEKIT_PRIVATE_KEY, tiene que
+    // Si /api/imagenes/firma se despliega sin IMAGEKIT_PRIVATE_KEY, tiene que
     // romper de forma ruidosa y no emitir firmas invalidas en silencio.
     assert.throws(() => new ImageKit({ privateKey: "" }).helper.getAuthenticationParameters());
   });
 });
 
 describe("paquetes de ImageKit instalados", () => {
-  test("@imagekit/next trae el subpath ./server que usara la fase 6", () => {
+  test("@imagekit/next trae el subpath ./server que usa la app", () => {
     // Desde Node plano no se puede ni importar el subpath ni pedir el
     // package.json del paquete: su campo "exports" no expone ninguno de los dos
     // (ver la cabecera del fichero). Asi que se lee del disco. Que Next lo

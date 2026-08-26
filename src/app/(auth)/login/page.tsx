@@ -8,9 +8,9 @@ import { rolDeSesion } from "@/models/usuario";
 import { Logo } from "@/components/logo";
 
 /**
- * El panel de cuenta: iniciar sesión, crear cuenta (registro ABIERTO desde el
- * 25 de agosto de 2026) y, con sesión, ver la cuenta y salir. La figura de
- * persona de la cabecera trae siempre aquí.
+ * El panel de cuenta: iniciar sesión, crear cuenta (el registro está abierto)
+ * y, con sesión, ver la cuenta y salir. La figura de persona de la cabecera
+ * trae siempre aquí.
  */
 
 const claseEtiqueta =

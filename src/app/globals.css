@@ -1,13 +1,11 @@
 @import "tailwindcss";
 
 /*
- * Tokens del sistema visual (fase 10, rediseño «Mi libro de recetas»).
- * Se definen UNA vez aquí y todo lo demás los usa; nada de valores sueltos
- * por los componentes.
+ * Tokens del sistema visual de «Mi libro de recetas». Se definen UNA vez aquí
+ * y todo lo demás los usa; nada de valores sueltos por los componentes.
  *
- * Solo existe el estilo claro: el modo oscuro automático se retiró con el
- * rediseño (decisión del 25 de agosto de 2026). El lienzo de referencia es
- * «Recetario claro.dc.html» del proyecto de Claude Design.
+ * Solo existe el estilo claro (el modo oscuro se retiró a propósito). El
+ * lienzo de referencia es «Recetario claro.dc.html», de Claude Design.
  */
 :root {
   --papel: #dee6e9; /* el gris azulado de fondo */

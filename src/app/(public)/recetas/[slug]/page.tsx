@@ -12,6 +12,7 @@ import type { ImagenDoc } from "@/models/imagen";
 import { CorazonGuardar } from "@/components/corazon-guardar";
 import { IngredientesEscalables } from "@/components/ingredientes-escalables";
 import { Logo } from "@/components/logo";
+import { PersonaCuenta } from "@/components/persona-cuenta";
 import { ModoCocina } from "@/components/modo-cocina";
 import { Revelado } from "@/components/revelado";
 import { CapaParallax } from "@/components/parallax";
@@ -182,6 +183,7 @@ export default async function PaginaReceta({
             haySesion={sesion !== null}
             volverA={`/recetas/${receta.slug}`}
           />
+          <PersonaCuenta />
           <ModoCocina
             titulo={receta.titulo}
             pasos={pasosDeCocina}

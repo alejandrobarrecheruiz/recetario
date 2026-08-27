@@ -22,7 +22,7 @@ import {
 } from "@/models/receta";
 import type { Imagen } from "@/models/imagen";
 import { subirImagen, quitarImagen } from "@/lib/subir-imagen";
-import { urlConAncho } from "@/lib/formato";
+import { parsearCantidad, urlConAncho } from "@/lib/formato";
 import { Logo } from "@/components/logo";
 
 /**
@@ -63,6 +63,45 @@ type FaseGuardado = "limpio" | "pendiente" | "guardando" | "invalido" | "fallo";
 
 function ingredienteVacio(): Ingrediente {
   return { id: crypto.randomUUID(), cantidad: 0, unidad: "", nombre: "" };
+}
+
+const formatoCantidadEditor = new Intl.NumberFormat("es-ES", {
+  maximumFractionDigits: 3,
+});
+
+/**
+ * El campo de cantidad de un ingrediente. Es de texto y no numérico porque
+ * «un cuarto» no se teclea como decimal de forma natural: admite «0,25»,
+ * «1/4», «¼» o «1 1/2» y guarda siempre el número (`parsearCantidad`). Lo que
+ * aún no parsea (un «1/» a medio teclear) se queda en pantalla sin guardarse,
+ * y al salir del campo se limpia: vacío es 0 («al gusto») y un garabato
+ * vuelve al último valor bueno.
+ */
+function EntradaCantidad({
+  valor,
+  onCambio,
+}: {
+  valor: number;
+  onCambio: (cantidad: number) => void;
+}) {
+  const [texto, setTexto] = useState(() => formatoCantidadEditor.format(valor));
+  return (
+    <input
+      aria-label="Cantidad"
+      value={texto}
+      onChange={(evento) => {
+        setTexto(evento.target.value);
+        const cantidad = parsearCantidad(evento.target.value);
+        if (cantidad !== null) onCambio(cantidad);
+      }}
+      onBlur={() => {
+        const cantidad = texto.trim() === "" ? 0 : (parsearCantidad(texto) ?? valor);
+        setTexto(formatoCantidadEditor.format(cantidad));
+        if (cantidad !== valor) onCambio(cantidad);
+      }}
+      className="bg-transparent font-[family-name:var(--font-dm-mono)] text-[13px] text-acento outline-none"
+    />
+  );
 }
 
 function pasoVacio(): Paso {
@@ -787,22 +826,15 @@ export function EditorReceta({
                   >
                     ::
                   </span>
-                  <input
-                    type="number"
-                    min={0}
-                    step="any"
-                    aria-label="Cantidad"
-                    value={ingrediente.cantidad}
-                    onChange={(evento) =>
+                  <EntradaCantidad
+                    valor={ingrediente.cantidad}
+                    onCambio={(cantidad) =>
                       tocar({
                         ingredientes: datos.ingredientes.map((otro) =>
-                          otro.id === ingrediente.id
-                            ? { ...otro, cantidad: evento.target.valueAsNumber || 0 }
-                            : otro,
+                          otro.id === ingrediente.id ? { ...otro, cantidad } : otro,
                         ),
                       })
                     }
-                    className="bg-transparent font-[family-name:var(--font-dm-mono)] text-[13px] text-acento outline-none"
                   />
                   <input
                     aria-label="Unidad"

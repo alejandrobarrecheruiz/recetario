@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Ingrediente } from "@/models/receta";
-import { formatearCantidad } from "@/lib/formato";
+import { medida } from "@/lib/formato";
 
 /**
  * La lista de ingredientes de la ficha: el escalador de raciones (la razón por
@@ -29,11 +29,9 @@ export function IngredientesEscalables({
   const claseBotonEscala =
     "flex h-6.5 w-6.5 items-center justify-center rounded-full text-base leading-none text-tinta hover:bg-tinta/10 disabled:opacity-40";
 
-  /** "150 g", "1,5" (la unidad "unidad" no se escribe), o null para "al gusto". */
+  /** "150 g", "1½" (la unidad "unidad" no se escribe), o null para "al gusto". */
   function medidaDe(ingrediente: Ingrediente): string | null {
-    if (ingrediente.cantidad === 0) return null;
-    const unidad = ingrediente.unidad === "unidad" ? "" : ingrediente.unidad;
-    return `${formatearCantidad(ingrediente.cantidad * factor)} ${unidad}`.trim();
+    return medida(ingrediente.cantidad * factor, ingrediente.unidad);
   }
 
   return (

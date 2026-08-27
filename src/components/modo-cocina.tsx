@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Ingrediente } from "@/models/receta";
-import { duracion, formatearCantidad } from "@/lib/formato";
+import { duracion, medida } from "@/lib/formato";
 
 /**
  * «Cocinar paso a paso»: la vista de cocina a pantalla completa. Un paso cada
@@ -27,11 +27,9 @@ type PasoDeCocina = {
   fotoAlt: string;
 };
 
-/** "1000 g", "1" (la unidad "unidad" no se escribe), o null para "al gusto". */
+/** "1000 g", "1½" (la unidad "unidad" no se escribe), o null para "al gusto". */
 function medidaDe(ingrediente: Ingrediente): string | null {
-  if (ingrediente.cantidad === 0) return null;
-  const unidad = ingrediente.unidad === "unidad" ? "" : ingrediente.unidad;
-  return `${formatearCantidad(ingrediente.cantidad)} ${unidad}`.trim();
+  return medida(ingrediente.cantidad, ingrediente.unidad);
 }
 
 export function ModoCocina({

@@ -6,7 +6,7 @@ import { ObjectId } from "mongodb";
 import { obtenerColecciones } from "@/lib/mongo";
 import { conVisibilidad } from "@/lib/visibilidad";
 import { rolActual, sesionActual } from "@/lib/sesion";
-import { duracion, fechaDePublicacion, formatearCantidad, urlConAncho } from "@/lib/formato";
+import { duracion, fechaDePublicacion, medida, urlConAncho } from "@/lib/formato";
 import type { Ingrediente, RecetaDoc } from "@/models/receta";
 import type { ImagenDoc } from "@/models/imagen";
 import { CorazonGuardar } from "@/components/corazon-guardar";
@@ -67,14 +67,14 @@ export async function generateMetadata({
 
 /** "150 g de harina", "6 huevo", "sal (al gusto)". Para el JSON-LD. */
 function ingredienteATexto(ingrediente: Ingrediente): string {
-  if (ingrediente.cantidad === 0) {
+  const cantidad = medida(ingrediente.cantidad, ingrediente.unidad);
+  if (cantidad === null) {
     return ingrediente.nota ? `${ingrediente.nombre} (${ingrediente.nota})` : ingrediente.nombre;
   }
-  const cantidad = formatearCantidad(ingrediente.cantidad);
   if (ingrediente.unidad === "" || ingrediente.unidad === "unidad") {
     return `${cantidad} ${ingrediente.nombre}`;
   }
-  return `${cantidad} ${ingrediente.unidad} de ${ingrediente.nombre}`;
+  return `${cantidad} de ${ingrediente.nombre}`;
 }
 
 /** JSON-LD de schema.org/Recipe. Solo se emite para recetas publicadas. */

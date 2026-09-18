@@ -9,6 +9,7 @@ import { CabeceraPublica } from "@/components/cabecera-publica";
 import { TarjetaReceta } from "@/components/tarjeta-receta";
 import { RetomarPreparacion } from "@/components/progreso-cocina";
 import { TiraCategorias } from "@/components/tira-categorias";
+import { RecordarCatalogo } from "@/components/retorno-catalogo";
 
 export const metadata: Metadata = { title: "Recetas", alternates: { canonical: "/recetas" } };
 
@@ -33,6 +34,7 @@ export default async function PaginaCatalogo({ searchParams }: {
     <>
       <CabeceraPublica />
       <main id="recetas" className="min-h-svh bg-superficie">
+        <RecordarCatalogo ruta={volverA}>
         <div className="pagina-catalogo py-8 sm:py-12">
           <div className="catalogo-encabezado"><h1>Recetas</h1><p role="status">{docs.length} {docs.length === 1 ? "receta" : "recetas"}</p></div>
           {/* La lupa es la entrada habitual. Esta ruta también funciona sin JS. */}
@@ -65,6 +67,7 @@ export default async function PaginaCatalogo({ searchParams }: {
             </div>
           )}
         </div>
+        </RecordarCatalogo>
       </main>
     </>
   );

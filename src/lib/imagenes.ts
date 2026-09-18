@@ -1,5 +1,10 @@
 import { ObjectId } from "mongodb";
 import type { Imagen, ImagenDoc } from "@/models/imagen";
+import { rutaImagen } from "@/lib/entrega-imagenes";
+
+export function imagenParaCliente(doc: ImagenDoc): Imagen {
+  return { ...docAImagen(doc), url: rutaImagen(doc._id.toHexString()) };
+}
 
 /**
  * Conversion entre las dos formas de una imagen, igual que en lib/recetas.ts:

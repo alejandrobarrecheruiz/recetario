@@ -16,6 +16,16 @@ import { idSchema, recetaEntradaSchema, recetaSchema } from "@/models/receta";
 
 type Contexto = { params: Promise<{ id: string }> };
 
+export async function GET(_peticion: Request, contexto: Contexto) {
+  const { id } = await contexto.params;
+  if (!idSchema.safeParse(id).success) return Response.json({ error: "No existe esa receta." }, { status: 404 });
+  const rol = await rolActual();
+  const recetas = await obtenerRecetas();
+  const receta = await recetas.findOne(conVisibilidad(rol, { _id: new ObjectId(id) }));
+  if (!receta) return Response.json({ error: "No existe esa receta." }, { status: 404, headers: { "Cache-Control": "private, no-store" } });
+  return Response.json(docAReceta(receta), { headers: { "Cache-Control": "private, no-store", Vary: "Cookie" } });
+}
+
 export async function PUT(peticion: Request, contexto: Contexto) {
   const origenInvalido = comprobarOrigen(peticion);
   if (origenInvalido) return origenInvalido;

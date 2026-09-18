@@ -1,7 +1,10 @@
 # Checklist para completar Recetario
 
-Actualizado: 18 de septiembre de 2026. Estado del código local, todavía sin
-desplegar. Las decisiones vigentes están en [CLAUDE.md](./CLAUDE.md).
+Actualizado: 19 de septiembre de 2026. Producción confirmada `Ready` en Vercel
+tras el PR #7 (`da5854e`). Los cambios de cierre posteriores están en la rama
+`feature/cierre-seguridad-fiabilidad`, aún no desplegados. Las decisiones
+vigentes están en [CLAUDE.md](./CLAUDE.md) y los procedimientos en
+[docs/OPERACION.md](./docs/OPERACION.md).
 
 **La web aún no está terminada.** Los dos problemas P0 identificados se han
 corregido localmente. Quedan configuración externa, contenidos y pruebas de
@@ -13,14 +16,13 @@ Se conservan los identificadores de los 39 puntos de la revisión inicial.
 
 ## Validación realizada
 
-- 76 pruebas unitarias correctas, incluidos retorno del login, comprobación
-  de origen, publicación, correo simulado, catálogo y progreso de cocina.
+- 82 pruebas unitarias correctas, incluidos intención de guardado tras acceso,
+  aislamiento/recuperación de borradores y tamaños de imágenes permitidos.
 - TypeScript y ESLint correctos; `git diff --check` sin errores.
-- 30 pruebas de entorno correctas contra `recetas_dev` e ImageKit. Mongo
+- 31 pruebas de entorno correctas con `PROBAR_HTTP=1` contra `recetas_dev` e ImageKit. Mongo
   comprobó índices y creó/eliminó datos temporales; ImageKit solo se consultó.
-- `npm run build -- --webpack` correcto. Turbopack quedó bloqueado por
-  restricciones del entorno para abrir puertos internos; no se ha validado
-  aquí su compilación.
+- `npm run build` con Turbopack correcto con acceso fuera del sandbox;
+  compilación 1,7 s y tipos 1,3 s en local. No equivale al tiempo total de Vercel.
 - `npm audit`: cero vulnerabilidades conocidas tras actualizar Next a
   16.3.5, sharp a 0.35.4 y js-yaml a su parche compatible.
 - HTTP local sobre el build: portada, login y recuperación responden 200;
@@ -28,11 +30,19 @@ Se conservan los identificadores de los 39 puntos de la revisión inicial.
   Las páginas incluyen CSP con nonce coincidente en HTML, nosniff y DENY.
 - Revisión visual e interactiva local de portada, ficha, catálogo y cuenta
   en móvil y escritorio: filtros y búsqueda combinados, raciones compartidas,
-  modo cocina y apertura/cierre de ajustes. No se han probado los nuevos flujos
-  autenticados de extremo a extremo: faltan entrega real de correos, TOTP,
-  cambios de contraseña y eliminación de cuentas con usuarios de prueba.
-- No se modificaron producción, cuentas reales, secretos ni configuración
-  de proveedores. No se hizo push ni despliegue.
+  modo cocina y apertura/cierre de ajustes. Retorno al filtro del catálogo
+  comprobado en navegador. Por HTTP local se comprobaron acceso, cambio de
+  contraseña, sesión caducada, TOTP y códigos de recuperación, eliminación de
+  lector y prohibición de eliminar admin, CSRF, fotos restringidas y conflicto
+  de guardado. Se utilizaron cuentas temporales y se limpiaron al terminar.
+- Editor probado en dos pestañas con un borrador temporal: recuperación de texto
+  e ingrediente incompleto, rechazo de versión antigua, conservación al seguir
+  escribiendo y sustitución solo tras confirmación explícita.
+- Backup de desarrollo restaurado en base temporal: documentos e índices
+  recuperados y cuatro originales verificados. La base temporal se eliminó;
+  el backup local se conserva fuera de Git. No se ensayó reconstruir ImageKit.
+- No se modificaron producción, cuentas reales, secretos ni configuración de
+  proveedores. Los workflows y correcciones nuevas requieren integración.
 
 Las comprobaciones de integración y HTTP necesitaron acceso de red fuera del
 sandbox. Los primeros fallos de DNS/conexión no eran fallos de credenciales.
@@ -66,19 +76,21 @@ sandbox. Los primeros fallos de DNS/conexión no eran fallos de credenciales.
 - [ ] **S8 · P1 · Separar credenciales dev/prod.** Verificar permisos reales,
   usuarios Mongo limitados por base, secretos de autenticación distintos y
   aislamiento de ImageKit. Una carpeta o nombre de base no aísla permisos.
+  La credencial local tiene `atlasAdmin`, confirmado con sus permisos efectivos.
   No se han cambiado secretos ni cuentas de proveedores.
 - [x] **S9 · P1 · Cabeceras HTTP.** CSP con nonce, protección frente a frames,
   nosniff, referrer y permisos restringidos. Verificadas por HTTP local.
   Estilos inline siguen permitidos; comprobar CSP y recursos en navegador y
   en el despliegue antes de integrar.
-- [ ] **S10 · P1 · CSRF — implementado, falta flujo autenticado.**
+- [ ] **S10 · P1 · CSRF — probado en HTTP local, falta Vercel.**
   Mutaciones propias comprueban Origin/Fetch Metadata y mantienen guards.
   Pruebas unitarias para origen ajeno/subdominios; falta comprobar cookies y
   llamadas autenticadas en Preview.
-- [ ] **S11 · P1 · Fotos restringidas.** Definir si deben tener el mismo control
-  de acceso que el texto. Las URLs actuales no están protegidas por sesión.
-  Si deben ser privadas, configurar entrega firmada, migración y caché; no
-  basta con esconder las URLs. No se ha migrado ningún fichero.
+- [ ] **S11 · P1 · Fotos restringidas — decisión aprobada, código preparado.**
+  Entrega por endpoint con autorización por receta y firma servidor-servidor,
+  tamaños acotados y sin caché compartida; probado 404/200 con cuentas de prueba.
+  Nuevas subidas privadas. Falta desplegar y bloquear URLs sin firma en ImageKit,
+  revisar caché y comprobar enlaces antiguos. No se ha migrado ningún fichero.
 - [ ] **S12 · P2 · Integridad de imágenes — implementación parcial.** El alta
   contrasta fileId, origen, carpeta, tipo, tamaño y dimensiones con ImageKit;
   rechaza SVG. Hay límites de textos/arrays y comprobación de fotos existentes
@@ -90,14 +102,17 @@ sandbox. Los primeros fallos de DNS/conexión no eran fallos de credenciales.
 
 ## 2. Editor y funcionamiento
 
-- [ ] **F1 · P1 · Guardado concurrente — implementado, falta prueba de flujo.**
+- [ ] **F1 · P1 · Guardado concurrente — probado por HTTP.**
   Peticiones serializadas; PUT exige If-Match con la fecha ISO y actualiza
   atómicamente por versión. 412 detiene el guardado y avisa del conflicto.
-  Probar dos pestañas, respuestas lentas y edición durante subida de fotos.
-- [ ] **F2 · P1 · Recuperación de trabajo — parcial.** Captura de fallos de red
-  y avisos al cerrar/seguir enlaces. Faltan borrador recuperable, resolución
-  de conflictos y cobertura de navegación atrás. No recargar ante un conflicto
-  sin copiar primero los cambios que se quieran conservar.
+  El segundo PUT con revisión antigua recibe 412 sin pisar el primero, también
+  probado en dos pestañas del navegador. Faltan respuestas lentas y fotos simultáneas.
+- [ ] **F2 · P1 · Recuperación de trabajo — implementada y probada entre pestañas.**
+  Borradores locales por usuario/receta/pestaña, recuperación y descarga JSON,
+  copia de la cola de fotos pendientes. Ante conflicto permite consultar la
+  versión actual y confirmar una sustitución, nunca fusiona automáticamente.
+  Pruebas unitarias de aislamiento y campos incompletos y recuperación visual;
+  falta corte de red real y navegación atrás con cambios sin guardar.
 - [ ] **F3 · P1 · Sustitución de fotos — parcial.** Se confirma la nueva
   referencia antes de borrar la foto antigua; una foto referenciada no se
   elimina. Falta limpieza/reintento de huérfanas tras fallo o cierre de pestaña.
@@ -115,8 +130,10 @@ sandbox. Los primeros fallos de DNS/conexión no eran fallos de credenciales.
   recuperables; Mongo no conserva promesas rechazadas. Falta probar recuperación
   tras fallo inicial de importación de auth, que usa await de módulo.
 - [ ] **F8 · P2 · Navegación/búsqueda — parcial.** Se combinan texto y categoría;
-  slug estable desde primera publicación. Faltan conservación de filtros al
-  navegar y paginación/límites del listado de API.
+  slug estable desde primera publicación. Retorno al catálogo conserva filtros
+  y posición dentro del recorrido público. Guardar tras acceso se completa con
+  intención local vigente y permite reintentar. Falta paginación/límites cuando
+  el volumen lo requiera. El progreso de cocina no se conserva tras recargar.
 
 ## 3. Privacidad, información y contacto
 
@@ -136,7 +153,8 @@ comprobaciones de los tratamientos reales para convertirlo en política definiti
 - [ ] **L3 · P1 · Inventario de cookies.** Observar navegación anónima, sesión,
   persistencia y TOTP: nombre, finalidad, duración y destinatario. Decidir con
   ese inventario si hacen falta medidas de consentimiento. No se añadió
-  automáticamente un banner.
+  automáticamente un banner. Inventario HTTP local inicial en `docs/OPERACION.md`;
+  verificar HTTPS y todos los flujos en producción antes de publicarlo.
 - [ ] **L4 · P1 · Información del sitio.** Contacto y titular disponibles.
   Faltan autoría/licencia de textos y fotos; valorar condiciones de cuenta y aplicabilidad del aviso
   legal. No añadir políticas de compra o devolución a este blog sin comercio.
@@ -155,13 +173,12 @@ Referencias para revisión del texto, no certificación legal:
 | Icono Apple | PNG 180 × 180 | Verificar en iPhone |
 | Imagen social | PNG 1200 × 630 con marca | Revisar tarjeta compartida |
 | Portada horizontal/móvil | Optimizador Next y selección por ancho | Medir peso, carga y encuadre reales |
-| Foto «Quién cocina aquí» | Sigue el hueco | Foto cuadrada de unos 1000 px o retirar bloque |
-| Bucle de cocina | Sigue el hueco | Vídeo corto con alternativa estática o retirar bloque |
+| Foto personal y vídeo | Bloques retirados de la portada aprobada | No son requisitos pendientes |
 | Fotos de recetas | Se resuelven por IDs referenciados | Inventario de portadas y pasos |
-| Texto alternativo | Sigue derivado de título/paso | Editor de descripciones útiles y revisión editorial |
+| Texto alternativo | Editable desde portada y pasos en el editor | Revisión editorial de descripciones útiles |
 
-- [ ] **V1 · P1:** icono sustituido; faltan foto/bucle o decisión de retirarlos.
-- [ ] **V2 · P1:** Apple/OG generados; faltan revisión de recortes y alt editables.
+- [ ] **V1 · P1:** icono sustituido; comprobar tamaño pequeño. Foto/bucle retirados.
+- [ ] **V2 · P1:** Apple/OG generados y alt editable; falta revisión en dispositivos.
 - [ ] **V3 · P1:** optimización implementada; faltan mediciones móviles.
 - [ ] **V4 · P1:** confirmar derechos de uso y revisar EXIF/ubicación.
   No se ha afirmado que los originales contengan GPS.
@@ -191,9 +208,10 @@ en Git. Manifest/PWA es opcional, no condición para cerrar el blog.
 
 ## 6. Operación y cierre
 
-- [ ] **O1 · P1 · Backup restaurable.** El script actual copia documentos,
-  no bytes de ImageKit ni índices. Falta restauración probada en base aislada,
-  copia protegida externa y retención. Con .env.local habitual se copia dev;
+- [ ] **O1 · P1 · Backup restaurable — ensayo parcial superado.** Documentos,
+  índices y originales incluidos; restauración aislada y hashes comprobados.
+  Faltan reconstrucción del proveedor de fotos, copia externa protegida y
+  retención. Con .env.local habitual se copia dev;
   producción requiere destino correcto y --permitir-prod explícito. Nunca
   ensayar una restauración sobre producción.
 - [ ] **O2 · P1 · Proveedores.** Verificar índices/permisos de producción,
@@ -201,14 +219,17 @@ en Git. Manifest/PWA es opcional, no condición para cerrar el blog.
   desarrollo no demuestran configuración correcta de producción.
 - [ ] **O3 · P1 · Alertas.** Confirmar monitor de disponibilidad y errores,
   destinatario de avisos y retención de logs; no registrar datos privados,
-  contraseñas o tokens. No es analítica comercial.
+  contraseñas o tokens. Workflow de disponibilidad preparado; falta integración
+  y prueba de notificaciones. No cubre todavía errores internos de aplicación.
 - [ ] **O4 · P1 · Pruebas y CI.** Pruebas unitarias/integración existentes
-  correctas; faltan cobertura de flujos autenticados/editor y CI del repositorio.
+  correctas; flujos HTTP ampliados y CI de lint/tipos/unidad preparado. Falta
+  ejecutarlo en GitHub y exigir su resultado en las ramas protegidas.
   No se añadieron frameworks ni dependencias nuevas.
 
 ## Siguiente revisión antes de desplegar
 
-1. Completar contacto/privacidad, configurar remitente y verificar correo.
+1. Configurar permisos de entorno y desplegar/probar entrega protegida antes de
+   bloquear URLs sin firma en ImageKit. Confirmar el remitente y verificar correo.
 2. Probar con cuentas temporales: lector, admin, TOTP, recuperación y borrado.
 3. Probar visibilidad por API y páginas: una receta no visible debe devolver 404.
 4. Simular dos pestañas, red lenta, caída de Mongo/ImageKit y limpieza fallida.

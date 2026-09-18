@@ -38,7 +38,8 @@ npm run dev                           # http://localhost:3000
 | `npm run indices` | Crea los índices de MongoDB (idempotente) |
 | `npm run crear-usuario` | Alta de usuario (`-- --rol admin` para el admin) |
 | `npm run seed:dev` | Datos de ejemplo (solo `recetas_dev`) |
-| `npm run backup` | Volcado manual de la base |
+| `npm run backup` | Copia de documentos, índices y originales de fotografías |
+| `npm run restaurar:ensayo -- --carpeta backups/… --base recetas_restauracion_ensayo` | Restauración en una base nueva y aislada; verifica las fotos sin subirlas |
 
 ## Entornos
 
@@ -67,11 +68,20 @@ acceso a las fuentes y la configuración de desarrollo de MongoDB.
 
 ### Bases de datos
 
-Un solo clúster de Atlas con dos bases. `MONGODB_URI` es la misma en todas
-partes; lo único que cambia es `MONGODB_DB`: `recetas_dev` en local y en Preview,
-`recetas_prod` solo en Production.
+Un clúster de Atlas con dos bases: `recetas_dev` en local y Preview,
+`recetas_prod` solo en Production. Cada entorno necesita un usuario limitado
+a su base y secretos de autenticación distintos. La revisión local encontró
+una credencial `atlasAdmin`: la separación de permisos todavía no está cerrada.
 
-Los scripts se niegan a arrancar contra `recetas_prod` desde local.
+El seed rechaza producción siempre. Índices, backup y alta de usuario requieren
+`--permitir-prod` explícito y configuración del entorno correcto.
+
+Producción: https://recetario-36ok.vercel.app. Preview de `develop`:
+https://recetario-git-develop-barrechee.vercel.app. Usar estos dominios canónicos
+en `BETTER_AUTH_URL`, no las URLs temporales de cada despliegue.
+
+La secuencia para proteger las fotos sin romperlas, las pruebas HTTP y el
+procedimiento de recuperación están en [docs/OPERACION.md](./docs/OPERACION.md).
 
 ## Ramas
 
@@ -82,12 +92,16 @@ feature/*  →  develop  →  PR  →  main
 `main` está protegida y despliega a producción. `develop` despliega a un preview
 fijo.
 
+GitHub Actions comprueba lint, tipos y pruebas unitarias en PRs y en las ramas
+principales, sin secretos. El workflow de disponibilidad comprueba la portada
+y `/api/salud` cada media hora una vez integrado en la rama predeterminada;
+hay que habilitar y verificar las notificaciones de fallos de Actions.
+
 ## Estado
 
 La iteración visual puede revisarse directamente con `npm run dev` en
 `http://localhost:3000`: portada, `/recetas`, `/recetas/[slug]`, modo cocina y `/cuenta`.
-Usa los datos de `recetas_dev`, que pueden diferir de las recetas y fotografías
-de la [maqueta de referencia](./docs/diseno/presentacion.html). No carga datos
+Usa los datos de `recetas_dev`, que pueden diferir de producción. No carga datos
 de demostración automáticamente ni modifica producción.
 
 El inicio muestra la última publicación visible y las dos anteriores. La

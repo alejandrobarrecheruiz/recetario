@@ -7,6 +7,7 @@ import { imagenADoc } from "@/lib/imagenes";
 import { sesionActual } from "@/lib/sesion";
 import { rolDeSesion } from "@/models/usuario";
 import { imagenEntradaSchema, imagenSchema } from "@/models/imagen";
+import { rutaImagen } from "@/lib/entrega-imagenes";
 
 // Alta de los METADATOS de una imagen que el navegador ya subio a ImageKit con
 // la firma de /api/imagenes/firma. Los bytes nunca pasan por aqui.
@@ -33,6 +34,9 @@ export async function POST(peticion: Request) {
   let archivo;
   try { archivo = await detallesDeImageKit(cuerpo.data.fileId); }
   catch { return Response.json({ error: "No se pudo verificar la foto. Vuelve a intentarlo." }, { status: 502 }); }
+  if (!archivo.isPrivateFile) {
+    return Response.json({ error: "La foto debe subirse como privada. Vuelve a subirla." }, { status: 400 });
+  }
   const carpeta = `/${process.env.IMAGEKIT_FOLDER?.replace(/^\/+|\/+$/g, "") ?? ""}/`;
   const origen = process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT;
   if (archivo.mime === "image/svg+xml" || archivo.filePath?.toLowerCase().endsWith(".svg")) {
@@ -55,5 +59,5 @@ export async function POST(peticion: Request) {
 
   await coleccion.insertOne(imagenADoc(imagen));
 
-  return Response.json(imagen, { status: 201 });
+  return Response.json({ ...imagen, url: rutaImagen(imagen._id) }, { status: 201 });
 }

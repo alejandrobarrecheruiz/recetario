@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 import { obtenerColecciones } from "@/lib/mongo";
 import type { Receta, RecetaDoc } from "@/models/receta";
 import type { Imagen } from "@/models/imagen";
+import { rutaImagen } from "@/lib/entrega-imagenes";
 
 type ResumenTarjeta = Pick<Receta, "_id" | "slug" | "titulo" | "resumen" | "publicadaEn" | "raciones" | "tiempo" | "dificultad" | "categorias">;
 type FotoTarjeta = Pick<Imagen, "url" | "alt" | "ancho" | "alto">;
@@ -26,7 +27,7 @@ export async function datosParaTarjetas(docs: RecetaDoc[], usuarioId?: string) {
     usuarioId && ids.length ? guardadas.find({ usuarioId: new ObjectId(usuarioId), recetaId: { $in: ids } }, { projection: { recetaId: 1 } }).toArray() : [],
   ]);
   return {
-    fotos: new Map<string, FotoTarjeta>(fotos.map((foto) => [foto._id.toHexString(), { url: foto.url, alt: foto.alt, ancho: foto.ancho, alto: foto.alto }])),
+    fotos: new Map<string, FotoTarjeta>(fotos.map((foto) => [foto._id.toHexString(), { url: rutaImagen(foto._id.toHexString()), alt: foto.alt, ancho: foto.ancho, alto: foto.alto }])),
     guardadas: new Set(propias.map((guardada) => guardada.recetaId.toHexString())),
   };
 }

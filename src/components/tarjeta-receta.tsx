@@ -29,9 +29,11 @@ export function TarjetaReceta({ receta, foto, guardada, haySesion, volverA, nive
           <img src={urlConAncho(foto.url, 960)} alt={foto.alt} width={foto.ancho} height={foto.alto} loading="lazy" />
         </span>}
         <div className="tarjeta-receta-cuerpo">
-          {receta.publicadaEn && <time className="tarjeta-receta-fecha" dateTime={receta.publicadaEn.toISOString()}>{fechaDePublicacion(receta.publicadaEn)}</time>}
+          <div className="tarjeta-receta-fecha" aria-hidden={receta.publicadaEn ? undefined : true}>
+            {receta.publicadaEn && <time dateTime={receta.publicadaEn.toISOString()}>{fechaDePublicacion(receta.publicadaEn)}</time>}
+          </div>
           <Titulo id={`receta-${receta._id}`} className="tarjeta-receta-titulo">{receta.titulo}</Titulo>
-          {receta.resumen && <p className="tarjeta-receta-resumen">{receta.resumen}</p>}
+          <p className="tarjeta-receta-resumen" aria-hidden={receta.resumen ? undefined : true}>{receta.resumen}</p>
           <div className="tarjeta-receta-datos"><DatosReceta minutos={receta.tiempo.total} raciones={receta.raciones} dificultad={receta.dificultad} /></div>
         </div>
       </Link>

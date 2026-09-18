@@ -13,17 +13,16 @@ import type { ZodError } from "zod";
 import {
   recetaEntradaSchema,
   type Dificultad,
-  type Estado,
-  type Ingrediente,
-  type Paso,
   type Receta,
-  type Tiempo,
-  type Visibilidad,
 } from "@/models/receta";
 import type { Imagen } from "@/models/imagen";
 import { subirImagen, quitarImagen } from "@/lib/subir-imagen";
 import { parsearCantidad, urlConAncho } from "@/lib/formato";
 import { Logo } from "@/components/logo";
+import { DescripcionImagen } from "@/components/descripcion-imagen";
+import { leerBorradores, prefijoBorrador } from "@/lib/borradores-editor";
+import type { DatosEditor, BorradorEditor } from "@/models/borrador-editor";
+import type { Ingrediente, Paso } from "@/models/receta";
 
 /**
  * El editor del panel: se escribe sobre la receta tal como se va a
@@ -39,25 +38,6 @@ import { Logo } from "@/components/logo";
  * (onInput actualiza el estado para el autoguardado, nunca al revés; así el
  * cursor no salta).
  */
-
-type DatosEditor = {
-  slug: string;
-  titulo: string;
-  resumen: string;
-  estado: Estado;
-  visibilidad: Visibilidad;
-  publicadaEn: Date | string | null;
-  raciones: number;
-  tiempo: Tiempo;
-  dificultad: Dificultad;
-  categorias: string[];
-  etiquetas: string[];
-  ingredientes: Ingrediente[];
-  pasos: Paso[];
-  portadaId: string | null;
-  notas: string;
-  seoDescripcion: string;
-};
 
 type FaseGuardado = "limpio" | "pendiente" | "guardando" | "invalido" | "fallo";
 
@@ -252,9 +232,11 @@ function GrupoChips({
 export function EditorReceta({
   receta,
   imagenes,
+  usuarioId,
 }: {
   receta: Receta;
   imagenes: Imagen[];
+  usuarioId: string;
 }) {
   const router = useRouter();
 
@@ -298,11 +280,77 @@ export function EditorReceta({
   const fotosPendientesDeBorrar = useRef(new Set<string>());
   const [borrando, setBorrando] = useState(false);
   const guardarRef = useRef<() => void>(() => {});
+  const [instancia] = useState(() => crypto.randomUUID());
+  const claveBorrador = `${prefijoBorrador(usuarioId, receta._id)}${instancia}`;
+  const [recuperables, setRecuperables] = useState<ReturnType<typeof leerBorradores>>([]);
+  const [borradoresLeidos, setBorradoresLeidos] = useState(false);
+  const [avisoLocal, setAvisoLocal] = useState("");
+  const [versionVista, setVersionVista] = useState(0);
+
+  useEffect(() => {
+    const temporizador = setTimeout(() => {
+      try { setRecuperables(leerBorradores(window.localStorage, usuarioId, receta._id)); }
+      catch { setAvisoLocal("El navegador no permite guardar una copia local. Descarga tus cambios antes de salir."); }
+      setBorradoresLeidos(true);
+    }, 0);
+    return () => clearTimeout(temporizador);
+  }, [usuarioId, receta._id]);
+
+  useEffect(() => {
+    if (!borradoresLeidos) return;
+    try {
+      if (guardado.fase === "limpio" && fotosPendientesDeBorrar.current.size === 0) {
+        window.localStorage.removeItem(claveBorrador);
+      } else {
+        const borrador: BorradorEditor = { recetaId: receta._id, usuarioId, revision: revisionServidor.current,
+          guardadoEn: Date.now(), datos, imagenes: Object.values(imagenesPorId), fotosPendientes: [...fotosPendientesDeBorrar.current] };
+        window.localStorage.setItem(claveBorrador, JSON.stringify(borrador));
+      }
+    } catch {
+      queueMicrotask(() => setAvisoLocal("No se puede mantener la copia local: el almacenamiento está lleno o bloqueado. Descarga tus cambios antes de salir."));
+    }
+  }, [borradoresLeidos, claveBorrador, guardado.fase, datos, imagenesPorId, receta._id, usuarioId]);
+
+  function descargarCambios() {
+    const fichero = new Blob([JSON.stringify({ recetaId: receta._id, usuarioId, revision: revisionServidor.current,
+      guardadoEn: Date.now(), datos, imagenes: Object.values(imagenesPorId), fotosPendientes: [...fotosPendientesDeBorrar.current] }, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(fichero);
+    const enlace = document.createElement("a"); enlace.href = url; enlace.download = `borrador-${receta._id}.json`; enlace.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async function guardarMiVersion() {
+    try {
+      const respuesta = await fetch(`/api/recetas/${receta._id}`, { cache: "no-store" });
+      if (!respuesta.ok) throw new Error();
+      const actual: Receta = await respuesta.json();
+      if (!window.confirm(`¿Quieres sustituir la versión del servidor guardada el ${new Date(actual.actualizadaEn).toLocaleString("es")} por tus cambios?`)) return;
+      revisionServidor.current = new Date(actual.actualizadaEn).toISOString();
+      hayConflicto.current = false;
+      await guardar();
+    } catch { setGuardado({ fase: "fallo", problema: "No se pudo consultar la versión actual. Tus cambios siguen en el editor." }); }
+  }
+
+  function recuperar(clave: string, borrador: BorradorEditor) {
+    // Primero copiar: una cuota de almacenamiento llena no debe perder la copia original.
+    try { window.localStorage.setItem(claveBorrador, JSON.stringify(borrador)); window.localStorage.removeItem(clave); }
+    catch { setAvisoLocal("No se pudo copiar el borrador local. Conserva una descarga antes de salir."); }
+    revisionServidor.current = borrador.revision;
+    hayConflicto.current = borrador.revision !== new Date(receta.actualizadaEn).toISOString();
+    fotosPendientesDeBorrar.current = new Set(borrador.fotosPendientes);
+    setDatos(borrador.datos);
+    setImagenesPorId(Object.fromEntries(borrador.imagenes.map(imagen => [imagen._id, imagen])));
+    version.current += 1; setVersionVista(v => v + 1);
+    setRecuperables(actuales => actuales.filter(b => b.clave !== clave));
+    setGuardado(hayConflicto.current ? { fase: "fallo", problema: "Hay una versión más reciente en el servidor. Revisa la receta actual antes de sustituirla con tu borrador." } : { fase: "pendiente" });
+  }
 
   function tocar(cambios: Partial<DatosEditor> | ((actuales: DatosEditor) => Partial<DatosEditor>)) {
     version.current += 1;
     setDatos((actuales) => ({ ...actuales, ...(typeof cambios === "function" ? cambios(actuales) : cambios) }));
-    setGuardado({ fase: "pendiente" });
+    setGuardado(hayConflicto.current
+      ? { fase: "fallo", problema: "Hay otra versión en el servidor. Revisa ambas antes de guardar tu versión." }
+      : { fase: "pendiente" });
   }
 
   async function guardar(publicando = false) {
@@ -399,7 +447,8 @@ export function EditorReceta({
     };
     const alNavegar = (evento: MouseEvent) => {
       const enlace = evento.target instanceof Element ? evento.target.closest("a[href]") : null;
-      if (enlace && !window.confirm("Hay cambios sin guardar. ¿Quieres salir y descartarlos?")) {
+      if (enlace?.hasAttribute("download") || enlace?.getAttribute("target") === "_blank" || evento.metaKey || evento.ctrlKey) return;
+      if (enlace && !window.confirm("Hay cambios sin guardar en el servidor. ¿Quieres salir? Comprueba que tienes una copia local o una descarga antes de hacerlo.")) {
         evento.preventDefault();
         evento.stopPropagation();
       }
@@ -534,7 +583,22 @@ export function EditorReceta({
     "bg-transparent text-right font-[family-name:var(--font-dm-mono)] text-[13px] outline-none";
 
   return (
-    <div className="flex min-h-svh flex-col">
+    <div key={versionVista} className="flex min-h-svh flex-col">
+      {recuperables.length > 0 && <aside className="border-b border-tinta/20 bg-superficie p-5" aria-label="Borradores recuperables">
+        <p>Hay cambios sin guardar de otra pestaña o sesión en este navegador.</p>
+        {recuperables.map(({ clave, borrador }) => <div key={clave} className="mt-3 flex flex-wrap items-center gap-4">
+          <span>{new Date(borrador.guardadoEn).toLocaleString("es")}</span>
+          <button type="button" disabled={guardado.fase !== "limpio"} onClick={() => recuperar(clave, borrador)}>Recuperar borrador</button>
+          <button type="button" onClick={() => { window.localStorage.removeItem(clave); setRecuperables(actuales => actuales.filter(b => b.clave !== clave)); }}>Descartar copia local</button>
+        </div>)}
+      </aside>}
+      {avisoLocal && <p role="alert" className="p-4 text-acento">{avisoLocal}</p>}
+      {conProblema && <aside className="flex flex-wrap items-center gap-4 border-b border-tinta/20 bg-superficie p-4">
+        <button type="button" onClick={descargarCambios}>Descargar mis cambios</button>
+        <a href={`/recetas/${receta.slug}`} target="_blank" rel="noopener noreferrer">Revisar receta del servidor</a>
+        <button type="button" onClick={() => window.location.reload()}>Recargar y conservar borrador local</button>
+        <button type="button" onClick={() => void guardarMiVersion()}>Guardar mi versión revisada</button>
+      </aside>}
       {/* ── Barra superior ─────────────────────────────────────────── */}
       <div className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-tinta/15 bg-superficie px-[clamp(16px,3vw,28px)] py-3">
         <div className="flex min-w-0 items-center gap-5 font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.14em]">
@@ -808,7 +872,7 @@ export function EditorReceta({
                 Título
               </div>
               <CampoEditable
-                inicial={receta.titulo}
+                inicial={datos.titulo}
                 onCambio={(titulo) => tocar({ titulo })}
                 placeholder="El nombre del plato"
                 className="-ml-1.5 max-w-[18ch] px-1.5 py-0.5 font-[family-name:var(--font-bricolage)] text-[clamp(34px,4.8vw,66px)] font-extrabold leading-[0.92] tracking-[-0.045em]"
@@ -817,6 +881,7 @@ export function EditorReceta({
           </div>
 
           <div className="max-w-[900px] px-[clamp(20px,4vw,44px)] pt-10">
+            {portada && <DescripcionImagen key={portada._id} id={portada._id} inicial={portada.alt} onGuardada={alt => setImagenesPorId(actual => ({ ...actual, [portada._id]: { ...actual[portada._id], alt } }))} />}
             {errorSubida && (
               <p role="alert" className="mb-6 text-sm text-acento">{errorSubida}</p>
             )}
@@ -825,7 +890,7 @@ export function EditorReceta({
               Resumen
             </div>
             <CampoEditable
-              inicial={receta.resumen}
+              inicial={datos.resumen}
               onCambio={(resumen) => tocar({ resumen })}
               multilinea
               placeholder="Dos líneas sobre por qué esta receta."
@@ -1052,6 +1117,9 @@ export function EditorReceta({
                         )}
                       </label>
                       {foto && (
+                        <DescripcionImagen key={foto._id} id={foto._id} inicial={foto.alt} onGuardada={alt => setImagenesPorId(actual => ({ ...actual, [foto._id]: { ...actual[foto._id], alt } }))} />
+                      )}
+                      {foto && (
                         <button
                           type="button"
                           onClick={() => void quitarFotoDePaso(paso)}
@@ -1083,7 +1151,7 @@ export function EditorReceta({
                 Nota personal
               </div>
               <CampoEditable
-                inicial={receta.notas ?? ""}
+                inicial={datos.notas}
                 onCambio={(notas) => tocar({ notas })}
                 multilinea
                 placeholder="Lo que le contarías a quien la cocine (opcional)."

@@ -43,12 +43,12 @@ export const dificultadSchema = z.enum(["facil", "media", "dificil"]);
  * `id` es propio y estable, para reordenar en el panel con keys fiables.
  */
 export const ingredienteSchema = z.object({
-  id: z.string().min(1),
+  id: z.string().min(1).max(100),
   cantidad: z.number().nonnegative(),
   /** "g", "ml", "cucharada", "diente"... Cadena vacia para "al gusto". */
-  unidad: z.string(),
-  nombre: z.string().min(1),
-  nota: z.string().optional(),
+  unidad: z.string().max(80),
+  nombre: z.string().trim().min(1).max(300),
+  nota: z.string().max(1000).optional(),
 });
 
 /**
@@ -57,11 +57,11 @@ export const ingredienteSchema = z.object({
  * proveedor de imagenes solo toca esa coleccion.
  */
 export const pasoSchema = z.object({
-  id: z.string().min(1),
+  id: z.string().min(1).max(100),
   orden: z.number().int().nonnegative(),
   /** Rotulillo opcional del paso («El sofrito»). Las recetas viejas no lo tienen. */
-  titulo: z.string().optional(),
-  texto: z.string().min(1),
+  titulo: z.string().max(300).optional(),
+  texto: z.string().trim().min(1).max(10000),
   imagenId: idSchema.nullable(),
 });
 
@@ -73,7 +73,7 @@ export const tiempoSchema = z.object({
 });
 
 export const seoSchema = z.object({
-  descripcion: z.string(),
+  descripcion: z.string().max(500),
 });
 
 export const recetaSchema = z.object({
@@ -81,9 +81,10 @@ export const recetaSchema = z.object({
   /** Unico. Es la URL: /recetas/{slug}. Indice unico en Mongo. */
   slug: z
     .string()
+    .max(180)
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "El slug va en minusculas y guiones"),
-  titulo: z.string().min(1),
-  resumen: z.string(),
+  titulo: z.string().trim().min(1).max(300),
+  resumen: z.string().max(2000),
   estado: estadoSchema,
   visibilidad: visibilidadSchema,
   publicadaEn: z.coerce.date().nullable(),
@@ -93,15 +94,15 @@ export const recetaSchema = z.object({
   raciones: z.number().int().positive(),
   tiempo: tiempoSchema,
   dificultad: dificultadSchema,
-  categorias: z.array(z.string()),
-  etiquetas: z.array(z.string()),
+  categorias: z.array(z.string().trim().min(1).max(80)).max(30),
+  etiquetas: z.array(z.string().trim().min(1).max(80)).max(50),
 
-  ingredientes: z.array(ingredienteSchema),
-  pasos: z.array(pasoSchema),
+  ingredientes: z.array(ingredienteSchema).max(200),
+  pasos: z.array(pasoSchema).max(100),
 
   /** Referencia a `images`, no una URL. */
   portadaId: idSchema.nullable(),
-  notas: z.string().optional(),
+  notas: z.string().max(10000).optional(),
   seo: seoSchema,
 });
 
@@ -113,6 +114,19 @@ export const recetaEntradaSchema = recetaSchema.omit({
   _id: true,
   autorId: true,
   actualizadaEn: true,
+}).superRefine((receta, contexto) => {
+  for (const lista of ["ingredientes", "pasos"] as const) {
+    const ids = receta[lista].map((elemento) => elemento.id);
+    if (new Set(ids).size !== ids.length) {
+      contexto.addIssue({ code: "custom", path: [lista], message: "Cada elemento debe tener un identificador distinto." });
+    }
+    if (receta.estado === "publicada" && ids.length === 0) {
+      contexto.addIssue({ code: "custom", path: [lista], message: `Añade ${lista} antes de publicar.` });
+    }
+  }
+  if (receta.estado === "publicada" && receta.tiempo.total < Math.max(receta.tiempo.preparacion, receta.tiempo.coccion)) {
+    contexto.addIssue({ code: "custom", path: ["tiempo", "total"], message: "El tiempo total no puede ser menor que la preparación o la cocción." });
+  }
 });
 
 export type Ingrediente = z.infer<typeof ingredienteSchema>;

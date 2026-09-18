@@ -292,15 +292,21 @@ export function EditorReceta({
   >(null);
 
   const version = useRef(0);
+  const revisionServidor = useRef(new Date(receta.actualizadaEn).toISOString());
+  const guardando = useRef(false);
+  const hayConflicto = useRef(false);
+  const fotosPendientesDeBorrar = useRef(new Set<string>());
+  const [borrando, setBorrando] = useState(false);
   const guardarRef = useRef<() => void>(() => {});
 
-  function tocar(cambios: Partial<DatosEditor>) {
+  function tocar(cambios: Partial<DatosEditor> | ((actuales: DatosEditor) => Partial<DatosEditor>)) {
     version.current += 1;
-    setDatos((actuales) => ({ ...actuales, ...cambios }));
+    setDatos((actuales) => ({ ...actuales, ...(typeof cambios === "function" ? cambios(actuales) : cambios) }));
     setGuardado({ fase: "pendiente" });
   }
 
   async function guardar(publicando = false) {
+    if (guardando.current || hayConflicto.current || borrando) return;
     const enVersion = version.current;
     const entrada = recetaEntradaSchema.safeParse({
       slug: datos.slug,
@@ -331,33 +337,45 @@ export function EditorReceta({
       return;
     }
 
+    guardando.current = true;
     setGuardado({ fase: "guardando" });
-    const respuesta = await fetch(`/api/recetas/${receta._id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(entrada.data),
-    });
-
-    if (!respuesta.ok) {
-      const cuerpo = await respuesta.json().catch(() => null);
-      setGuardado({
-        fase: "fallo",
-        problema: cuerpo?.error ?? `error ${respuesta.status} al guardar`,
+    try {
+      const respuesta = await fetch(`/api/recetas/${receta._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "If-Match": revisionServidor.current },
+        body: JSON.stringify(entrada.data),
       });
-      return;
+      if (!respuesta.ok) {
+        const cuerpo = await respuesta.json().catch(() => null);
+        hayConflicto.current = respuesta.status === 412;
+        throw new Error(cuerpo?.error ?? "No se pudo guardar. Comprueba tu conexión y vuelve a intentarlo.");
+      }
+      const guardada: Receta = await respuesta.json();
+      revisionServidor.current = new Date(guardada.actualizadaEn).toISOString();
+      setDatos((actuales) => ({
+        ...actuales,
+        estado: version.current === enVersion ? guardada.estado : actuales.estado,
+        publicadaEn: guardada.publicadaEn,
+      }));
+      setGuardadoEn(Date.now());
+      setHaceSegundos(0);
+      // Solo borrar después de que el servidor confirme que ya no se usa.
+      const usadas = new Set([guardada.portadaId, ...guardada.pasos.map((paso) => paso.imagenId)]);
+      for (const id of fotosPendientesDeBorrar.current) {
+        if (usadas.has(id)) continue;
+        try {
+          await quitarImagen(id);
+          fotosPendientesDeBorrar.current.delete(id);
+        } catch {
+          setErrorSubida("Los cambios están guardados, pero alguna foto anterior no se pudo limpiar. Pulsa Guardar para reintentarlo.");
+        }
+      }
+      setGuardado(version.current === enVersion ? { fase: "limpio" } : { fase: "pendiente" });
+    } catch (error) {
+      setGuardado({ fase: "fallo", problema: error instanceof Error ? error.message : "No hay conexión. Vuelve a guardar cuando se recupere." });
+    } finally {
+      guardando.current = false;
     }
-
-    // `publicadaEn` la decide el servidor al publicar: se recoge para no
-    // mandarle null otra vez en el siguiente autoguardado.
-    const guardada: Receta = await respuesta.json();
-    setDatos((actuales) => ({
-      ...actuales,
-      estado: guardada.estado,
-      publicadaEn: guardada.publicadaEn,
-    }));
-    setGuardadoEn(Date.now());
-    setHaceSegundos(0);
-    setGuardado(version.current === enVersion ? { fase: "limpio" } : { fase: "pendiente" });
   }
 
   // La referencia se refresca en cada render para que el debounce llame
@@ -372,6 +390,27 @@ export function EditorReceta({
     const temporizador = setTimeout(() => guardarRef.current(), 1200);
     return () => clearTimeout(temporizador);
   }, [guardado.fase, datos]);
+
+  useEffect(() => {
+    if (guardado.fase === "limpio" || borrando) return;
+    const alCerrar = (evento: BeforeUnloadEvent) => {
+      evento.preventDefault();
+      evento.returnValue = "";
+    };
+    const alNavegar = (evento: MouseEvent) => {
+      const enlace = evento.target instanceof Element ? evento.target.closest("a[href]") : null;
+      if (enlace && !window.confirm("Hay cambios sin guardar. ¿Quieres salir y descartarlos?")) {
+        evento.preventDefault();
+        evento.stopPropagation();
+      }
+    };
+    window.addEventListener("beforeunload", alCerrar);
+    document.addEventListener("click", alNavegar, true);
+    return () => {
+      window.removeEventListener("beforeunload", alCerrar);
+      document.removeEventListener("click", alNavegar, true);
+    };
+  }, [guardado.fase, borrando]);
 
   // El "hace 12 s" de la barra: un tic por segundo.
   useEffect(() => {
@@ -406,7 +445,7 @@ export function EditorReceta({
       });
       setImagenesPorId((mapa) => ({ ...mapa, [imagen._id]: imagen }));
       tocar({ portadaId: imagen._id });
-      if (anterior) await quitarImagen(anterior).catch(() => {});
+      if (anterior) fotosPendientesDeBorrar.current.add(anterior);
     } catch (fallo) {
       setErrorSubida(fallo instanceof Error ? fallo.message : "La subida falló.");
     } finally {
@@ -419,7 +458,7 @@ export function EditorReceta({
     setErrorSubida(null);
     const id = datos.portadaId;
     tocar({ portadaId: null });
-    await quitarImagen(id).catch(() => {});
+    fotosPendientesDeBorrar.current.add(id);
   }
 
   async function cambiarFotoDePaso(paso: Paso, indice: number, fichero: File) {
@@ -434,12 +473,12 @@ export function EditorReceta({
         alt: `${datos.titulo || "Receta"}: paso ${indice + 1}`,
       });
       setImagenesPorId((mapa) => ({ ...mapa, [imagen._id]: imagen }));
-      tocar({
-        pasos: datos.pasos.map((otro) =>
+      tocar((actuales) => ({
+        pasos: actuales.pasos.map((otro) =>
           otro.id === paso.id ? { ...otro, imagenId: imagen._id } : otro,
         ),
-      });
-      if (anterior) await quitarImagen(anterior).catch(() => {});
+      }));
+      if (anterior) fotosPendientesDeBorrar.current.add(anterior);
     } catch (fallo) {
       setErrorSubida(fallo instanceof Error ? fallo.message : "La subida falló.");
     } finally {
@@ -455,24 +494,33 @@ export function EditorReceta({
         otro.id === paso.id ? { ...otro, imagenId: null } : otro,
       ),
     });
-    await quitarImagen(id).catch(() => {});
+    fotosPendientesDeBorrar.current.add(id);
   }
 
   async function borrarReceta() {
+    if (guardando.current || borrando) return;
     if (!confirmandoBorrado) {
       // Doble pulsacion en vez de confirm(): sin modales del navegador.
       setConfirmandoBorrado(true);
       return;
     }
+    setBorrando(true);
+    try {
     const respuesta = await fetch(`/api/recetas/${receta._id}`, { method: "DELETE" });
     if (!respuesta.ok) {
       setConfirmandoBorrado(false);
       const cuerpo = await respuesta.json().catch(() => null);
       setGuardado({ fase: "fallo", problema: cuerpo?.error ?? "no se pudo borrar" });
+      setBorrando(false);
       return;
     }
-    router.push("/admin");
+    const resultado = await respuesta.json();
+    router.push(resultado.imagenesConFallo ? "/admin?limpieza=pendiente" : "/admin");
     router.refresh();
+    } catch {
+      setBorrando(false);
+      setGuardado({ fase: "fallo", problema: "No se pudo confirmar el borrado. Comprueba la conexión." });
+    }
   }
 
   const portada = datos.portadaId ? imagenesPorId[datos.portadaId] : undefined;
@@ -498,6 +546,7 @@ export function EditorReceta({
             /recetas/
             <input
               value={datos.slug}
+              readOnly={Boolean(datos.publicadaEn)}
               onChange={(evento) =>
                 tocar({ slug: evento.target.value.toLowerCase() })
               }
@@ -508,6 +557,7 @@ export function EditorReceta({
         </div>
         <div className="flex flex-wrap items-center gap-3.5">
           <span
+            role="status"
             className={`flex items-center gap-2 font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.12em] ${
               conProblema ? "text-acento" : "text-tinta/60"
             }`}
@@ -527,16 +577,14 @@ export function EditorReceta({
             >
               Borrador
             </button>
-            <button
-              type="button"
-              onClick={() => tocar({ estado: "publicada" })}
-              className={clasePildoraEstado(datos.estado === "publicada")}
-            >
+            <span className={clasePildoraEstado(datos.estado === "publicada")}>
               Publicada
-            </button>
+            </span>
           </div>
+          <button type="button" disabled={guardado.fase === "guardando" || borrando} onClick={() => void guardar()} className="rounded-full border border-tinta/30 px-5 py-3 disabled:opacity-50">Guardar</button>
           <button
             type="button"
+            disabled={guardado.fase === "guardando" || borrando}
             onClick={() => void guardar(true)}
             className="rounded-full bg-tinta px-5.5 py-2.75 font-[family-name:var(--font-dm-mono)] text-[11.5px] uppercase tracking-[0.14em] text-papel hover:bg-acento"
           >
@@ -770,7 +818,7 @@ export function EditorReceta({
 
           <div className="max-w-[900px] px-[clamp(20px,4vw,44px)] pt-10">
             {errorSubida && (
-              <p className="mb-6 text-sm text-acento">{errorSubida}</p>
+              <p role="alert" className="mb-6 text-sm text-acento">{errorSubida}</p>
             )}
 
             <div className="mb-2.75 font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.2em] text-tinta/50">
@@ -817,6 +865,8 @@ export function EditorReceta({
                   onDrop={(evento) => evento.preventDefault()}
                   className="grid grid-cols-[22px_58px_68px_minmax(0,1fr)_minmax(60px,120px)_22px] items-baseline gap-3 rounded-[3px] border-t border-tinta/10 px-2 py-2.5 hover:bg-tinta/5"
                 >
+                  <span className="flex flex-col">
+                  <button type="button" aria-label={`Subir ingrediente ${indice + 1}`} disabled={indice === 0} onClick={() => tocar({ ingredientes: mover(datos.ingredientes, indice, indice - 1) })}>↑</button>
                   <span
                     draggable
                     onDragStart={() => setArrastre({ lista: "ingredientes", desde: indice })}
@@ -825,6 +875,8 @@ export function EditorReceta({
                     className="cursor-grab font-[family-name:var(--font-dm-mono)] text-xs text-tinta/30"
                   >
                     ::
+                  </span>
+                  <button type="button" aria-label={`Bajar ingrediente ${indice + 1}`} disabled={indice === datos.ingredientes.length - 1} onClick={() => tocar({ ingredientes: mover(datos.ingredientes, indice, indice + 1) })}>↓</button>
                   </span>
                   <EntradaCantidad
                     valor={ingrediente.cantidad}
@@ -933,6 +985,8 @@ export function EditorReceta({
                     onDrop={(evento) => evento.preventDefault()}
                     className="grid grid-cols-[40px_minmax(0,1fr)_92px] items-start gap-4.5 rounded-[4px] px-2.5 py-3.5 hover:bg-tinta/5"
                   >
+                    <div className="flex flex-col items-center gap-2">
+                    <button type="button" aria-label={`Subir paso ${indice + 1}`} disabled={indice === 0} onClick={() => tocar({ pasos: mover(datos.pasos, indice, indice - 1) })}>↑</button>
                     <div
                       draggable
                       onDragStart={() => setArrastre({ lista: "pasos", desde: indice })}
@@ -941,6 +995,8 @@ export function EditorReceta({
                       className="cursor-grab font-[family-name:var(--font-bricolage)] text-3xl font-extrabold leading-none tracking-[-0.045em] text-tinta/30"
                     >
                       {String(indice + 1).padStart(2, "0")}
+                    </div>
+                    <button type="button" aria-label={`Bajar paso ${indice + 1}`} disabled={indice === datos.pasos.length - 1} onClick={() => tocar({ pasos: mover(datos.pasos, indice, indice + 1) })}>↓</button>
                     </div>
                     <div className="min-w-0">
                       <CampoEditable

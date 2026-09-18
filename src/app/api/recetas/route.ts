@@ -1,4 +1,5 @@
 import { ObjectId } from "mongodb";
+import { comprobarOrigen } from "@/lib/origen";
 import { MongoServerError } from "mongodb";
 import { obtenerRecetas } from "@/lib/mongo";
 import { conVisibilidad } from "@/lib/visibilidad";
@@ -26,6 +27,8 @@ export async function GET() {
 
 /** Alta. Solo admin. */
 export async function POST(peticion: Request) {
+  const origenInvalido = comprobarOrigen(peticion);
+  if (origenInvalido) return origenInvalido;
   const sesion = await sesionActual();
   if (!sesion || rolDeSesion(sesion.user.role) !== "admin") {
     // 403 uniforme, antes de mirar nada: no revela si algo existe o no.

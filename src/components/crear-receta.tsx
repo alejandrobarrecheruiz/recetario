@@ -42,6 +42,7 @@ export function CrearReceta() {
     }
 
     setEnviando(true);
+    try {
     const respuesta = await fetch("/api/recetas", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -56,6 +57,11 @@ export function CrearReceta() {
 
     const receta: Receta = await respuesta.json();
     router.push(`/admin/recetas/${receta._id}/editar`);
+    } catch {
+      setError("No se pudo confirmar la creación. Comprueba el panel antes de volver a intentarlo.");
+    } finally {
+      setEnviando(false);
+    }
   }
 
   return (
@@ -72,7 +78,7 @@ export function CrearReceta() {
           className="border-b border-tinta/25 bg-transparent pb-3 font-[family-name:var(--font-bricolage)] text-[clamp(26px,3.4vw,44px)] font-extrabold tracking-[-0.04em] outline-none placeholder:text-tinta/25 focus:border-tinta"
         />
       </label>
-      {error && <p className="text-sm text-acento">{error}</p>}
+      {error && <p role="alert" className="text-sm text-acento">{error}</p>}
       <button
         type="submit"
         disabled={enviando}

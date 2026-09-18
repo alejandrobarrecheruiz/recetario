@@ -15,13 +15,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const coleccion = await obtenerRecetas();
 
   const docs = await coleccion
-    .find(conVisibilidad("publico"))
-    .sort({ publicadaEn: -1 })
+    .find(conVisibilidad("publico", { estado: "publicada" }))
+    .sort({ publicadaEn: -1, _id: -1 })
     .toArray();
 
   return [
     {
       url: base,
+      lastModified: docs[0]?.actualizadaEn ?? new Date(),
+    },
+    {
+      url: `${base}/recetas`,
       lastModified: docs[0]?.actualizadaEn ?? new Date(),
     },
     ...docs.map((receta) => ({

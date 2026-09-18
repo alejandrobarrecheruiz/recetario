@@ -1,4 +1,6 @@
 import { ObjectId } from "mongodb";
+import { comprobarOrigen } from "@/lib/origen";
+import { conVisibilidad } from "@/lib/visibilidad";
 import { MongoServerError } from "mongodb";
 import { obtenerColecciones, obtenerRecetas } from "@/lib/mongo";
 import { borrarDeImageKit } from "@/lib/imagekit";
@@ -15,6 +17,8 @@ import { idSchema, recetaEntradaSchema, recetaSchema } from "@/models/receta";
 type Contexto = { params: Promise<{ id: string }> };
 
 export async function PUT(peticion: Request, contexto: Contexto) {
+  const origenInvalido = comprobarOrigen(peticion);
+  if (origenInvalido) return origenInvalido;
   if ((await rolActual()) !== "admin") {
     return Response.json({ error: "Solo el admin edita recetas." }, { status: 403 });
   }
@@ -34,9 +38,25 @@ export async function PUT(peticion: Request, contexto: Contexto) {
   }
 
   const coleccion = await obtenerRecetas();
-  const existente = await coleccion.findOne({ _id: new ObjectId(idValido.data) });
+  const existente = await coleccion.findOne(conVisibilidad("admin", { _id: new ObjectId(idValido.data) }));
   if (!existente) {
     return Response.json({ error: "No existe esa receta." }, { status: 404 });
+  }
+
+  if (peticion.headers.get("if-match") !== existente.actualizadaEn.toISOString()) {
+    return Response.json({ error: "La receta ha cambiado en otra pestaña. Recarga para ver la última versión antes de editar." }, { status: 412 });
+  }
+  if (existente.publicadaEn && cuerpo.data.slug !== existente.slug) {
+    return Response.json({ error: "La dirección de una receta publicada se conserva para que sus enlaces sigan funcionando." }, { status: 400 });
+  }
+
+  const idsImagenes = [...new Set([cuerpo.data.portadaId, ...cuerpo.data.pasos.map((paso) => paso.imagenId)].filter((id): id is string => id !== null))];
+  if (idsImagenes.length) {
+    const { imagenes } = await obtenerColecciones();
+    const disponibles = await imagenes.countDocuments({ _id: { $in: idsImagenes.map((id) => new ObjectId(id)) } });
+    if (disponibles !== idsImagenes.length) {
+      return Response.json({ error: "Alguna foto ya no existe. Revisa las imágenes antes de guardar." }, { status: 400 });
+    }
   }
 
   // `autorId` se conserva: quien la escribio no cambia por editarla.
@@ -44,12 +64,17 @@ export async function PUT(peticion: Request, contexto: Contexto) {
     ...cuerpo.data,
     _id: idValido.data,
     autorId: existente.autorId.toHexString(),
-    actualizadaEn: new Date(),
-    publicadaEn: resolverPublicadaEn(cuerpo.data),
+    actualizadaEn: new Date(Math.max(Date.now(), existente.actualizadaEn.getTime() + 1)),
+    publicadaEn: resolverPublicadaEn({ ...cuerpo.data, publicadaEn: existente.publicadaEn }),
   });
 
   try {
-    await coleccion.replaceOne({ _id: existente._id }, recetaADoc(receta));
+    const resultado = await coleccion.replaceOne(
+      conVisibilidad("admin", { _id: existente._id, actualizadaEn: existente.actualizadaEn }), recetaADoc(receta),
+    );
+    if (resultado.matchedCount === 0) {
+      return Response.json({ error: "La receta acaba de cambiar. Recarga antes de volver a guardarla." }, { status: 412 });
+    }
   } catch (error) {
     if (error instanceof MongoServerError && error.code === 11000) {
       return Response.json(
@@ -64,6 +89,8 @@ export async function PUT(peticion: Request, contexto: Contexto) {
 }
 
 export async function DELETE(_peticion: Request, contexto: Contexto) {
+  const origenInvalido = comprobarOrigen(_peticion);
+  if (origenInvalido) return origenInvalido;
   if ((await rolActual()) !== "admin") {
     return Response.json({ error: "Solo el admin borra recetas." }, { status: 403 });
   }
@@ -74,11 +101,12 @@ export async function DELETE(_peticion: Request, contexto: Contexto) {
     return Response.json({ error: "Identificador no valido." }, { status: 404 });
   }
 
-  const { recetas, imagenes } = await obtenerColecciones();
-  const resultado = await recetas.findOneAndDelete({ _id: new ObjectId(idValido.data) });
+  const { recetas, imagenes, guardadas } = await obtenerColecciones();
+  const resultado = await recetas.findOneAndDelete(conVisibilidad("admin", { _id: new ObjectId(idValido.data) }));
   if (!resultado) {
     return Response.json({ error: "No existe esa receta." }, { status: 404 });
   }
+  await guardadas.deleteMany({ recetaId: resultado._id });
 
   // Limpieza de sus imagenes: primero el fichero en ImageKit y solo despues los
   // metadatos. Si ImageKit falla, el documento conserva su fileId y se puede
@@ -87,6 +115,13 @@ export async function DELETE(_peticion: Request, contexto: Contexto) {
   let imagenesBorradas = 0;
   let imagenesConFallo = 0;
   for (const imagen of deLaReceta) {
+    const referencia = await recetas.findOne(conVisibilidad("admin", {
+      $or: [{ portadaId: imagen._id }, { "pasos.imagenId": imagen._id }],
+    }), { projection: { _id: 1 } });
+    if (referencia) {
+      await imagenes.updateOne({ _id: imagen._id }, { $set: { recetaId: referencia._id } });
+      continue;
+    }
     try {
       await borrarDeImageKit(imagen.fileId);
       await imagenes.deleteOne({ _id: imagen._id });

@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="color-scheme" content="light">
+  <title>Mi libro de recetas — recorrido 04</title>
+  <link rel="icon" href="../../public/Logo.png">
+  <link rel="preload" href="assets/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="portada.css">
+  <link rel="stylesheet" href="ficha.css">
+  <script src="portada.js" defer></script>
+  <script src="movimiento-portada.js" defer></script>
+  <script src="recetas-demo.js" defer></script>
+  <script src="estado-cocina.js" defer></script>
+  <script src="ficha.js" defer></script>
+</head>
+<body>
+  <svg class="svg-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="flecha" viewBox="0 0 24 24"><path d="M4 12h15M13 5l7 7-7 7"/></symbol>
+    <symbol id="marcador" viewBox="0 0 24 24"><path d="M6 20V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v16l-6-4-6 4Z"/></symbol>
+    <symbol id="lupa" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+  </svg>
+  <a class="skip" href="#archivo">Saltar a las recetas</a>
+    <header class="masthead">
+      <div class="masthead-inner">
+      <a class="brand" href="portada.html" aria-label="Mi libro de recetas, inicio">
+        <img src="../../public/Logo.png" width="246" height="256" alt="">
+        <span>Mi libro de recetas</span>
+      </a>
+      <nav aria-label="Principal">
+        <a href="#archivo">Recetas <span aria-hidden="true">↓</span></a>
+        <button class="saved-nav" id="ver-guardadas" type="button" aria-pressed="false" aria-controls="archivo" hidden>
+          <svg aria-hidden="true"><use href="#marcador"/></svg>Guardadas<span id="total-guardadas" hidden>0</span>
+        </button>
+      </nav>
+      </div>
+    </header>
+
+    <main id="contenido">
+      <section class="cover" id="cubierta" aria-labelledby="titulo-cuaderno">
+        <picture class="cover-scene" id="imagen-cubierta">
+          <source media="(max-width:700px)" srcset="../../public/Portada-V.jpg">
+          <img src="../../public/Portada.jpg" width="1536" height="1024" alt="" fetchpriority="high">
+        </picture>
+        <div class="cover-content">
+          <div class="cover-plaque">
+            <h1 id="titulo-cuaderno">Mi libro<br>de recetas</h1>
+            <p class="cover-signature">Alejandro</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="ribbon" aria-hidden="true">
+        <div class="ribbon-track" id="banda-scroll">
+          <span>Cocina de casa <i>/</i> Una receta a la semana <i>/</i> Mi libro de recetas <i>/</i></span>
+          <span>Cocina de casa <i>/</i> Una receta a la semana <i>/</i> Mi libro de recetas <i>/</i></span>
+          <span>Cocina de casa <i>/</i> Una receta a la semana <i>/</i> Mi libro de recetas <i>/</i></span>
+          <span>Cocina de casa <i>/</i> Una receta a la semana <i>/</i> Mi libro de recetas <i>/</i></span>
+        </div>
+      </div>
+
+      <section class="archive page" id="archivo" aria-labelledby="titulo-archivo">
+        <div class="archive-heading">
+          <h2 class="sr-only" id="titulo-archivo">Recetas</h2>
+          <form class="search" role="search" id="buscador" hidden>
+            <label class="sr-only" for="buscar">Buscar por plato o ingrediente</label>
+            <svg aria-hidden="true"><use href="#lupa"/></svg>
+            <input type="search" id="buscar" placeholder="Un plato, un ingrediente…" autocomplete="off">
+            <button id="limpiar" type="button" aria-label="Borrar búsqueda" hidden>×</button>
+          </form>
+        </div>
+      <div class="resume-strip" id="retomar-preparacion" hidden><div><span id="retomar-nombre"></span><small id="retomar-detalle"></small></div><button type="button" id="retomar-receta">Retomar →</button></div>
+      <article class="feature" id="destacada" aria-labelledby="titulo-plato">
+        <div class="feature-visual">
+          <a class="feature-photo" href="https://recetario-36ok.vercel.app/recetas/katsu-curry-de-proteina-vegetal" target="_blank" rel="noopener" aria-label="Ver la receta publicada de katsu curry, en otra pestaña">
+            <img src="assets/katsu-curry.jpg" width="1200" height="1048" alt="Tofu empanado cortado en tiras, con arroz blanco y salsa de curry en un plato verde claro." loading="lazy">
+          </a>
+          <button class="save photo-save" type="button" data-guardar="katsu" aria-pressed="false" aria-label="Guardar katsu curry en esta maqueta" title="Guardar katsu curry en esta maqueta" hidden><svg aria-hidden="true"><use href="#marcador"/></svg></button>
+        </div>
+        <div class="feature-caption">
+          <h3 id="titulo-plato"><a href="https://recetario-36ok.vercel.app/recetas/katsu-curry-de-proteina-vegetal" target="_blank" rel="noopener"><span class="recipe-name">Katsu curry<span class="recipe-subtitle">de proteína vegetal</span></span><svg aria-hidden="true"><use href="#flecha"/></svg><span class="sr-only"> (abre la receta publicada en otra pestaña)</span></a></h3>
+          <p class="recipe-meta"><time datetime="2026-08-27">27 ago. 2026</time><span>60 min</span><span>4 raciones</span></p>
+          <p class="description">Base de arroz, salsa de curry y tofu empanado.</p>
+        </div>
+      </article>
+
+        <div class="filter-state" id="estado-filtros" hidden>
+          <span id="resultado" role="status" aria-live="polite"></span>
+          <button id="ver-todas" type="button">Ver todas</button>
+        </div>
+        <div class="archive-list">
+          <article class="archive-row" id="fila-katsu" hidden>
+            <a class="row-link" href="https://recetario-36ok.vercel.app/recetas/katsu-curry-de-proteina-vegetal" target="_blank" rel="noopener">
+              <time datetime="2026-08-27">27 ago. 2026</time>
+              <div><h3>Katsu curry de proteína vegetal</h3><p>Arroz, curry y tofu empanado.</p></div>
+              <span class="row-time">60 min</span><svg aria-hidden="true"><use href="#flecha"/></svg><span class="sr-only">Abre la receta publicada en otra pestaña</span>
+            </a>
+            <button class="save row-save" type="button" data-guardar="katsu" aria-pressed="false" aria-label="Guardar katsu curry en esta maqueta" hidden><svg aria-hidden="true"><use href="#marcador"/></svg></button>
+          </article>
+          <article class="archive-row" id="fila-guacamole">
+            <a class="row-link" href="https://recetario-36ok.vercel.app/recetas/guacamole-casero" target="_blank" rel="noopener">
+              <time datetime="2026-08-26">26 ago. 2026</time>
+              <div><h3>Guacamole casero</h3><p>Aguacate, tomate, cebolla roja y limón.</p></div>
+              <span class="row-time">5 min</span><svg aria-hidden="true"><use href="#flecha"/></svg><span class="sr-only">Abre la receta publicada en otra pestaña</span>
+            </a>
+            <button class="save row-save" type="button" data-guardar="guacamole" aria-pressed="false" aria-label="Guardar guacamole casero en esta maqueta" hidden><svg aria-hidden="true"><use href="#marcador"/></svg></button>
+          </article>
+        </div>
+        <div class="empty" id="vacio" hidden>
+          <h3 id="titulo-vacio">No encuentro esa receta.</h3>
+          <p id="texto-vacio">Prueba con «tofu», «arroz» o «aguacate».</p>
+          <button class="text-link" id="reiniciar" type="button">Ver todas las recetas <span aria-hidden="true">↗</span></button>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="footer page">
+      <span>Mi libro de recetas <span class="footer-year">· Alejandro · 2026</span></span>
+      <a href="mailto:alex.barreche@gmail.com">Escríbeme <span aria-hidden="true">↗</span></a>
+    </footer>
+    <p class="prototype-note page">Propuesta 04 · Fichas, guardadas y cocina de demostración. Todo se reinicia al recargar; tu cuenta no cambia.</p>
+  <dialog class="recipe-dialog" id="ficha" aria-labelledby="nombre-ficha">
+    <header class="masthead">
+      <div class="masthead-inner">
+        <a class="brand" id="inicio-ficha" href="#contenido" aria-label="Mi libro de recetas, inicio"><img src="../../public/Logo.png" width="44" height="44" alt=""><span>Mi libro de recetas</span></a>
+        <nav aria-label="Navegación de la ficha">
+          <button id="cerrar-ficha" type="button" autofocus>Recetas</button>
+          <button class="save" id="guardar-ficha" type="button" aria-pressed="false"><svg aria-hidden="true"><use href="#marcador"/></svg><span>Guardar</span></button>
+        </nav>
+      </div>
+    </header>
+    <div class="recipe-sheet">
+      <div class="recipe-intro">
+        <time id="fecha-ficha"></time>
+        <h1 id="nombre-ficha"></h1>
+        <p class="recipe-meta" id="datos-ficha"></p>
+        <p class="recipe-summary" id="resumen-ficha"></p>
+        <div class="recipe-tools"><a href="#ingredientes-ficha" id="saltar-ingredientes">Ingredientes ↓</a><button class="cook-button" id="cocinar" type="button">Cocinar paso a paso <span aria-hidden="true">→</span></button></div>
+      </div>
+      <figure class="recipe-picture" id="foto-ficha"><img id="imagen-ficha" src="assets/katsu-curry.jpg" width="1200" height="1048" alt=""></figure>
+      <div class="recipe-body">
+        <section class="ingredients-panel" id="ingredientes-ficha" aria-labelledby="titulo-ingredientes">
+          <div class="ingredients-heading"><h2 id="titulo-ingredientes">Ingredientes</h2><div class="portions"><button type="button" id="menos-raciones" aria-label="Una ración menos">−</button><output id="raciones-ficha" aria-live="polite">4</output><button type="button" id="mas-raciones" aria-label="Una ración más">+</button></div></div>
+          <p class="ingredient-caption">Para <span id="numero-raciones">4</span> personas · marca lo que tienes listo</p>
+          <div id="lista-ingredientes"></div>
+          <div class="ingredient-footer"><span id="contador-ingredientes" role="status"></span><button type="button" class="text-link" id="desmarcar">Desmarcar</button></div>
+          <p class="scaling-note" id="aviso-raciones" hidden>Las cantidades de esta lista están ajustadas. Las cantidades escritas dentro de los pasos siguen siendo las de la receta original para 4 personas.</p>
+        </section>
+        <section class="preparation" aria-labelledby="titulo-preparacion"><h2 id="titulo-preparacion">Preparación</h2><ol id="lista-pasos"></ol></section>
+      </div>
+      <div class="recipe-ending"><p id="cierre-ficha"></p><button class="text-link" id="otra-receta" type="button"></button></div>
+      <p class="prototype-note">Ficha de demostración · Cantidades, marcas y progreso se conservan mientras esta maqueta esté abierta. No es un guardado en tu cuenta.</p>
+    </div>
+  </dialog>
+  <dialog class="kitchen-dialog" id="cocina" aria-labelledby="nombre-cocina">
+    <div class="kitchen-layout">
+      <header class="kitchen-header"><span id="nombre-cocina"></span><button id="salir-cocina" type="button" autofocus>Salir del modo <span aria-hidden="true">×</span></button></header>
+      <progress id="progreso-cocina" aria-label="Progreso de la receta" value="1" max="8"></progress>
+      <div class="kitchen-content">
+        <p class="step-count" id="contador-paso" role="status"></p>
+        <h2 id="titulo-paso" tabindex="-1"></h2><p class="step-copy" id="texto-paso"></p>
+        <details id="ingredientes-cocina"><summary>Ingredientes · <span id="raciones-cocina">4</span> personas</summary><ul id="lista-cocina"></ul></details>
+        <p class="scaling-note" id="aviso-raciones-cocina" hidden>Lista ajustada; las cantidades escritas en este paso corresponden a 4 personas.</p>
+        <button class="text-link" id="reiniciar-pasos" type="button">Empezar de nuevo</button>
+        <p class="prototype-note">Esta maqueta no impide que se apague la pantalla del dispositivo.</p>
+      </div>
+      <footer class="kitchen-footer"><button id="paso-anterior" type="button">← Anterior</button><button class="cook-button" id="paso-siguiente" type="button">Siguiente →</button></footer>
+    </div>
+  </dialog>
+  <p class="toast" id="aviso" role="status" aria-live="polite" aria-atomic="true"></p>
+</body>
+</html>

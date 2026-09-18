@@ -1,7 +1,7 @@
 "use client";
 
 import { createAuthClient } from "better-auth/react";
-import { adminClient } from "better-auth/client/plugins";
+import { adminClient, twoFactorClient } from "better-auth/client/plugins";
 
 /**
  * Cliente de Better Auth para el navegador. Sin `baseURL`: el cliente y
@@ -9,7 +9,7 @@ import { adminClient } from "better-auth/client/plugins";
  * NEXT_PUBLIC_ (y BETTER_AUTH_SECRET no debe llegar NUNCA al navegador).
  */
 export const authClient = createAuthClient({
-  plugins: [adminClient()],
+  plugins: [adminClient(), twoFactorClient()],
 });
 
 export const { signIn, signUp, signOut, useSession } = authClient;

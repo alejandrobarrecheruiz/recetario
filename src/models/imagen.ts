@@ -26,9 +26,9 @@ export const imagenSchema = z.object({
    * al eliminar una receta la foto se quedaria ocupando espacio para siempre.
    */
   fileId: z.string().min(1),
-  url: z.url(),
+  url: z.url().refine((valor) => valor.startsWith("https://"), "La imagen debe usar HTTPS."),
   path: z.string().min(1),
-  alt: z.string(),
+  alt: z.string().max(1000),
   ancho: z.number().int().positive(),
   alto: z.number().int().positive(),
   bytes: z.number().int().nonnegative(),

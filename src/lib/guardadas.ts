@@ -1,22 +1,20 @@
 import { ObjectId } from "mongodb";
 import { obtenerColecciones } from "@/lib/mongo";
 import { conVisibilidad } from "@/lib/visibilidad";
-import { duracion, urlConAncho } from "@/lib/formato";
+import { resumenParaTarjeta } from "@/lib/datos-tarjetas";
+import type { RecetaParaTarjeta } from "@/components/tarjeta-receta";
+import type { Imagen } from "@/models/imagen";
 import type { Rol } from "@/models/usuario";
 
-/** Fila del listado de guardadas. Serializable: la consume un componente de cliente. */
+/** Datos mínimos de la tarjeta guardada, serializables para el cliente. */
 export type RecetaGuardada = {
   recetaId: string;
-  slug: string;
-  titulo: string;
-  categoria: string;
-  tiempo: string;
-  fotoUrl: string | null;
-  fotoAlt: string;
+  receta: RecetaParaTarjeta;
+  foto?: Pick<Imagen, "url" | "alt" | "ancho" | "alto">;
 };
 
 /**
- * Las guardadas de un usuario con su miniatura de portada, de la mas reciente
+ * Las guardadas de un usuario con su portada, de la mas reciente
  * a la primera. Solo de servidor.
  *
  * Las recetas pasan por el filtro del rol, como toda consulta: una guardada
@@ -55,12 +53,8 @@ export async function recetasGuardadasDe(
     return [
       {
         recetaId: receta._id.toHexString(),
-        slug: receta.slug,
-        titulo: receta.titulo,
-        categoria: receta.categorias[0] ?? "receta",
-        tiempo: duracion(receta.tiempo.total),
-        fotoUrl: foto ? urlConAncho(foto.url, 160) : null,
-        fotoAlt: foto?.alt ?? "",
+        receta: resumenParaTarjeta(receta),
+        foto: foto ? { url: foto.url, alt: foto.alt, ancho: foto.ancho, alto: foto.alto } : undefined,
       },
     ];
   });

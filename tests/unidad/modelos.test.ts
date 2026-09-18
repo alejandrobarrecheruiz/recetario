@@ -184,6 +184,17 @@ describe("generarSlug", () => {
 });
 
 describe("recetaEntradaSchema", () => {
+  test("un borrador puede estar vacío pero una publicación necesita ingredientes y pasos", () => {
+    const vacia = { ...recetaValida(), ingredientes: [], pasos: [] };
+    assert.equal(recetaEntradaSchema.safeParse(vacia).success, false);
+    assert.equal(recetaEntradaSchema.safeParse({ ...vacia, estado: "borrador" }).success, true);
+  });
+  test("rechaza ids repetidos, títulos de espacios y tiempos imposibles al publicar", () => {
+    const receta = recetaValida();
+    assert.equal(recetaEntradaSchema.safeParse({ ...receta, ingredientes: [receta.ingredientes[0], receta.ingredientes[0]] }).success, false);
+    assert.equal(recetaEntradaSchema.safeParse({ ...receta, titulo: "   " }).success, false);
+    assert.equal(recetaEntradaSchema.safeParse({ ...receta, tiempo: { preparacion: 20, coccion: 30, total: 10 } }).success, false);
+  });
   test("lo que manda el panel no incluye _id, autorId ni actualizadaEn", () => {
     // Esos tres los decide el servidor. Si viajaran desde el formulario, el
     // cliente podria firmar una receta como otro autor.

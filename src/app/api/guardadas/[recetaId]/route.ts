@@ -1,4 +1,5 @@
 import { ObjectId } from "mongodb";
+import { comprobarOrigen } from "@/lib/origen";
 import { obtenerColecciones } from "@/lib/mongo";
 import { conVisibilidad } from "@/lib/visibilidad";
 import { sesionActual } from "@/lib/sesion";
@@ -30,6 +31,8 @@ async function contextoDeSesion(contexto: Contexto) {
 
 /** Guarda. Idempotente: el upsert sobre el indice unico no duplica. */
 export async function POST(_peticion: Request, contexto: Contexto) {
+  const origenInvalido = comprobarOrigen(_peticion);
+  if (origenInvalido) return origenInvalido;
   const datos = await contextoDeSesion(contexto);
   if ("fallo" in datos) return datos.fallo;
 
@@ -54,6 +57,8 @@ export async function POST(_peticion: Request, contexto: Contexto) {
  * ver tiene que funcionar igual.
  */
 export async function DELETE(_peticion: Request, contexto: Contexto) {
+  const origenInvalido = comprobarOrigen(_peticion);
+  if (origenInvalido) return origenInvalido;
   const datos = await contextoDeSesion(contexto);
   if ("fallo" in datos) return datos.fallo;
 

@@ -42,6 +42,31 @@ npm run dev                           # http://localhost:3000
 
 ## Entornos
 
+### Acceso y correo
+
+El contacto público está en `/contacto`; sus datos se mantienen en
+`src/lib/sitio.ts`. No configura el remitente automático. El texto de privacidad
+pendiente de aprobación está en [PRIVACIDAD.md](./PRIVACIDAD.md), fuera de la web.
+
+Sin `RESEND_API_KEY` y `CORREO_REMITENTE`, el registro está cerrado; las cuentas
+existentes pueden entrar. Para habilitar verificación y recuperación:
+
+1. Verificar un dominio y remitente en Resend y configurar ambas variables
+   exclusivamente en servidor, en el entorno que corresponda.
+2. Comprobar `BETTER_AUTH_URL`, completar privacidad/contacto y desplegar en
+   Preview antes de abrir el registro en producción.
+3. Probar alta, confirmación, acceso, recuperación, caducidad y reutilización
+   del enlace. Las cuentas antiguas no verificadas también deben confirmar su
+   correo al habilitar esta función. No compartir claves por chat ni guardarlas
+   en Git.
+4. Activar el segundo factor desde `/cuenta` y guardar los códigos de recuperación.
+
+`npm run build -- --webpack` permite validar la compilación cuando el entorno
+de ejecución impide a Turbopack abrir sus puertos internos. El build necesita
+acceso a las fuentes y la configuración de desarrollo de MongoDB.
+
+### Bases de datos
+
 Un solo clúster de Atlas con dos bases. `MONGODB_URI` es la misma en todas
 partes; lo único que cambia es `MONGODB_DB`: `recetas_dev` en local y en Preview,
 `recetas_prod` solo en Production.
@@ -59,7 +84,31 @@ fijo.
 
 ## Estado
 
+La iteración visual puede revisarse directamente con `npm run dev` en
+`http://localhost:3000`: portada, `/recetas`, `/recetas/[slug]`, modo cocina y `/cuenta`.
+Usa los datos de `recetas_dev`, que pueden diferir de las recetas y fotografías
+de la [maqueta de referencia](./docs/diseno/presentacion.html). No carga datos
+de demostración automáticamente ni modifica producción.
+
+El inicio muestra la última publicación visible y las dos anteriores. La
+cuadrícula de la cabecera abre el catálogo completo, la lupa abre la búsqueda
+y el perfil lleva a la cuenta. Los borradores solo aparecen en administración.
+`/recetas?buscar=1` permite buscar sin JavaScript. El catálogo y el inicio
+comparten tarjetas y márgenes adaptados a pantallas grandes.
+Las categorías del catálogo usan una tira ilustrada deslizable, conservando
+los nombres reales y la búsqueda. La cuenta muestra identidad y guardadas con
+las mismas tarjetas; el engranaje abre perfil, seguridad y cierre de sesión.
+
+La ficha implementa la propuesta 04: introducción e ingredientes a la izquierda,
+foto a la derecha y pasos debajo; en móvil se apilan. Sin foto no queda una
+columna vacía. La nota final va centrada y en cursiva, sin recuadro. La lista no
+tiene casillas; conserva el redondeo de cantidades y el escalador junto al título.
+Raciones y paso se comparten mientras se navega entre las páginas
+públicas. El progreso es temporal: recargar o entrar en cuenta/acceso/panel lo
+reinicia. Las guardadas sí usan la cuenta y la base de datos habituales.
+
 El blog está estrenado y en producción desde el 24 de agosto de 2026. El ritmo
 es semanal: escribir la receta en el panel, publicarla y `npm run backup`. Los
-pendientes viven en la sección de decisiones abiertas de
-[CLAUDE.md](./CLAUDE.md).
+pendientes de seguridad, contenido y puesta en marcha están en
+[AUDITORIA.md](./AUDITORIA.md), junto con su estado de validación. Las decisiones
+de arquitectura permanecen en [CLAUDE.md](./CLAUDE.md).

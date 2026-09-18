@@ -13,6 +13,10 @@ import ImageKit, { NotFoundError } from "@imagekit/nodejs";
 
 let cliente: ImageKit | undefined;
 
+export async function detallesDeImageKit(fileId: string) {
+  return clienteImageKit().files.get(fileId);
+}
+
 function clienteImageKit(): ImageKit {
   if (!cliente) {
     const clave = process.env.IMAGEKIT_PRIVATE_KEY;

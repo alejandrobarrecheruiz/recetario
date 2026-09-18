@@ -28,7 +28,9 @@ export default async function PaginaEditarReceta({
   if (!doc) notFound();
 
   // Las imagenes de la receta, para que el editor pinte las miniaturas.
-  const docsImagenes = await imagenes.find({ recetaId: doc._id }).toArray();
+  const idsImagenes = [doc.portadaId, ...doc.pasos.map((paso) => paso.imagenId)]
+    .filter((id): id is ObjectId => id !== null);
+  const docsImagenes = await imagenes.find({ _id: { $in: idsImagenes } }).toArray();
 
   return (
     <EditorReceta receta={docAReceta(doc)} imagenes={docsImagenes.map(docAImagen)} />

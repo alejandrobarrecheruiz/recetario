@@ -8,7 +8,8 @@ import { CabeceraPanel } from "@/components/cabecera-panel";
 // `conVisibilidad("admin")` devuelve un filtro vacio. Aun asi la consulta pasa
 // por el helper con el rol de la sesion, para que no haya ni una consulta de
 // recetas que lo esquive. (La navegacion ya la corta el guard del layout.)
-export default async function PaginaAdmin() {
+export default async function PaginaAdmin({ searchParams }: { searchParams: Promise<{ limpieza?: string }> }) {
+  const { limpieza } = await searchParams;
   const rol = await rolActual();
   const coleccion = await obtenerRecetas();
   const recetas = await coleccion
@@ -22,6 +23,7 @@ export default async function PaginaAdmin() {
   return (
     <div className="mx-auto flex min-h-svh w-full max-w-[1100px] flex-col gap-8 px-[clamp(20px,4vw,40px)] py-8">
       <CabeceraPanel />
+      {limpieza === "pendiente" && <p role="alert" className="rounded border border-acento/40 p-4 text-sm">La receta se ha borrado, pero algunas fotos no pudieron eliminarse de ImageKit. Sus metadatos se han conservado para poder localizarlas y reintentar la limpieza.</p>}
 
       <section className="flex flex-col gap-5">
         <div className="flex flex-wrap items-end justify-between gap-4">

@@ -39,12 +39,23 @@ function conectar(): Promise<MongoClient> {
     serverSelectionTimeoutMS: 10_000,
   });
 
-  return cliente.connect();
+  return cliente.connect().catch(async (error: unknown) => {
+    await cliente.close().catch(() => {});
+    throw error;
+  });
 }
 
 /** Cliente conectado y compartido. Cachea la promesa en `globalThis`. */
 export function obtenerCliente(): Promise<MongoClient> {
-  globalConCache._promesaClienteMongo ??= conectar();
+  if (!globalConCache._promesaClienteMongo) {
+    const promesa = conectar();
+    globalConCache._promesaClienteMongo = promesa;
+    void promesa.catch(() => {
+      if (globalConCache._promesaClienteMongo === promesa) {
+        delete globalConCache._promesaClienteMongo;
+      }
+    });
+  }
   return globalConCache._promesaClienteMongo;
 }
 

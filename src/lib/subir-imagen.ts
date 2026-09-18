@@ -22,6 +22,9 @@ export async function subirImagen({
   tipo: TipoImagen;
   alt: string;
 }): Promise<Imagen> {
+  if (!fichero.type.startsWith("image/") || fichero.type === "image/svg+xml" || fichero.size > 20 * 1024 * 1024) {
+    throw new Error("Elige una fotografía de hasta 20 MB (JPG, PNG, WebP o HEIC).");
+  }
   const respuestaFirma = await fetch("/api/imagenes/firma");
   if (!respuestaFirma.ok) {
     throw new Error("No se pudo obtener la firma de subida.");

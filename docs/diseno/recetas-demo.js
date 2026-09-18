@@ -1,0 +1,53 @@
+/* Selección pública del 17/09/2026. Sin IDs de cuenta ni conexión a servicios. */
+globalThis.recetasDemo = {
+  katsu: {
+    titulo: 'Katsu curry de proteína vegetal', fecha: '27 de agosto de 2026', fechaISO: '2026-08-27', minutos: 60, raciones: 4,
+    resumen: 'Base de arroz, salsa de curry y tofu empanado.', foto: 'assets/katsu-curry.jpg', alt: 'Tofu empanado con arroz blanco y salsa de curry en un plato verde claro.',
+    ingredientes: [
+      { id:'arroz', cantidad:2, unidad:'vasos', nombre:'Arroz japonés', nota:'También sirve redondo o basmati' },
+      { id:'cebolla', cantidad:2, unidad:'', nombre:'Cebolla mediana' },
+      { id:'zanahoria', cantidad:1, unidad:'', nombre:'Zanahoria' },
+      { id:'patata', cantidad:1, unidad:'', nombre:'Patata mediana' },
+      { id:'ajo', cantidad:2, unidad:'', nombre:'Diente de ajo' },
+      { id:'mantequilla', cantidad:40, unidad:'g', nombre:'Mantequilla' },
+      { id:'harina', cantidad:1, unidad:'cucharada', nombre:'Harina', nota:'Para la roux' },
+      { id:'caldo', cantidad:.75, unidad:'l', nombre:'Caldo de verduras' },
+      { id:'garam', cantidad:1, unidad:'cucharadita de café', nombre:'Garam masala' },
+      { id:'curry', cantidad:2, unidad:'cucharada sopera', nombre:'Curry' },
+      { id:'jengibre', cantidad:.5, unidad:'cucharadita', nombre:'Jengibre' },
+      { id:'tofu', cantidad:450, unidad:'g', nombre:'Tofu firme' },
+      { id:'maicena', cantidad:100, unidad:'g', nombre:'Maicena', nota:'Para el rebozado' },
+      { id:'soja', cantidad:0, unidad:'', nombre:'Salsa de soja' },
+      { id:'panko', cantidad:120, unidad:'g', nombre:'Panko' },
+      { id:'aceite', cantidad:0, unidad:'', nombre:'Aceite de girasol para freír' },
+      { id:'sal', cantidad:0, unidad:'', nombre:'Sal' },
+    ],
+    pasos: [
+      { id:'secar', titulo:'Secar el tofu', texto:'Escurre el tofu envolviéndolo en papel de cocina, y prénsalo con algún peso encima durante media hora. Una vez seco, córtalo en cuatro filetes de un centímetro y medio y sazónalos por ambas caras. Mezcla cuatro cucharadas de salsa de soja con un diente de ajo y un trozo de jengibre rallados, y deja los filetes marinando mínimo 30 minutos, dándoles la vuelta a mitad.' },
+      { id:'pochar', titulo:'Pochar las verduras', texto:'Derrite la mantequilla en una sartén a fuego medio alto. Añade la cebolla cortada en juliana y cocina durante 10 minutos hasta que estén doradas. Una vez estén doradas, incorpora la zanahoria cortada en rodajas finas, y cocina durante cinco minutos más. Incorpora los dientes de ajo picados, el jengibre y sofríe durante un minuto más.' },
+      { id:'espesar', titulo:'Espesar la salsa', texto:'Baja el fuego, añade la harina de trigo y remueve durante un minuto hasta que la harina cambie de color. Ahora añade el curry y el garam masala y tuéstalo unos 30 segundos.' },
+      { id:'caldo', titulo:'Añadir el caldo', texto:'Vierte el caldo de verduras poco a poco sin dejar de remover para que no se formen grumos. Incorpora la patata cortada en dados y cocina a fuego medio bajo durante 20 minutos, hasta que la patata esté tierna y la salsa haya espesado. Ahora añade una cucharadita de azúcar y una cucharada de vinagre de arroz, prueba de sal y rectifica si hace falta.' },
+      { id:'arroz', titulo:'Cocer el arroz', texto:'Mientras se hace la salsa, lava el arroz bajo el grifo hasta que el agua salga clara. Ponlo en una olla con dos vasos y medio de agua, tápalo y cocina a fuego bajo durante 12 minutos. Una vez cocido, apaga el fuego y déjalo reposar tapado cinco minutos más.' },
+      { id:'rebozar', titulo:'Rebozar el tofu', texto:'Saca los filetes de tofu de la marinada y escúrrelos bien. Mezcla la mitad de la maicena con un poco de agua hasta conseguir una papilla ligera. Pasa cada filete primero por la maicena seca, después por la papilla y por último por el panko, apretando bien para que se pegue por ambas caras.' },
+      { id:'freir', titulo:'Freír', texto:'Calienta abundante aceite de girasol en una sartén a fuego medio alto. Fríe los filetes de dos en dos durante unos tres minutos por cada lado hasta que estén dorados y crujientes. Sácalos sobre papel de cocina para que suelten el exceso de aceite y córtalos en tiras.' },
+      { id:'montar', titulo:'Montar el plato', texto:'Sirve una base de arroz en cada plato, cubre una mitad con la salsa de curry y coloca el tofu en tiras encima. Termina con un chorrito de salsa de soja al gusto.' },
+    ],
+  },
+  guacamole: {
+    titulo:'Guacamole casero', fecha:'26 de agosto de 2026', fechaISO:'2026-08-26', minutos:5, raciones:4,
+    resumen:'No cuesta nada hacer un guacamole casero, y una vez que lo pruebas, no puedes volver atrás.', foto:null,
+    ingredientes: [
+      { id:'aguacate', cantidad:3, unidad:'', nombre:'Aguacate maduro (mediano)' },
+      { id:'tomate', cantidad:.25, unidad:'', nombre:'Tomate', nota:'Evita utilizar las semillas' },
+      { id:'cebolla', cantidad:.25, unidad:'', nombre:'Cebolla morada' },
+      { id:'limon', cantidad:.5, unidad:'', nombre:'Limón' },
+      { id:'sal', cantidad:0, unidad:'', nombre:'Sal' },
+      { id:'aceite', cantidad:50, unidad:'ml', nombre:'Aceite de oliva', nota:'Suave' },
+    ],
+    pasos: [
+      { id:'cortar', titulo:'Trocear', texto:'Trocea los aguacates, y corta en cuadrados pequeños el tomate y la cebolla.' },
+      { id:'machacar', titulo:'Machacar', texto:'Añade la sal y el jugo de limón. Machaca con un tenedor hasta romper prácticamente la forma del aguacate.' },
+      { id:'mezclar', titulo:'Mezclar', texto:'Incorpora el aceite y mezcla hasta obtener una textura cremosa.' },
+    ],
+  },
+};

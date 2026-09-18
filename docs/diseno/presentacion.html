@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Mi libro de recetas — recorrido 04</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#c0ccd1;color:#0f1418;font:14px/1.45 system-ui,sans-serif}header{padding:12px 24px;display:flex;align-items:center;gap:22px;flex-wrap:wrap;background:#fff;border-bottom:1px solid #c0ccd1}header p{margin:0}header strong{font-size:14px}header small{display:block;font-size:12px;color:#465358}nav{display:flex;gap:6px;margin-left:auto;align-items:center}button,a{color:inherit;font:inherit;min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:8px 14px;touch-action:manipulation}button{border:1px solid #c0ccd1;cursor:pointer;background:#fff;border-radius:3px}button[aria-pressed=true]{background:#0f1418;color:#fff;border-color:#0f1418}a{text-underline-offset:4px}button:focus-visible,a:focus-visible{outline:3px solid #b33420;outline-offset:3px}.stage{padding:24px 20px;display:flex;justify-content:center}iframe{display:block;width:100%;height:calc(100dvh - 135px);min-height:540px;border:0;background:#dee6e9;box-shadow:0 4px 24px #0f141817}.stage.mobile iframe{width:390px;max-width:100%;height:844px}.stage.small iframe{width:320px;max-width:100%;height:740px}.hint{margin:0;padding:0 24px 16px;text-align:center;font-size:12px;color:#465358}@media(max-width:600px){header{padding:12px 16px;gap:8px}nav{margin:0;flex-wrap:wrap;gap:4px}button,a{padding:8px 10px;font-size:12px}.stage{padding:16px 10px}iframe{height:80dvh}.hint{padding:0 16px 16px}}
+  </style>
+</head>
+<body>
+  <header>
+    <p><strong>Mi libro de recetas · 04</strong><small>Portada, fichas y cocina · Maqueta sin conexión a tu cuenta</small></p>
+    <nav aria-label="Tamaño de la vista">
+      <button type="button" data-view="desktop" aria-pressed="true">Escritorio</button>
+      <button type="button" data-view="mobile" aria-pressed="false">Móvil · 390</button>
+      <button type="button" data-view="small" aria-pressed="false">320 px</button>
+      <a href="portada.html" target="_blank" rel="noopener">Abrir sin marco ↗</a>
+      <a href="propuestas-ficha.html">Nuevas fichas · propuesta 04 ↗</a>
+    </nav>
+  </header>
+  <nav class="screen-nav" aria-label="Pantallas de la propuesta" style="justify-content:center;flex-wrap:wrap;padding:8px 16px">
+    <button type="button" data-screen="portada" aria-pressed="true">Portada</button>
+    <button type="button" data-screen="katsu" aria-pressed="false">Ficha · Katsu</button>
+    <button type="button" data-screen="guacamole" aria-pressed="false">Ficha · Guacamole</button>
+    <button type="button" data-screen="cocina" aria-pressed="false">Modo cocina</button>
+  </nav>
+  <main class="stage" id="stage"><iframe id="portada" src="portada.html" title="Propuesta interactiva de la portada de Mi libro de recetas"></iframe></main>
+  <p class="hint">Abre una receta, cambia las raciones y entra en cocina. Al salir conserva el paso. Todo se reinicia al recargar.</p>
+  <script>
+    document.querySelectorAll('[data-view]').forEach(button => {
+      button.addEventListener('click', () => {
+        document.getElementById('stage').className = 'stage ' + button.dataset.view;
+        document.querySelectorAll('[data-view]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+      });
+    });
+    document.querySelectorAll('[data-screen]').forEach(button => {
+      button.addEventListener('click', () => {
+        document.getElementById('portada').contentWindow.postMessage({ tipo:'recetario:mostrar', vista:button.dataset.screen }, '*');
+      });
+    });
+    window.addEventListener('message', event => {
+      if (event.source !== document.getElementById('portada').contentWindow || event.data?.tipo !== 'recetario:vista') return;
+      document.querySelectorAll('[data-screen]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.screen === event.data.vista)));
+    });
+  </script>
+</body>
+</html>

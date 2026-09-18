@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Cuaderno abierto — boceto de recorrido</title>
+  <style>
+    /* Boceto autónomo: valores del sistema actual, no una nueva piel para la app. */
+    :root{--papel:#dee6e9;--tinta:#0f1418;--superficie:#fff;--raya:#c0ccd1;--acento:oklch(.55 .19 30)}
+    *{box-sizing:border-box}body{margin:0;background:var(--papel);color:var(--tinta);font:16px/1.5 system-ui,sans-serif}
+    a{color:inherit;text-underline-offset:4px}button,input{font:inherit}button,a{touch-action:manipulation}button{cursor:pointer}
+    button:disabled{cursor:default;opacity:.4}:focus-visible{outline:3px solid var(--acento);outline-offset:4px}
+    .intro{max-width:1200px;margin:auto;padding:32px 24px 20px}.intro h1{font-size:clamp(28px,4vw,46px);line-height:1.1;margin:0 0 14px;letter-spacing:-.04em}
+    .intro p{max-width:76ch;margin:10px 0}.meta{font-size:13px}.stage{max-width:1260px;margin:auto;padding:12px 24px 48px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px;align-items:start}
+    .screen{min-width:0;scroll-margin-top:16px}.caption{font-size:14px;margin:0 0 12px;min-height:42px}.caption strong{display:block}
+    .sheet{background:var(--superficie);border:1px solid var(--raya);min-height:760px;display:flex;flex-direction:column;box-shadow:0 8px 24px #0f141808}
+    .top{padding:16px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--raya);font-size:14px}
+    .brand{display:flex;align-items:center;gap:8px;text-decoration:none}.brand img{width:38px;height:38px;object-fit:cover;border-radius:50%}.textnav{display:inline-flex;align-items:center;min-height:44px}
+    .body{padding:20px}.body h2{font-size:32px;line-height:1.08;letter-spacing:-.035em;margin:10px 0 14px}.body h3{font-size:19px;margin:18px 0 12px}
+    .subtle{font-size:14px}.photo{height:180px;display:grid;place-items:center;border:1px dashed var(--raya);background:var(--papel);font-size:13px;text-align:center;color:var(--tinta);margin:18px 0}
+    .photo span{max-width:20ch}.photo.small{height:96px;margin:14px 0}.strip{border-top:1px solid var(--raya);padding:14px 0;display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .primary{display:inline-flex;min-height:48px;align-items:center;justify-content:center;background:var(--tinta);color:white;padding:10px 18px;text-decoration:none;border:0;border-radius:4px}
+    .quiet{border:1px solid var(--raya);background:transparent;min-height:44px;padding:8px 12px;border-radius:4px}
+    .bottom{margin-top:auto;padding:16px;display:flex;gap:10px;border-top:1px solid var(--raya)}.bottom>*{flex:1}
+    .controls{display:flex;align-items:center;gap:8px}.controls button{width:44px;height:44px;border:1px solid var(--raya);background:transparent;border-radius:50%;font-size:22px}
+    .controls output{min-width:20px;text-align:center}.ingredient{display:flex;align-items:center;gap:10px;padding:11px 0;min-height:48px;border-bottom:1px solid var(--raya)}
+    .ingredient input{width:20px;height:20px;accent-color:var(--acento)}.ingredient:has(input:checked) span{text-decoration:line-through;opacity:.65}
+    .mark{font-size:13px;color:var(--acento)}.progress{height:4px;background:var(--papel)}.progress span{display:block;height:100%;width:25%;background:var(--acento)}
+    .step{font-size:26px;line-height:1.42;letter-spacing:-.02em;min-height:180px;margin:24px 0}.stepnum{font-size:16px;margin:0}.stepnum strong{font-size:40px;letter-spacing:-.06em}
+    details{margin:16px 0;border-top:1px solid var(--raya)}summary{cursor:pointer;min-height:48px;padding:12px 0}blockquote{border-left:2px solid var(--acento);margin:20px 0;padding-left:16px}
+    .instructions{max-width:1200px;margin:0 auto;padding:0 24px 44px}.instructions h2{font-size:22px}.instructions p{max-width:75ch}
+    [hidden]{display:none!important}#search{width:100%;min-height:46px;border:1px solid var(--raya);padding:8px 12px;background:transparent;border-radius:0}
+    @media(max-width:960px){.stage{grid-template-columns:1fr;max-width:440px;padding:12px 16px 32px}.sheet{min-height:0}.caption{min-height:0}.intro,.instructions{padding-left:20px;padding-right:20px}.step{min-height:120px}.bottom{position:static}}
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}@media print{.stage{display:block}.screen{break-inside:avoid;margin-bottom:24px}.sheet{min-height:0}.intro,.instructions{padding:12px}.bottom{position:static}}
+  </style>
+</head>
+<body>
+  <header class="intro">
+    <p class="meta">Propuesta de estructura · No es la web terminada</p>
+    <p><a href="presentacion.html">Abrir la propuesta visual de portada · móvil y escritorio →</a></p>
+    <h1>Un plato primero.<br>Un cuaderno después.</h1>
+    <p>Tres momentos del mismo recorrido. Cambia las raciones o marca ingredientes en la ficha: el modo cocina comparte ese estado. Los pasos se pueden avanzar y reiniciar.</p>
+    <p class="meta">Contenido de ejemplo del seed de desarrollo. Recuadros = fotografías reales por aportar; no se inventan fotos de platos. Tipografía de sistema para evaluar estructura. Sin conexión a cuentas, APIs ni almacenamiento.</p>
+  </header>
+  <main class="stage">
+    <section class="screen" id="portada" aria-labelledby="cap-portada">
+      <p class="caption" id="cap-portada"><strong>Descubrir</strong>La receta hace de apertura; no se anuncia otra sección.</p>
+      <div class="sheet">
+        <div class="top"><a class="brand" href="#portada"><img src="../../public/Logo.png" alt=""><span>Mi libro de recetas</span></a><a class="textnav" href="#criterios">Boceto</a></div>
+        <div class="body">
+          <time class="subtle" datetime="2026-08-17">17 de agosto de 2026</time>
+          <h2><a href="#ficha">Tortilla de patatas</a></h2>
+          <p class="subtle">45 min · Con cebolla</p>
+          <a class="photo" href="#ficha" aria-label="Abrir tortilla de patatas"><span>Espacio para la foto real de esta receta</span></a>
+          <p>Jugosa por dentro y dorada por fuera. Con cebolla, sin pedir perdón.</p>
+          <label for="search" class="subtle">Buscar en el cuaderno</label>
+          <input id="search" type="search" placeholder="Un plato o un ingrediente" autocomplete="off">
+          <p class="meta" id="search-result" role="status">El boceto busca entre los dos ejemplos.</p>
+          <div class="strip" id="archive-tortilla" hidden><a href="#ficha">Tortilla de patatas</a><span class="subtle">45 min</span></div>
+          <div class="strip" id="archive-gazpacho"><span>Gazpacho andaluz</span><span class="subtle">15 min</span></div>
+          <p class="meta">El archivo real continuaría aquí. La tortilla solo se repite cuando la búsqueda la encuentra.</p>
+          <blockquote>Empecé esto por una persona concreta.<br><span class="subtle">Alejandro</span></blockquote>
+        </div>
+      </div>
+    </section>
+    <section class="screen" id="ficha" aria-labelledby="cap-ficha">
+      <p class="caption" id="cap-ficha"><strong>Preparar</strong>Datos y cantidades antes de una larga introducción.</p>
+      <div class="sheet">
+        <div class="top"><a class="textnav" href="#portada">Volver al cuaderno</a><button class="quiet" id="save" type="button" aria-pressed="false">Guardar</button></div>
+        <div class="body">
+          <h2>Tortilla de patatas</h2><p class="subtle">45 min · Preparación: 15 min</p>
+          <div class="photo small"><span>Foto del plato</span></div>
+          <div class="strip"><h3>Ingredientes</h3><div class="controls"><button id="less" type="button" aria-label="Una ración menos">−</button><output id="portions" aria-live="polite">6</output><button id="more" type="button" aria-label="Una ración más">+</button></div></div>
+          <p class="subtle">Para <span data-portions>6</span> personas</p>
+          <div id="ingredients"></div>
+          <details><summary>Preparación completa</summary><ol id="all-steps"></ol></details>
+          <blockquote>Con la patata confitada, no frita: la textura lo agradece.</blockquote>
+          <p class="meta" id="save-status" role="status">Guardar solo cambia este boceto; no crea una cuenta ni guarda una receta real.</p>
+        </div>
+        <div class="bottom"><a class="primary" id="resume" href="#cocina">Cocinar</a></div>
+      </div>
+    </section>
+    <section class="screen" id="cocina" aria-labelledby="cap-cocina">
+      <p class="caption" id="cap-cocina"><strong>Cocinar y retomar</strong>Las mismas cantidades; menos elementos compitiendo.</p>
+      <div class="sheet">
+        <div class="top"><span>Tortilla de patatas</span><a class="textnav" href="#ficha">Salir del modo</a></div>
+        <div class="progress" aria-hidden="true"><span id="progress"></span></div>
+        <div class="body">
+          <p class="stepnum" role="status">Paso <strong id="step-number">1</strong> de 4</p>
+          <p class="step" id="step-text"></p>
+          <details><summary>Ingredientes · <span data-portions>6</span> personas</summary><div id="kitchen-ingredients"></div></details>
+          <p class="mark">Consultar ingredientes no cambia de paso.</p>
+          <button class="quiet" id="restart" type="button">Empezar de nuevo</button>
+          <p class="meta">El boceto conserva el paso mientras está abierto. Recargar lo reinicia: no simula persistencia que todavía no existe.</p>
+        </div>
+        <div class="bottom"><button class="quiet" id="previous" type="button" disabled>Anterior</button><button class="primary" id="next" type="button">Siguiente</button></div>
+      </div>
+    </section>
+  </main>
+  <section class="instructions" id="criterios">
+    <h2>Qué se decide con este boceto</h2>
+    <p>Si se reconoce la receta sin «Lo último que he publicado»; si los ingredientes llegan a tiempo; y si preparar y cocinar se sienten como una sola tarea. Los controles repetidos entre láminas comparten estado a propósito para comparar las vistas.</p>
+    <p>No se está validando aún fotografía, tipografía final, modal accesible, comportamiento sticky, autenticación ni persistencia. La barra inferior propuesta debe probarse con safe-area y teclado en la implementación.</p>
+    <p><a href="REVISION.md">Leer crítica, alternativas y metodología completa</a></p>
+  </section>
+  <script>
+    const steps = [
+      'Pelar y cortar la patata en láminas finas; picar la cebolla.',
+      'Confitar patata y cebolla en aceite a fuego medio hasta que estén tiernas.',
+      'Escurrir bien y mezclar con el huevo batido y la sal. Reposar diez minutos.',
+      'Cuajar en sartén caliente, dar la vuelta con un plato y terminar al gusto.'
+    ];
+    const ingredients = [
+      {name:'patata',amount:800,unit:'g'}, {name:'huevo',amount:6,unit:''},
+      {name:'cebolla',amount:1,unit:''}, {name:'aceite de oliva para freír',amount:400,unit:'ml'},
+      {name:'sal al gusto',amount:0,unit:''}
+    ];
+    let portions=6, step=0, saved=false;
+    const checked=new Set();
+    const byId=id=>document.getElementById(id);
+    const formatter=new Intl.NumberFormat('es-ES',{maximumFractionDigits:1});
+    for(const target of ['ingredients','kitchen-ingredients']) ingredients.forEach((item,index)=>{
+      const label=document.createElement('label');label.className='ingredient';
+      const input=document.createElement('input');input.type='checkbox';input.dataset.ingredient=String(index);
+      const span=document.createElement('span');span.dataset.amount=String(index);
+      input.addEventListener('change',()=>{input.checked?checked.add(index):checked.delete(index);render();});
+      label.append(input,span);byId(target).append(label);
+    });
+    steps.forEach(text=>{const li=document.createElement('li');li.textContent=text;byId('all-steps').append(li);});
+    function render(){
+      byId('portions').textContent=portions;
+      document.querySelectorAll('[data-portions]').forEach(node=>{node.textContent=portions;});
+      document.querySelectorAll('[data-amount]').forEach(node=>{
+        const item=ingredients[Number(node.dataset.amount)];
+        node.textContent=(item.amount?formatter.format(item.amount*portions/6)+' '+item.unit+' ':'')+item.name;
+      });
+      document.querySelectorAll('[data-ingredient]').forEach(node=>{node.checked=checked.has(Number(node.dataset.ingredient));});
+      byId('less').disabled=portions<=1;
+      byId('step-text').textContent=steps[step];byId('step-number').textContent=step+1;
+      byId('progress').style.width=((step+1)/steps.length*100)+'%';
+      byId('previous').disabled=step===0;byId('next').disabled=step===steps.length-1;
+      byId('next').textContent=step===steps.length-1?'Último paso':'Siguiente';
+      byId('resume').textContent=step?'Retomar paso '+(step+1):'Cocinar';
+    }
+    byId('less').addEventListener('click',()=>{portions=Math.max(1,portions-1);render();});
+    byId('more').addEventListener('click',()=>{portions++;render();});
+    byId('previous').addEventListener('click',()=>{step=Math.max(0,step-1);render();});
+    byId('next').addEventListener('click',()=>{step=Math.min(steps.length-1,step+1);render();});
+    byId('restart').addEventListener('click',()=>{step=0;render();});
+    byId('save').addEventListener('click',()=>{saved=!saved;byId('save').setAttribute('aria-pressed',String(saved));byId('save').textContent=saved?'Guardada':'Guardar';byId('save-status').textContent=saved?'Marcada solo en este boceto. No se ha guardado en tu cuenta.':'Sin marcar en este boceto.';});
+    byId('search').addEventListener('input',event=>{
+      const query=event.target.value.trim().toLocaleLowerCase('es');
+      const tortilla=!!query&&'tortilla patata huevo cebolla'.includes(query);
+      const gazpacho=!query||'gazpacho tomate pepino sopa'.includes(query);
+      byId('archive-tortilla').hidden=!tortilla;byId('archive-gazpacho').hidden=!gazpacho;
+      byId('search-result').textContent=!query?'El boceto busca entre los dos ejemplos.':tortilla||gazpacho?'Coincidencias entre los ejemplos.':'No hay coincidencias. Prueba patata o tomate.';
+    });
+    render();
+  </script>
+</body>
+</html>

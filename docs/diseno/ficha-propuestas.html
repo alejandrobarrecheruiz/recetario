@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Tortilla de patatas · Propuesta de ficha</title>
+  <link rel="stylesheet" href="ficha-propuestas.css">
+  <script src="ficha-propuestas.js" defer></script>
+</head>
+<body data-propuesta="4">
+  <svg class="simbolos" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="reloj" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="personas" viewBox="0 0 24 24"><circle cx="9" cy="7.5" r="3"/><path d="M3.5 20v-2.5a5.5 5.5 0 0 1 11 0V20M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 2.5 4.5V20"/></symbol>
+    <symbol id="guardar" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4Z"/></symbol>
+    <symbol id="buscar" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="7"/><path d="m16 16 5 5"/></symbol>
+    <symbol id="cuadricula" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></symbol>
+    <symbol id="perfil" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.5"/><path d="M4.5 21v-2a7.5 7.5 0 0 1 15 0v2"/></symbol>
+    <symbol id="flecha" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
+  </svg>
+  <a href="#ingredientes" class="saltar">Saltar a la receta</a>
+  <header class="cabecera">
+    <a href="propuestas-ficha.html" target="_top" aria-label="Volver a las propuestas"><img src="assets/logo-ficha.png" alt="" width="48" height="48"></a>
+    <nav aria-label="Principal">
+      <button class="icono" data-demo="El catálogo no forma parte de esta maqueta." aria-label="Todas las recetas"><svg><use href="#cuadricula"/></svg></button>
+      <button class="icono" data-demo="El buscador no forma parte de esta maqueta." aria-label="Buscar recetas"><svg><use href="#buscar"/></svg></button>
+      <button class="icono" data-demo="Esta maqueta no accede a tu cuenta." aria-label="Mi cuenta"><svg><use href="#perfil"/></svg></button>
+    </nav>
+  </header>
+  <main class="ficha">
+    <section class="introduccion" aria-labelledby="titulo">
+      <p class="fecha">17 de agosto <span aria-hidden="true">·</span> Clásicos de casa</p>
+      <h1 id="titulo">Tortilla<br class="salto-titulo"> de patatas</h1>
+      <p class="resumen">Jugosa por dentro y dorada por fuera. Con cebolla, sin pedir perdón.</p>
+      <ul class="datos" aria-label="Datos de la receta">
+        <li><svg><use href="#reloj"/></svg><span><span class="sr-only">Tiempo total: </span>45 min</span></li>
+        <li><svg><use href="#personas"/></svg><span><span data-raciones>6</span><span class="sr-only"> raciones</span></span></li>
+        <li><svg class="dificultad" viewBox="0 0 24 24"><rect x="2" y="15" width="4" height="5"/><rect x="10" y="10" width="4" height="10"/><rect class="vacio" x="18" y="5" width="4" height="15"/></svg><span><span class="sr-only">Dificultad: </span>Media</span></li>
+      </ul>
+      <dl class="tiempos"><div><dt>Preparación</dt><dd>15 min</dd></div><div><dt>Cocción</dt><dd>30 min</dd></div></dl>
+      <div class="acciones"><button class="cocinar" id="abrir-cocina">Cocinar paso a paso <svg><use href="#flecha"/></svg></button><button class="icono guardar" aria-label="Guardar receta en esta maqueta" aria-pressed="false"><svg><use href="#guardar"/></svg></button></div>
+    </section>
+    <figure class="foto"><div class="marco"><img src="assets/tortilla-propuestas.jpg" alt="Foto de prueba añadida a la receta: un perro al aire libre" width="1600" height="1200"></div></figure>
+    <section class="ingredientes seccion" id="ingredientes" aria-labelledby="titulo-ingredientes">
+      <div class="rotulo"><h2 id="titulo-ingredientes">Ingredientes</h2></div>
+      <div class="contenido">
+        <div class="raciones-barra"><div class="raciones" role="group" aria-label="Ajustar raciones"><button id="menos" aria-label="Una ración menos">−</button><output aria-live="polite" aria-atomic="true"><svg><use href="#personas"/></svg><span data-raciones>6</span><span class="sr-only"> raciones</span></output><button id="mas" aria-label="Una ración más">+</button></div></div>
+        <ul class="lista-ingredientes">
+          <li><span class="cantidad" data-cantidad="800" data-unidad="g">800 g</span><span>Patata</span></li>
+          <li><span class="cantidad" data-cantidad="6" data-unidad="">6</span><span>Huevos</span></li>
+          <li><span class="cantidad" data-cantidad="1" data-unidad="">1</span><span>Cebolla</span></li>
+          <li><span class="cantidad" data-cantidad="400" data-unidad="ml">400 ml</span><span>Aceite de oliva<small>Para freír</small></span></li>
+          <li><span class="cantidad">Al gusto</span><span>Sal</span></li>
+        </ul>
+      </div>
+    </section>
+    <section class="preparacion seccion" id="preparacion" aria-labelledby="titulo-preparacion">
+      <div class="rotulo"><h2 id="titulo-preparacion">Preparación</h2></div>
+      <ol class="pasos contenido">
+        <li><span class="numero" aria-hidden="true">01</span><div><h3>Pelar y cortar</h3><p>Pelar y cortar la patata en láminas finas; picar la cebolla.</p></div></li>
+        <li><span class="numero" aria-hidden="true">02</span><div><h3>Confitar despacio</h3><p>Confitar patata y cebolla en aceite a fuego medio hasta que estén tiernas.</p></div></li>
+        <li><span class="numero" aria-hidden="true">03</span><div><h3>Mezclar y dejar reposar</h3><p>Escurrir bien y mezclar con el huevo batido y la sal. Reposar diez minutos.</p></div></li>
+        <li><span class="numero" aria-hidden="true">04</span><div><h3>Dar la vuelta</h3><p>Cuajar en sartén caliente, dar la vuelta con un plato y terminar al gusto.</p></div></li>
+      </ol>
+    </section>
+    <aside class="nota"><span class="firma">De mi cocina</span><p>Con la patata confitada, no frita: la textura lo agradece.</p><span class="autor">Alejandro</span></aside>
+  </main>
+  <footer><img src="assets/logo-ficha.png" alt="" width="36" height="36"><span>Maqueta visual · foto de prueba · sin conexión a tu cuenta</span><a href="propuestas-ficha.html" target="_top">Comparar propuestas <span aria-hidden="true">↗</span></a></footer>
+  <p class="aviso" role="status" hidden></p>
+  <dialog id="cocina" aria-labelledby="titulo-cocina"><div class="cocina-cabecera"><span id="titulo-cocina">Tortilla de patatas</span><button class="icono" id="cerrar-cocina" aria-label="Cerrar modo cocina">×</button></div><div class="cocina-paso"><span id="contador-paso">01 / 04</span><h2 id="nombre-paso"></h2><p id="texto-paso"></p></div><div class="cocina-pie"><button id="paso-anterior">Anterior</button><button id="paso-siguiente">Siguiente</button></div></dialog>
+</body>
+</html>

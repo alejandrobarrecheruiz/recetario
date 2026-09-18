@@ -45,6 +45,10 @@ describe("medida: piezas (sin unidad o «unidad»)", () => {
 });
 
 describe("medida: unidades de medida", () => {
+  test("el escalado conserva el redondeo y no muestra decimales largos", () => {
+    assert.equal(medida(993.42, "ml"), "993,5 ml");
+    assert.equal(medida(1000 * (5 / 6), "g"), "833,5 g");
+  });
   test("escribe la cantidad con su unidad", () => {
     assert.equal(medida(150, "g"), "150 g");
     assert.equal(medida(25, "ml"), "25 ml");

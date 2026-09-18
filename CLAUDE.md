@@ -15,7 +15,7 @@ tiene sentido para monetizar o para «crecer», no aplica aquí.
 
 Qué hace:
 
-- Portada con listado de recetas y ficha de detalle por receta.
+- Inicio con las tres últimas publicaciones, catálogo completo y ficha por receta.
 - Panel de administración en la propia web, con login, para escribir y editar
   recetas sin tocar código.
 - Tres roles: `admin`, `registrado`, `publico`. Los registrados ven recetas que
@@ -175,11 +175,58 @@ Sobre los roles (`src/models/usuario.ts`):
 - En `user.role` solo se guarda `admin` o `registrado` (`defaultRole:
   "registrado"` en `src/lib/auth.ts`; `rolDeSesion()` trata cualquier valor
   desconocido con sesión válida como `registrado`).
-- **El registro público está ABIERTO**: cualquiera crea cuenta en `/login` con
-  correo y contraseña y entra como `registrado`. Consecuencia asumida: las
+- **El registro público requiere correo transaccional configurado**:
+  `RESEND_API_KEY` y `CORREO_REMITENTE` habilitan altas con confirmación de correo
+  y sin inicio automático de sesión. Sin ambos valores se cierran las altas y
+  se conserva el acceso de las cuentas existentes. Al habilitar correo, también
+  las cuentas antiguas no verificadas deben confirmar su dirección: un intento
+  de acceso válido les envía el enlace. Consecuencia asumida: las
   recetas de visibilidad `registrada` las ve cualquiera que se registre; ya no
   equivalen a «gente invitada». El admin solo se crea con
   `npm run crear-usuario -- --rol admin`; el registro nunca da ese rol.
+
+### Protección del acceso y edición
+
+- Better Auth limita intentos con almacenamiento en MongoDB (`rateLimit`),
+  también en desarrollo: login 5/min y alta/recuperación/reenvío 3/min. Verificar
+  IP fiable y comportamiento entre instancias antes de producción; las APIs
+  propias no heredan estos límites.
+- `/recuperar` usa enlaces de una hora y revoca sesiones tras cambiar la
+  contraseña. Resend se integra mediante HTTP sin dependencias nuevas; el
+  envío se programa con `after()` para no bloquear la respuesta. No registrar
+  enlaces ni tokens. La entrega y los DNS del remitente requieren prueba real.
+- `/cuenta` permite cambiar nombre y contraseña, activar TOTP con códigos de
+  recuperación y eliminar una cuenta lectora. No se permite eliminar admins
+  desde esta interfaz. La activación de TOTP no es obligatoria ni automática;
+  el administrador debe completarla y conservar los códigos fuera del sitio.
+- Las mutaciones propias comprueban Origin y Fetch Metadata además de sesión.
+  El destino de retorno del login se restringe al origen propio.
+- `src/proxy.ts` aplica CSP con nonce, `frame-ancestors 'none'` y restricciones
+  de recursos; el layout raíz es dinámico para generar un nonce por petición.
+  Estilos inline siguen permitidos por el diseño actual; `unsafe-eval` solo en
+  desarrollo. Cabeceras globales adicionales viven en `next.config.ts`.
+- `PUT /api/recetas/[id]` requiere `If-Match` con `actualizadaEn` en ISO y hace
+  reemplazo condicionado a esa versión. Devuelve 412 ante conflicto. El editor
+  serializa guardados y avisa antes de abandonar cambios pendientes; todavía
+  no hay borrador local recuperable ni fusión de conflictos.
+- Una publicación requiere ingredientes y pasos; el slug no cambia después
+  de la primera publicación. Resumen y portada continúan siendo opcionales.
+- Las fotos antiguas se borran después de guardar sus nuevas referencias y
+  nunca si otra receta las usa. Se validan metadatos con ImageKit y referencias
+  al guardar. Las fotos se resuelven por IDs referenciados, no por propietario.
+  No hay transacción distribuida Mongo/ImageKit ni tarea de limpieza automática.
+- `icon`, `apple-icon` y `opengraph-image` reutilizan `public/Logo.png`. Las
+  portadas locales pasan por el optimizador de Next; no se modifica el original.
+  Cuenta, acceso, admin y Preview se marcan para no indexar.
+
+La lista de cierre y las validaciones pendientes están en [AUDITORIA.md](./AUDITORIA.md).
+`src/lib/sitio.ts` centraliza la identidad y el correo públicos confirmados:
+Alejandro Barreche Ruiz, alex.barreche@gmail.com. `/contacto` los muestra y
+ofrece un canal para consultas y derechos; se enlaza desde el pie público y
+las páginas de acceso/cuenta. No es el remitente automático de Resend.
+El borrador [PRIVACIDAD.md](./PRIVACIDAD.md) queda fuera de las rutas públicas:
+faltan bases jurídicas validadas, conservación, cookies y condiciones reales de
+proveedores. Contacto no sustituye una política de privacidad completa.
 
 ### Índices
 
@@ -355,14 +402,24 @@ reales).
 
 ## 13. El diseño
 
-El sistema visual vigente es el del rediseño **«Mi libro de recetas»**,
-copiado fielmente del lienzo «Recetario claro.dc.html» del proyecto de Claude
-Design «Diseño blog de cocina desde cero»
-(https://claude.ai/design/p/5a5bba19-00f5-4785-aad0-ce60c03ddf0d). **Ante la
-duda visual, ese lienzo manda.** (Sustituyó entero al primer sistema, «La
-cocina nos Une»; de aquel no queda nada.)
+El sistema visual **«Mi libro de recetas»** evoluciona la cubierta original
+con la portada 03 aprobada de `docs/diseno/portada.html` y el recorrido 04 de
+`docs/diseno/presentacion.html`. La aplicación Next.js incorpora esa dirección
+para revisarla con datos reales en desarrollo; no implica despliegue ni
+aprobación final de todas las ampliaciones. El antiguo lienzo de Claude Design
+queda como antecedente, no como autoridad sobre estas decisiones posteriores.
 
 ### Reglas de base
+
+**Base aprobada e implementada para validación en desarrollo:**
+la portada 03 de `docs/diseno/portada.html` es la base visual aceptada por el
+autor: cubierta ilustrada con scroll, fotos con margen blanco y marco fino,
+título y datos al pie, marcador de guardar en la imagen y contenido blanco.
+Sin botón «Abrir el cuaderno», sin rótulo visible «El cuaderno» ni declaración
+personal destacada. El logo es **circular**, con ancho y alto iguales.
+`docs/diseno/presentacion.html` reúne el recorrido propuesto a partir de esa
+base. Las ampliaciones de ficha y cocina ya pueden probarse en rutas reales;
+siguen abiertas a revisión y no certifican que esté lista para producción.
 
 Tailwind, sin fichero de estilos aparte: los tokens (color, tipografía,
 espaciado) se definen una vez en `globals.css` y todo los usa; nada de valores
@@ -384,12 +441,13 @@ ver no existe para él** (ver sección 5). Nada de candados ni tarjetas borrosas
 
 ### Lo decidido
 
-**Nombre: «Mi libro de recetas»**, firmado «Alejandro». El rótulo en Pinyon
-Script; la firma en DM Mono con tracking muy abierto.
+**Nombre: «Mi libro de recetas»**, firmado «Alejandro» en la cubierta. No se
+repite como texto en la cabecera ni en el pie.
 
-**Tipografías** (Google Fonts, vía `next/font`): Bricolage Grotesque para
-display, Instrument Sans para el cuerpo, DM Mono para rótulos y datos
-(versalitas espaciadas), Pinyon Script SOLO para el nombre.
+**Tipografías** (Google Fonts, vía `next/font`): Instrument Sans para toda la
+interfaz, incluidos títulos y números; Pinyon Script únicamente para el rótulo
+de la cubierta. Son las únicas dos familias cargadas. Las variables heredadas
+`--font-bricolage` y `--font-dm-mono` son alias de Instrument, no otras fuentes.
 
 **Paleta** (tokens en `globals.css`, y solo ahí): papel `#DEE6E9`, tinta
 `#0F1418`, superficie `#FFFFFF`, lateral `#CFD9DD`, rayas `#C0CCD1`/`#CCD7DB`,
@@ -400,24 +458,70 @@ acento `oklch(0.55 0.19 30)` (rojo anaranjado, ÚNICO acento) y
 **Solo existe el estilo claro.** El modo oscuro se retiró a propósito: un
 único `themeColor` y ninguna media query de `prefers-color-scheme`.
 
-**La portada**: cubierta a pantalla completa con la foto de la semana a sangre
-(parallax suave) y el rótulo encima; las dos entradas grandes («Lo último que
-hice» → la ficha de la última, «Todas las recetas» → ancla a la rejilla); la
-marquesina oscura ligada al scroll; la rejilla de tarjetas 4:5 con numeración
-de cuaderno (la más antigua es la 01), categoría · tiempo en acento y píldoras
-de categoría como filtros; y «Quién cocina aquí» con la cita, el hueco de gif
-y los dos párrafos personales. **Sin captura de correo**: el campo «Avísame»
-del lienzo se omitió a sabiendas (regla de la sección 1).
+**La cabecera**: logo circular que lleva a inicio y tres SVG uniformes:
+cuadrícula (`/recetas`), lupa y perfil (`/cuenta`, que reenvía al login sin
+sesión). Sin rótulos visibles permanentes, con nombres accesibles, ayuda al
+enfocar/pasar el cursor y controles de 44 px. Guardadas vive dentro de cuenta,
+no se disfraza el acceso al perfil como una lista de guardadas.
 
-**La ficha**: cabecera pegajosa con el logo (la vuelta universal a la
-portada; no existe ningún «← Volver» en el sitio, a propósito), el corazón de
-guardar y el botón «Cocinar paso a paso»; cubierta 70svh con parallax y
-título en Bricolage gigante; ingredientes en tarjeta blanca pegajosa con
-escalador de raciones Y checklist (cada fila se tacha al tocarla, contador
-«n de m listos», Desmarcar); pasos con número en acento y rotulillo opcional
-(`paso.titulo`); fotos de paso 16:10 intercaladas; «Nota personal» (el campo
-`notas`) en caja blanca con filo izquierdo en acento; y «Sigue por aquí» con
-las dos publicadas más recientes.
+**La portada**: conserva la cubierta ilustrada original (`Portada.jpg` /
+`Portada-V.jpg`), aproximadamente una pantalla, parallax y rótulo. Después de
+la banda muestra la última receta publicada y las dos anteriores que el rol
+puede ver. Mongo aplica visibilidad, `estado: publicada`, orden por
+`publicadaEn` e `_id` descendentes y límite tres; no se recorta un listado en
+el cliente. No entran borradores ni siquiera para admins. La selección es
+automática, no se fijan recetas manualmente. No hay buscador inline, filtros,
+numeración ni manifiesto personal en inicio. Una tarjeta de continuación al
+final enlaza al catálogo completo, con flecha y fondo decorativo desenfocado
+(no fotografías ocultas). Indica cuántas recetas publicadas visibles quedan
+fuera de la selección; si no quedan más, muestra «Explorar recetas». El recuento
+aplica el mismo filtro de visibilidad que el listado. Sin recetas no se muestra.
+
+**El catálogo** (`/recetas`): todas las publicadas visibles, con categorías y
+búsqueda por plato o ingrediente combinables mediante `q` y `categoria`.
+La tira visual aprobada muestra ilustraciones SVG con nombres, selección
+subrayada en acento y desplazamiento horizontal en móvil. Las categorías salen
+de las recetas visibles, no de una lista de muestra; las desconocidas usan una
+ilustración genérica. Los enlaces conservan la búsqueda, funcionan sin JavaScript
+y mantienen la selección visible. El recuento acompaña al título; los filtros
+activos y su limpieza aparecen solo cuando se están usando.
+También excluye borradores para admins; estos permanecen en administración.
+Las búsquedas antiguas en `/?q=…` o `/?categoria=…` redirigen al catálogo.
+La lupa abre un diálogo nativo con foco inicial y cierre mediante Escape;
+envía con `next/form` sin recargar el documento. El enlace alternativo
+`/recetas?buscar=1` muestra un formulario funcional incluso sin JavaScript.
+
+**Tarjeta de receta** (`tarjeta-receta.tsx`): componente común de inicio,
+catálogo y guardadas, con fotografía 4:3 enmarcada, título, resumen breve, fecha secundaria
+y datos visuales de tiempo, raciones y dificultad (`datos-receta.tsx`). La
+dificultad se representa por niveles y su nombre, no solo por color. Guardar
+es hermano del enlace, nunca está anidado en él. Sin flechas ni «Ver receta».
+Sin foto utiliza la misma información en una tarjeta compacta, sin reservar
+un gran hueco. No se filtran ni retocan los colores de la comida.
+
+**Anchuras**: inicio y catálogo usan márgenes fluidos y hasta 1920 px; tres
+columnas en el inicio de escritorio, hasta cuatro en catálogo y una en móvil.
+Los 720 px quedan para lectura, no para encerrar el listado en un monitor grande.
+
+**La ficha actual**: cabecera pública compartida con navegación por iconos.
+Título compacto, marcador y entrada a cocina en la introducción. Los datos
+reutilizan los SVG de las tarjetas: tiempo total, personas y dificultad;
+preparación y cocción tienen un desglose secundario. Las raciones de la
+cabecera reflejan el escalador. La propuesta 04 aprobada organiza el escritorio
+en hasta 1600 px: introducción e ingredientes a la izquierda, foto enmarcada a
+la derecha y pasos debajo en una columna centrada de hasta 980 px, sobre blanco.
+En móvil se apilan introducción, foto, ingredientes y pasos. La lista de
+ingredientes se acota a 440 px en escritorio, con el escalador junto al título
+y controles de 44 px también en móvil. Cantidad y nombre se alinean en cada
+fila, con notas secundarias, sin casillas,
+tachados, contadores ni «Desmarcar», tampoco en modo cocina. Se mantiene
+`medida()` con su redondeo a cuartos para piezas y medios para otras unidades.
+Sin explicación de escalado ni enlace «Ingredientes y pasos». Pasos con
+número y título opcional real, sin rótulo visible «Preparación» ni separadores
+entre ingredientes y pasos o entre pasos. Se conservan las fotos intercaladas;
+la portada no lleva pie. La nota del autor cierra más abajo, centrada y en
+cursiva, sin caja, título ni firma. Otras recetas visibles al final. Sin foto
+se elimina la segunda columna y no se reserva un hueco vacío.
 
 **El modo cocina** («Cocinar paso a paso»): overlay a pantalla completa (en
 portal sobre `body`: el backdrop-blur de la cabecera crearía un contexto de
@@ -425,7 +529,20 @@ contención que atraparía el `fixed`), un paso cada vez en cuerpo gigante con
 su foto si la tiene, barra de progreso en acento, los ingredientes a mano en
 un panel propio, y página con botones, deslizando el dedo o con las flechas
 (Escape sale). Pide wake lock para que el móvil no se apague cocinando. Es la
-respuesta a «se lee en la cocina».
+respuesta a «se lee en la cocina». Comparte raciones y
+paso actual con la ficha; salir y volver no reinicia. Terminar y reiniciar
+son acciones explícitas. Las cantidades escritas dentro de los pasos no se
+reescriben al escalar; los tiempos tampoco se recalculan.
+
+**Continuidad de preparación**: un proveedor en `(public)/layout.tsx` conserva
+solo identificadores, cantidades y progreso en memoria. La portada ofrece
+retomar la última receta interactuada si está entre sus tres resultados;
+el catálogo también puede ofrecer retomar una receta de sus resultados actuales.
+Se invalida al cambiar la versión de receta o la identidad/rol de sesión.
+No utiliza almacenamiento persistente: recargar o salir del grupo público
+(por ejemplo, hacia `/cuenta`, `/login` o administración) pierde el progreso.
+Mantenerlo entre esos recorridos o recargas queda pendiente de decisión; no
+se promete persistencia durante toda la vida de la pestaña.
 
 **El panel**: editor sobre la receta tal como se ve. contentEditable sin
 control de React para título, resumen, pasos y nota; autoguardado con debounce
@@ -434,44 +551,57 @@ y etiquetas como chips, y la descripción SEO; fotos con subida directa a
 ImageKit; reordenado por arrastre. El alta (`/admin/recetas/nueva`) pide solo
 el título y salta al editor. Todo valida con el MISMO Zod que la API.
 
-**Las guardadas**: un corazón vacío junto a cada receta (en la cabecera de la
-ficha y sobre cada tarjeta de la rejilla) que se rellena al tocarlo
+**Las guardadas**: un marcador vacío junto a cada receta (en la introducción
+de la ficha y sobre la foto destacada o junto a la fila) que se rellena al tocarlo
 (`corazon-guardar.tsx`, estado optimista). Sin sesión no alterna: lleva a
 `/login?volver=` a donde estabas. La API (`/api/guardadas/[recetaId]`)
 comprueba la sesión por su cuenta y trata una receta no visible para el rol
 como inexistente (404), también al guardarla.
 
-**La cuenta** («Tu cuaderno», `/cuenta`): página de servidor que abre con las
-guardadas —lista con miniatura de portada, enlace y quitar en el sitio
-(`lista-guardadas.tsx`)—, saluda por el nombre y deja el correo y «Salir»
-como pie discreto. **El rol no se enseña nunca, se nota**: si eres admin
-existe «Ir al panel», y esa es toda la señal (nada de chips de tipo de
-cuenta). Sin sesión reenvía a `/login?volver=/cuenta`. `/login` solo contiene
+**La cuenta** (`/cuenta`): página de servidor con identidad compacta (iniciales
+circulares, nombre y correo), sin saludo explicativo. Las guardadas siguen
+siendo el contenido principal: tarjetas compartidas y recuento inmediato al
+quitar, en hasta tres columnas y una en móvil. Usa hasta 1500 px en escritorio;
+en móvil el nombre va debajo del avatar y el engranaje queda arriba a la derecha.
+El engranaje abre un diálogo lateral nativo con Perfil y Seguridad: nombre,
+contraseña, segundo factor y cierre de sesión. Los formularios se despliegan
+al elegir la acción; Escape cierra y devuelve el foco al engranaje. No se
+cierra durante una operación pendiente. Al cerrar se limpian contraseñas y
+confirmaciones; una configuración TOTP iniciada conserva temporalmente sus
+códigos mientras el componente siga montado. El estado vacío lleva al catálogo.
+**El rol no se enseña nunca, se nota**: si eres admin aparece «Panel» junto a
+Guardadas; la eliminación de cuenta queda separada dentro de los ajustes y
+solo está disponible para lectores. Sin sesión reenvía a `/login?volver=/cuenta`.
+`/login` solo contiene
 entrar y crear cuenta; con sesión reenvía a `/cuenta` (lo que además corta el
 bucle del guard de `/admin` para quien no es admin). «Salir» responde al
 toque («Saliendo...») y aterriza siempre en la portada, ya como público. La
-figura de persona vive en todas las cabeceras públicas (`persona-cuenta.tsx`)
-y lleva siempre a `/cuenta`: ningún salto frecuente cuesta más de un toque.
+entrada de perfil de la cabecera lleva a `/cuenta`. El marcador usa estado
+optimista y refresca los datos de servidor tras guardar o quitar. Al quitar
+una tarjeta enfocada, el foco pasa a la siguiente, a la anterior o a Explorar.
+Si la petición falla se restituye la tarjeta en su orden original.
 
 **Movimiento**: entradas en cascada (`Revelado`), parallax (`CapaParallax`) y
-marquesina, siempre respetando `prefers-reduced-motion` y sin esconder nada si
-no hay JS. El hover solo decora.
+banda de frases continua y compacta, sin grandes huecos entre ellas. La banda
+no tiene controles ni se detiene al pasar el cursor. Todo
+respeta `prefers-reduced-motion`; el contenido no depende de la animación.
 
-**Huecos de foto**: rayas diagonales (`.rayas` / `.rayas-finas`), nunca gris
-plano. La foto cuadrada y el gif de «Quién cocina» siguen siendo huecos hasta
-que existan los ficheros reales.
+**Ausencia de foto**: las vistas públicas son tipográficas cuando no existe
+imagen; no simulan fotografía ni añaden un bloque de relleno. Los patrones de
+rayas existentes pueden seguir usándose como controles de carga en el editor.
 
-**El pie** (solo páginas públicas, vía `(public)/layout.tsx`): deliberadamente
-mínimo — el nombre en Pinyon y «Una receta a la semana · desde 2026». Sin
-redes, sin newsletter, sin columnas de enlaces (regla de la sección 1).
+**El pie**, compartido por páginas públicas y acceso/cuenta: enlace discreto a
+Contacto, sin repetir nombre ni lema ni usar otra tipografía. No enlaza ayuda
+o políticas inexistentes. Añadir contenido de ayuda y publicar la política
+validada siguen pendientes. Sin redes ni newsletter.
 
 **Estados vacíos y 404**: «La primera está al fuego.», «De eso aún no
 tenemos.», «Esta página se nos ha quemado.» — el 404 deliberadamente ambiguo
 (es lo que ve un visitante ante una receta de solo registrados).
 
-Concesión asumida al copiar el lienzo: los botones del escalador son de 26 px,
-por debajo de la regla de toques de 44 px; las filas de ingredientes, en
-cambio, son tocables a toda anchura.
+Los botones del escalador tienen un área de 44 px y límites de raciones;
+su valor se anuncia con `output`. Las filas de ingredientes son texto de
+lectura, no controles interactivos.
 
 ### Subida de imágenes
 
@@ -485,6 +615,10 @@ de ~4 MB; los bytes no pasan por ellas). Esa ruta comprueba sesión y rol
 ## 14. Decisiones aún abiertas
 
 No darlas por cerradas sin querer.
+
+- **Ampliación del pie**: definir contenido útil de ayuda y finalizar privacidad,
+  sin enlaces vacíos. Extender la tarjeta común a relacionadas; guardadas ya
+  reutiliza el componente de inicio y catálogo.
 
 - **Dónde se decide la autorización**: reglas en la base de datos frente a
   comprobaciones en las rutas de API. De momento, todo pasa por el servidor.
@@ -506,9 +640,9 @@ Y cuatro que se cerraron el 26 de agosto de 2026, para no reabrirlas:
   persona sin sesión). El panel es el enlace «Ir al panel» de `/cuenta`,
   nunca un destino forzado por rol.
 - **No existe ningún «← Volver»**: la vuelta es siempre el logo.
-- **La cuenta vive en `/cuenta`** y son tus recetas, no tus datos: las
-  guardadas abren la página y lo administrativo es el pie. `/login` solo
-  entra y crea cuentas.
+- **La cuenta vive en `/cuenta`**: las guardadas son su contenido principal.
+  La revisión aprobada de catálogo y cuenta añade identidad arriba y traslada
+  lo administrativo al engranaje. `/login` solo entra y crea cuentas.
 - **El rol no se enseña, se nota**: quien puede hacer algo ve el botón para
   hacerlo; quien no, no ve nada. Y **cada toque responde al instante**: el
   estado cambia al momento (corazón, Salir) y la red se resuelve por detrás.
@@ -531,11 +665,13 @@ recetario/
 │  │  ├─ robots.ts
 │  │  ├─ (public)/
 │  │  │  ├─ layout.tsx               # añade el pie a las páginas públicas
-│  │  │  ├─ page.tsx                 # portada: cubierta, buscador (?q, ?categoria)
+│  │  │  ├─ page.tsx                 # cubierta + tres últimas publicadas visibles
+│  │  │  ├─ recetas/page.tsx         # catálogo y filtros (?q, ?categoria)
 │  │  │  └─ recetas/[slug]/page.tsx  # ficha con escalador de raciones
 │  │  ├─ (auth)/
 │  │  │  ├─ login/page.tsx           # entrar y crear cuenta; con sesión → /cuenta
-│  │  │  └─ cuenta/page.tsx          # tu cuaderno: guardadas, panel (admin), salir
+│  │  │  ├─ recuperar/page.tsx       # solicitud y cambio por enlace de correo
+│  │  │  └─ cuenta/page.tsx          # guardadas, panel (admin), salir
 │  │  ├─ admin/
 │  │  │  ├─ layout.tsx               # guard de rol admin (navegación, no datos)
 │  │  │  ├─ page.tsx                 # listado de recetas
@@ -548,7 +684,7 @@ recetario/
 │  │     ├─ recetas/[id]/route.ts    # PUT, DELETE con limpieza de imágenes
 │  │     ├─ guardadas/[recetaId]/route.ts  # POST guarda, DELETE quita
 │  │     ├─ imagenes/route.ts        # POST metadatos tras subir a ImageKit
-│  │     ├─ imagenes/[id]/route.ts   # DELETE: ImageKit + metadatos + referencias
+│  │     ├─ imagenes/[id]/route.ts   # DELETE: solo fotos sin referencias
 │  │     ├─ imagenes/firma/route.ts  # firma de subida (solo admin)
 │  │     └─ salud/route.ts           # ping a la base; ver sección 8
 │  ├─ lib/
@@ -576,7 +712,7 @@ recetario/
 │     ├─ persona-cuenta.tsx          # la figura de persona → /cuenta
 │     ├─ pie-de-pagina.tsx           # pie mínimo de las páginas públicas
 │     ├─ cabecera-panel.tsx
-│     ├─ ingredientes-escalables.tsx # escalador de raciones + checklist
+│     ├─ ingredientes-escalables.tsx # lista de lectura + escalador de raciones
 │     ├─ modo-cocina.tsx             # «Cocinar paso a paso»
 │     ├─ revelado.tsx                # entrada en cascada
 │     ├─ marquesina.tsx

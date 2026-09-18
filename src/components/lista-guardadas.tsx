@@ -1,84 +1,64 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { IconoGuardar } from "@/components/icono-guardar";
+import { TarjetaReceta } from "@/components/tarjeta-receta";
 import type { RecetaGuardada } from "@/lib/guardadas";
 
-/**
- * La lista de guardadas de la cuenta: miniatura de portada, titulo con enlace
- * y el corazon lleno para quitar en el sitio. Llega ya resuelta del servidor;
- * quitar es optimista (la fila desaparece al toque y vuelve si la API falla).
- */
-export function ListaGuardadas({ iniciales }: { iniciales: RecetaGuardada[] }) {
-  const [lista, setLista] = useState(iniciales);
+/** Tarjetas compartidas, eliminación optimista y restitución en su orden original. */
+export function ListaGuardadas({ iniciales, esAdmin }: { iniciales: RecetaGuardada[]; esAdmin: boolean }) {
+  const [ocultas, setOcultas] = useState<Set<string>>(new Set());
+  const lista = iniciales.filter(receta => !ocultas.has(receta.recetaId));
+  const pendientes = useRef(new Set<string>());
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const enlaces = useRef(new Map<string, HTMLAnchorElement>());
+  const explorar = useRef<HTMLAnchorElement>(null);
+  const siguienteFoco = useRef<string | null>(null);
 
-  async function quitar(recetaId: string) {
-    const previa = lista;
-    setLista(previa.filter((receta) => receta.recetaId !== recetaId));
+  useEffect(() => {
+    const destino = siguienteFoco.current;
+    if (destino === null) return;
+    (destino === "vacia" ? explorar.current : enlaces.current.get(destino))?.focus();
+    siguienteFoco.current = null;
+  }, [ocultas]);
+
+  async function quitar(recetaId: string, moverFoco: boolean) {
+    if (pendientes.current.has(recetaId)) return;
+    const indice = lista.findIndex(elemento => elemento.recetaId === recetaId);
+    if (indice < 0) return;
+    pendientes.current.add(recetaId);
+    if (moverFoco) siguienteFoco.current = (lista[indice + 1] ?? lista[indice - 1])?.recetaId ?? "vacia";
+    setError(null);
+    setOcultas(actual => new Set(actual).add(recetaId));
     try {
       const respuesta = await fetch(`/api/guardadas/${recetaId}`, { method: "DELETE" });
-      if (!respuesta.ok) setLista(previa);
+      if (!respuesta.ok) throw new Error("No se pudo quitar la receta.");
+      router.refresh();
     } catch {
-      setLista(previa);
-    }
+      setOcultas(actual => { const copia = new Set(actual); copia.delete(recetaId); return copia; });
+      setError("No se pudo quitar la receta. Vuelve a intentarlo.");
+    } finally { pendientes.current.delete(recetaId); }
   }
 
-  if (lista.length === 0) {
-    return (
-      <p className="max-w-[38ch] text-[15px] leading-relaxed text-tinta/55">
-        Aún no has guardado ninguna. El corazón que hay junto a cada receta las
-        trae aquí.
-      </p>
-    );
-  }
-
-  return (
-    <ul className="flex flex-col">
-      {lista.map((receta) => (
-        <li key={receta.recetaId} className="flex items-center gap-3.5 border-t border-tinta/10 py-2.5">
-          <Link
-            href={`/recetas/${receta.slug}`}
-            className="flex min-w-0 flex-1 items-center gap-3.5"
-          >
-            {receta.fotoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={receta.fotoUrl}
-                alt={receta.fotoAlt}
-                className="h-13 w-13 shrink-0 object-cover"
-              />
-            ) : (
-              <span className="rayas-finas h-13 w-13 shrink-0" />
-            )}
-            <span className="min-w-0">
-              <span className="block truncate text-[15.5px]">{receta.titulo}</span>
-              <span className="block font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.16em] text-tinta/45">
-                {receta.categoria} · {receta.tiempo}
-              </span>
-            </span>
-          </Link>
-          <button
-            type="button"
-            onClick={() => quitar(receta.recetaId)}
-            aria-label={`Quitar «${receta.titulo}» de guardadas`}
-            title="Quitar de guardadas"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-acento hover:text-tinta"
-          >
-            <svg
-              width="19"
-              height="19"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M12 20.5C7.2 16.7 3.5 13.5 3.5 9.8 3.5 7.1 5.5 5 8 5c1.6 0 3.1.9 4 2.2C12.9 5.9 14.4 5 16 5c2.5 0 4.5 2.1 4.5 4.8 0 3.7-3.7 6.9-8.5 10.7Z" />
-            </svg>
-          </button>
-        </li>
-      ))}
-    </ul>
-  );
+  return <section aria-labelledby="titulo-guardadas">
+    <div className="cuenta-guardadas-cabecera">
+      <h2 id="titulo-guardadas"><IconoGuardar />Guardadas <span aria-live="polite" aria-atomic="true"><span className="sr-only">Recetas guardadas: </span>{lista.length}</span></h2>
+      {esAdmin && <Link href="/admin" className="cuenta-panel" aria-label="Ir al panel de administración"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M12 4H4v16h16v-8M13 11l7-7m-6 0h6v6" /></svg>Panel</Link>}
+    </div>
+    {error && <p role="alert" className="mb-5 text-sm text-acento">{error}</p>}
+    {lista.length === 0 ? <div className="cuenta-vacia">
+      <IconoGuardar /><h3>Aún no has guardado ninguna.</h3>
+      <p>Toca el marcador de una receta para tenerla aquí.</p>
+      <Link ref={explorar} href="/recetas" className="cuenta-boton">Explorar recetas <span aria-hidden="true">→</span></Link>
+    </div> : <ul className="rejilla-recetas cuenta-rejilla">
+      {lista.map(({ recetaId, receta, foto }) => <li key={recetaId}>
+        <TarjetaReceta receta={receta} foto={foto} guardada haySesion volverA="/cuenta" nivelTitulo={3}
+          enlaceRef={elemento => { if (elemento) enlaces.current.set(recetaId, elemento); else enlaces.current.delete(recetaId); }}
+          accionGuardar={<button type="button" onClick={evento => quitar(recetaId, document.activeElement === evento.currentTarget)} aria-label={`Quitar «${receta.titulo}» de guardadas`} title="Quitar de guardadas" className={`cuenta-quitar${foto ? " cuenta-quitar-con-fondo" : ""}`}><IconoGuardar marcado /></button>} />
+      </li>)}
+    </ul>}
+  </section>;
 }

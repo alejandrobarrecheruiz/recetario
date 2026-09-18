@@ -1,10 +1,14 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
-import { admin } from "better-auth/plugins";
+import { admin, twoFactor } from "better-auth/plugins";
+import { APIError } from "better-auth/api";
+import { ObjectId } from "mongodb";
 import { createAccessControl } from "better-auth/plugins/access";
 import { adminAc, defaultStatements, userAc } from "better-auth/plugins/admin/access";
 import { obtenerCliente, obtenerDb } from "@/lib/mongo";
 import { ROL_POR_DEFECTO } from "@/models/usuario";
+import { after } from "next/server";
+import { correoConfigurado, enviarCorreoAcceso } from "@/lib/correo";
 
 /**
  * Instancia de servidor de Better Auth.
@@ -33,16 +37,48 @@ const roles = {
 };
 
 export const auth = betterAuth({
+  appName: "Mi libro de recetas",
   database: mongodbAdapter(db, { client: cliente }),
+  advanced: {
+    backgroundTasks: { handler: (tarea) => { after(async () => { await tarea; }); } },
+  },
+  rateLimit: {
+    enabled: true,
+    storage: "database",
+    window: 60,
+    max: 100,
+    customRules: {
+      "/sign-in/email": { window: 60, max: 5 },
+      "/sign-up/email": { window: 60, max: 3 },
+      "/request-password-reset": { window: 60, max: 3 },
+      "/send-verification-email": { window: 60, max: 3 },
+    },
+  },
 
   emailAndPassword: {
     enabled: true,
-    // Registro abierto: cualquiera crea cuenta en /login y entra como
-    // "registrado". El rol admin solo se da por scripts/crear-usuario.ts.
-    disableSignUp: false,
+    // No crear cuentas sin un medio de verificar y recuperar el acceso.
+    disableSignUp: !correoConfigurado(),
+    autoSignIn: false,
+    requireEmailVerification: correoConfigurado(),
+    revokeSessionsOnPasswordReset: true,
+    resetPasswordTokenExpiresIn: 3600,
+    sendResetPassword: async ({ user, url }) => {
+      await enviarCorreoAcceso(user.email, url, "recuperar");
+    },
+  },
+  emailVerification: {
+    sendOnSignUp: true,
+    sendOnSignIn: correoConfigurado(),
+    autoSignInAfterVerification: false,
+    expiresIn: 3600,
+    sendVerificationEmail: async ({ user, url }) => {
+      await enviarCorreoAcceso(user.email, url, "verificar");
+    },
   },
 
   plugins: [
+    twoFactor(),
     admin({
       ac: control,
       roles,
@@ -50,4 +86,19 @@ export const auth = betterAuth({
       defaultRole: ROL_POR_DEFECTO,
     }),
   ],
+  user: {
+    deleteUser: {
+      enabled: true,
+      beforeDelete: async (usuario) => {
+        const almacenado = await db.collection("user").findOne({ _id: new ObjectId(usuario.id) });
+        if (almacenado?.role === "admin") {
+          throw new APIError("FORBIDDEN", { message: "La cuenta que mantiene el cuaderno no se puede eliminar desde aquí." });
+        }
+        await db.collection("saves").deleteMany({ usuarioId: new ObjectId(usuario.id) });
+      },
+      afterDelete: async (usuario) => {
+        await db.collection("twoFactor").deleteMany({ userId: new ObjectId(usuario.id) });
+      },
+    },
+  },
 });

@@ -56,7 +56,8 @@ describe("plantilla y fichero real", () => {
     const plantilla = leerEnv(join(RAIZ, ".env.example"));
     assert.ok(plantilla.size > 0, ".env.example no tiene variables; algo raro pasa");
 
-    const faltan = [...plantilla.keys()].filter((clave) => !process.env[clave]);
+    const opcionales = new Set(["RESEND_API_KEY", "CORREO_REMITENTE"]);
+    const faltan = [...plantilla.keys()].filter((clave) => !opcionales.has(clave) && !process.env[clave]);
     assert.deepEqual(
       faltan,
       [],
@@ -70,6 +71,7 @@ describe("plantilla y fichero real", () => {
       "MONGODB_URI",
       "BETTER_AUTH_SECRET",
       "IMAGEKIT_PRIVATE_KEY",
+      "RESEND_API_KEY",
       "NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY",
       "NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT",
     ];

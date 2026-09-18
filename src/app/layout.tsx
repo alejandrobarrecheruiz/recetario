@@ -1,30 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import {
-  Bricolage_Grotesque,
-  Instrument_Sans,
-  DM_Mono,
-  Pinyon_Script,
-} from "next/font/google";
+import { connection } from "next/server";
+import { Instrument_Sans, Pinyon_Script } from "next/font/google";
 import "./globals.css";
 
-// Las cuatro familias del sistema: Bricolage Grotesque para display,
-// Instrument Sans para el cuerpo, DM Mono para rótulos y datos, y Pinyon
-// Script solo para el nombre del blog. Variables CSS que globals.css mapea a
-// font-display/font-cuerpo/font-rotulo/font-script.
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-bricolage",
-  subsets: ["latin"],
-});
-
+// Una familia para toda la interfaz; la caligrafía solo identifica la cubierta.
 const instrument = Instrument_Sans({
   variable: "--font-instrument",
   subsets: ["latin"],
-});
-
-const dmMono = DM_Mono({
-  variable: "--font-dm-mono",
-  subsets: ["latin"],
-  weight: ["400", "500"],
 });
 
 const pinyon = Pinyon_Script({
@@ -55,11 +37,12 @@ export const viewport: Viewport = {
   themeColor: "#dee6e9",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  await connection();
   return (
     <html
       lang="es"
-      className={`${bricolage.variable} ${instrument.variable} ${dmMono.variable} ${pinyon.variable} h-full antialiased`}
+      className={`${instrument.variable} ${pinyon.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

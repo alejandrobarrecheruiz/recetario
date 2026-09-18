@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { rolActual } from "@/lib/sesion";
+
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 // Guard de rol admin. La sesion se resuelve EN EL SERVIDOR y cubre todas las
 // rutas de /admin de una vez.

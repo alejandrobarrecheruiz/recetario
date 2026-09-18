@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 /**
  * El logo de la casa (el gato y la mariquita cocineros), recortado en círculo
@@ -8,10 +9,11 @@ import Link from "next/link";
 export function Logo({ tamano = 64 }: { tamano?: number }) {
   return (
     <Link href="/" className="shrink-0" aria-label="Volver a la portada">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src="/Logo.png"
         alt="Mi libro de recetas"
+        width={tamano}
+        height={tamano}
         style={{ width: tamano, height: tamano }}
         className="rounded-full object-cover"
       />

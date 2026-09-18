@@ -13,6 +13,19 @@ import ImageKit, { NotFoundError } from "@imagekit/nodejs";
 
 let cliente: ImageKit | undefined;
 
+/** Solo para peticiones servidor a servidor; la firma no sale al navegador. */
+export function urlFirmadaDeImagen(path: string, ancho?: number): string {
+  const urlEndpoint = process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT;
+  const carpeta = process.env.IMAGEKIT_FOLDER?.replace(/^\/+|\/+$/g, "");
+  if (!urlEndpoint || !carpeta || !path.startsWith(`/${carpeta}/`) || /[?#\\]/.test(path) || path.split("/").some((parte) => parte === ".." || parte === ".")) {
+    throw new Error("La imagen no pertenece al entorno.");
+  }
+  return clienteImageKit().helper.buildSrc({
+    urlEndpoint, src: path, signed: true, expiresIn: 60,
+    ...(ancho ? { transformation: [{ width: ancho, height: 1600, crop: "at_max" as const, quality: 80, format: "webp" as const }] } : {}),
+  });
+}
+
 export async function detallesDeImageKit(fileId: string) {
   return clienteImageKit().files.get(fileId);
 }

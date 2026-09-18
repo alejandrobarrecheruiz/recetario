@@ -1,13 +1,12 @@
 import { cache } from "react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { ObjectId } from "mongodb";
 import { obtenerColecciones } from "@/lib/mongo";
 import { conVisibilidad } from "@/lib/visibilidad";
 import { rolActual, sesionActual } from "@/lib/sesion";
-import { duracion, fechaDePublicacion, medida, urlConAncho } from "@/lib/formato";
+import { fechaDePublicacion, medida, urlConAncho } from "@/lib/formato";
 import type { Ingrediente, RecetaDoc } from "@/models/receta";
 import type { ImagenDoc } from "@/models/imagen";
 import { CorazonGuardar } from "@/components/corazon-guardar";
@@ -17,6 +16,9 @@ import { CabeceraPublica } from "@/components/cabecera-publica";
 import { PreparacionReceta } from "@/components/progreso-cocina";
 import { ModoCocina } from "@/components/modo-cocina";
 import { Revelado } from "@/components/revelado";
+import { rutaImagen } from "@/lib/entrega-imagenes";
+import { datosParaTarjetas, resumenParaTarjeta } from "@/lib/datos-tarjetas";
+import { TarjetaReceta } from "@/components/tarjeta-receta";
 
 // La ficha: lectura vertical, fotografía enmarcada, ingredientes con escalador
 // compartido con el modo cocina, pasos con rotulillo, nota
@@ -36,7 +38,7 @@ const obtenerFicha = cache(async (slug: string) => {
   const fotos = new Map(
     (await imagenes.find({ _id: { $in: [receta.portadaId, ...receta.pasos.map((paso) => paso.imagenId)].filter((id): id is ObjectId => id !== null) } }).toArray()).map((foto) => [
       foto._id.toHexString(),
-      foto,
+      { ...foto, url: rutaImagen(foto._id.toHexString()) },
     ]),
   );
   return { receta, fotos };
@@ -89,7 +91,7 @@ function datosEstructurados(receta: RecetaDoc, fotos: Map<string, ImagenDoc>) {
     "@type": "Recipe",
     name: receta.titulo,
     description: receta.seo.descripcion || receta.resumen || receta.titulo,
-    ...(portada && { image: [urlConAncho(portada.url, 1200)] }),
+    ...(portada && { image: [new URL(urlConAncho(portada.url, 1200), process.env.BETTER_AUTH_URL).href] }),
     ...(receta.publicadaEn && { datePublished: receta.publicadaEn.toISOString() }),
     author: { "@type": "Person", name: "Alejandro" },
     inLanguage: "es",
@@ -107,7 +109,7 @@ function datosEstructurados(receta: RecetaDoc, fotos: Map<string, ImagenDoc>) {
         position: indice + 1,
         ...(paso.titulo && { name: paso.titulo }),
         text: paso.texto,
-        ...(foto && { image: urlConAncho(foto.url, 828) }),
+        ...(foto && { image: new URL(urlConAncho(foto.url, 828), process.env.BETTER_AUTH_URL).href }),
       };
     }),
   };
@@ -142,14 +144,7 @@ export default async function PaginaReceta({
     .sort({ publicadaEn: -1 })
     .limit(2)
     .toArray();
-  const idsDeSiguientes = siguientes.flatMap((doc) => (doc.portadaId ? [doc.portadaId] : []));
-  const { imagenes } = await obtenerColecciones();
-  const fotosDeSiguientes = new Map(
-    (await imagenes.find({ _id: { $in: idsDeSiguientes } }).toArray()).map((foto) => [
-      foto._id.toHexString(),
-      foto,
-    ]),
-  );
+  const { fotos: fotosDeSiguientes, guardadas: siguientesGuardadas } = await datosParaTarjetas(siguientes, sesion?.user.id);
 
   // El modo cocina es un componente de cliente: recibe los pasos ya resueltos
   // (URL de foto en vez de imagenId) y los ingredientes para tenerlos a mano.
@@ -255,35 +250,15 @@ export default async function PaginaReceta({
           <div className="mb-7 font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.2em] text-tinta/50">
             Sigue por aquí
           </div>
-          <div className="grid gap-7 sm:grid-cols-2">
+          <div className="rejilla-recetas ficha-siguientes">
             {siguientes.map((otra) => {
               const fotoDeOtra = otra.portadaId
                 ? fotosDeSiguientes.get(otra.portadaId.toHexString())
                 : undefined;
               return (
-                <Link
-                  key={otra.slug}
-                  href={`/recetas/${otra.slug}`}
-                  className="group block min-w-0 text-tinta"
-                >
-                  {fotoDeOtra ? (
-                    <div className="marco-foto mb-4">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                      src={urlConAncho(fotoDeOtra.url, 828)}
-                      alt={fotoDeOtra.alt}
-                      loading="lazy"
-                      className="aspect-[16/10] w-full object-cover"
-                    />
-                    </div>
-                  ) : (
-                    <div aria-hidden="true" className="rayas-finas mb-4 h-2" />
-                  )}
-                  <h3 className="font-[family-name:var(--font-bricolage)] text-2xl font-medium tracking-tight group-hover:text-acento">
-                    {otra.titulo}
-                  </h3>
-                  <p className="mt-2 text-sm text-tinta/65">{duracion(otra.tiempo.total)}</p>
-                </Link>
+                <TarjetaReceta key={otra._id.toHexString()} receta={resumenParaTarjeta(otra)} foto={fotoDeOtra}
+                  guardada={siguientesGuardadas.has(otra._id.toHexString())} haySesion={sesion !== null}
+                  volverA={`/recetas/${receta.slug}`} nivelTitulo={3} />
               );
             })}
           </div>

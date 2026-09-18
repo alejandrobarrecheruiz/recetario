@@ -207,14 +207,26 @@ Sobre los roles (`src/models/usuario.ts`):
   desarrollo. Cabeceras globales adicionales viven en `next.config.ts`.
 - `PUT /api/recetas/[id]` requiere `If-Match` con `actualizadaEn` en ISO y hace
   reemplazo condicionado a esa versión. Devuelve 412 ante conflicto. El editor
-  serializa guardados y avisa antes de abandonar cambios pendientes; todavía
-  no hay borrador local recuperable ni fusión de conflictos.
+  serializa guardados y avisa antes de abandonar cambios pendientes. Mantiene
+  borradores locales separados por usuario, receta y pestaña; permite recuperar
+  o descargar el trabajo. Ante un conflicto se consulta la versión actual y se
+  confirma expresamente cualquier sustitución; no hay fusión automática.
 - Una publicación requiere ingredientes y pasos; el slug no cambia después
   de la primera publicación. Resumen y portada continúan siendo opcionales.
 - Las fotos antiguas se borran después de guardar sus nuevas referencias y
   nunca si otra receta las usa. Se validan metadatos con ImageKit y referencias
   al guardar. Las fotos se resuelven por IDs referenciados, no por propietario.
   No hay transacción distribuida Mongo/ImageKit ni tarea de limpieza automática.
+- Las fotografías siguen la visibilidad de las recetas que las referencian.
+  El cliente recibe `/api/imagenes/[id]`, nunca una firma reutilizable de ImageKit.
+  La ruta autoriza cada descarga, entrega sin caché compartida y solicita al
+  proveedor una versión de hasta 1600 px. El original se conserva para backup.
+  Las nuevas subidas son privadas. Las URLs antiguas solo quedan cerradas al
+  activar la restricción global de peticiones sin firma en ImageKit y revisar
+  su caché: configuración externa todavía pendiente. Véase `docs/OPERACION.md`.
+- Guardar sin sesión registra una intención temporal en `sessionStorage`.
+  Después del acceso (también con TOTP) se completa el guardado, con reintento
+  explícito si falla. No se ejecutan guardados por un parámetro de URL aislado.
 - `icon`, `apple-icon` y `opengraph-image` reutilizan `public/Logo.png`. Las
   portadas locales pasan por el optimizador de Next; no se modifica el original.
   Cuenta, acceso, admin y Preview se marcan para no indexar.
@@ -311,17 +323,18 @@ variables de entorno.
 
 ## 8. Separación dev / prod
 
-**Montado y comprobado.** Un solo clúster de Atlas con dos bases:
-`recetas_dev` y `recetas_prod`. `MONGODB_URI` es **idéntica** en todas partes;
-solo cambia `MONGODB_DB`.
+Un clúster de Atlas con dos bases: `recetas_dev` y `recetas_prod`.
+La separación por nombre está montada, pero no certifica aislamiento.
+La credencial local comprobada tiene `atlasAdmin`; hay que reemplazarla por
+usuarios con permisos limitados a su base y verificar los de Production.
 
-En Vercel (proyecto `recetario`; sus dominios conservan el sufijo `-36ok`
-porque `recetario.vercel.app` ya estaba cogido):
+En Vercel (proyecto `recetario`; el dominio principal conserva `-36ok`,
+pero los alias de rama no):
 
 | Entorno | `MONGODB_DB` | `IMAGEKIT_FOLDER` | `BETTER_AUTH_URL` |
 |---|---|---|---|
 | Production | `recetas_prod` | `prod` | `https://recetario-36ok.vercel.app` |
-| Preview | `recetas_dev` | `dev` | `https://recetario-36ok-git-develop-barrechee.vercel.app` |
+| Preview | `recetas_dev` | `dev` | `https://recetario-git-develop-barrechee.vercel.app` |
 | Development | `recetas_dev` | `dev` | `http://localhost:3000` |
 
 Reglas de esas variables:
@@ -330,9 +343,10 @@ Reglas de esas variables:
   esquema no parsea y tumba el build al prerenderizar `/login`.
 - La de Preview es la URL fija de rama de `develop`, no la de un despliegue
   concreto (esa cambia en cada push).
-- Las otras cinco (`MONGODB_URI`, `BETTER_AUTH_SECRET`, `IMAGEKIT_PRIVATE_KEY`,
-  `NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY`, `NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT`)
-  valen lo mismo en los tres entornos.
+- `MONGODB_URI` y `BETTER_AUTH_SECRET` deben ser distintos entre desarrollo y
+  producción. No cambiar el secreto de producción sin planificar la revocación
+  de sesiones y la compatibilidad del cifrado TOTP existente. Separar también
+  permisos de ImageKit; una carpeta no es una frontera de autorización.
 - `recetas_prod` va **solo** en Production: al meterla, desmarcar Preview y
   Development explícitamente (Vercel marca las tres casillas por defecto).
 - El login solo funciona en el dominio canónico de cada entorno (el de
@@ -398,28 +412,34 @@ receta a la semana, un backup a la semana; única cadencia que no hay que
 recordar aparte. Los volcados van a `./backups/` (en `.gitignore`: datos
 reales).
 
+El formato 2 incluye EJSON canónico de todas las colecciones, índices y los
+originales de ImageKit con hash SHA-256. Solo escribe `completo: true` al terminar.
+Ensayar con `npm run restaurar:ensayo -- --carpeta backups/… --base
+recetas_restauracion_ensayo`: rechaza una base existente con colecciones y no
+puede apuntar a dev/prod. Comprueba documentos y bytes; no vuelve a subir las
+fotos al proveedor. No es una instantánea transaccional: hacerlo sin ediciones
+concurrentes. Retención, copia externa protegida y recuperación del proveedor
+completo siguen pendientes de definir.
+
 ---
 
 ## 13. El diseño
 
-El sistema visual **«Mi libro de recetas»** evoluciona la cubierta original
-con la portada 03 aprobada de `docs/diseno/portada.html` y el recorrido 04 de
-`docs/diseno/presentacion.html`. La aplicación Next.js incorpora esa dirección
-para revisarla con datos reales en desarrollo; no implica despliegue ni
-aprobación final de todas las ampliaciones. El antiguo lienzo de Claude Design
-queda como antecedente, no como autoridad sobre estas decisiones posteriores.
+El sistema visual **«Mi libro de recetas»** aprobado está implementado en Next.js.
+Los prototipos de `docs/diseno` se retiraron del árbol activo; se conservan en
+el historial de Git (commit `2cf725e`). Estas reglas y los componentes reales
+son la referencia vigente, no las maquetas ni el antiguo lienzo de Claude Design.
 
 ### Reglas de base
 
-**Base aprobada e implementada para validación en desarrollo:**
-la portada 03 de `docs/diseno/portada.html` es la base visual aceptada por el
-autor: cubierta ilustrada con scroll, fotos con margen blanco y marco fino,
+**Base aprobada e implementada:**
+cubierta ilustrada con scroll, fotos con margen blanco y marco fino,
 título y datos al pie, marcador de guardar en la imagen y contenido blanco.
 Sin botón «Abrir el cuaderno», sin rótulo visible «El cuaderno» ni declaración
 personal destacada. El logo es **circular**, con ancho y alto iguales.
-`docs/diseno/presentacion.html` reúne el recorrido propuesto a partir de esa
-base. Las ampliaciones de ficha y cocina ya pueden probarse en rutas reales;
-siguen abiertas a revisión y no certifican que esté lista para producción.
+No se reinicia el diseño. Los cambios de cierre corrigen seguridad, fiabilidad
+y coherencia del recorrido. Volver desde una ficha mediante el icono del catálogo
+recupera filtros y posición del recorrido público; una recarga reinicia esa memoria.
 
 Tailwind, sin fichero de estilos aparte: los tokens (color, tipografía,
 espaciado) se definen una vez en `globals.css` y todo los usa; nada de valores
@@ -496,8 +516,12 @@ catálogo y guardadas, con fotografía 4:3 enmarcada, título, resumen breve, fe
 y datos visuales de tiempo, raciones y dificultad (`datos-receta.tsx`). La
 dificultad se representa por niveles y su nombre, no solo por color. Guardar
 es hermano del enlace, nunca está anidado en él. Sin flechas ni «Ver receta».
-Sin foto utiliza la misma información en una tarjeta compacta, sin reservar
-un gran hueco. No se filtran ni retocan los colores de la comida.
+Las tarjetas de un listado tienen la misma altura, también en guardadas.
+Reservan una línea para la fecha aunque falte y dos para título y resumen;
+ambos textos se limitan visualmente a dos líneas, con el texto completo en la ficha.
+Sin foto conservan la información tipográfica y se igualan en altura a las
+demás del listado, sin simular una imagen. No se filtran ni retocan los colores
+de la comida.
 
 **Anchuras**: inicio y catálogo usan márgenes fluidos y hasta 1920 px; tres
 columnas en el inicio de escritorio, hasta cuatro en catálogo y una en móvil.
@@ -511,15 +535,23 @@ cabecera reflejan el escalador. La propuesta 04 aprobada organiza el escritorio
 en hasta 1600 px: introducción e ingredientes a la izquierda, foto enmarcada a
 la derecha y pasos debajo en una columna centrada de hasta 980 px, sobre blanco.
 En móvil se apilan introducción, foto, ingredientes y pasos. La lista de
-ingredientes se acota a 440 px en escritorio, con el escalador junto al título
+ingredientes aprovecha todo el ancho de la columna izquierda en escritorio,
+con el escalador junto al título
 y controles de 44 px también en móvil. Cantidad y nombre se alinean en cada
-fila, con notas secundarias, sin casillas,
+fila; en escritorio, la columna compartida de cantidad y unidad se ajusta a la
+medida más larga, sin saltos de línea, y los nombres quedan alineados a su
+derecha. Con notas secundarias, sin casillas,
 tachados, contadores ni «Desmarcar», tampoco en modo cocina. Se mantiene
 `medida()` con su redondeo a cuartos para piezas y medios para otras unidades.
 Sin explicación de escalado ni enlace «Ingredientes y pasos». Pasos con
 número y título opcional real, sin rótulo visible «Preparación» ni separadores
 entre ingredientes y pasos o entre pasos. Se conservan las fotos intercaladas;
-la portada no lleva pie. La nota del autor cierra más abajo, centrada y en
+la portada no lleva pie. Se muestra completa, con su proporción original y
+altura limitada al espacio disponible de la pantalla (hasta 760 px). En escritorio
+acompaña el desplazamiento bajo la cabecera y se detiene antes de los pasos;
+en móvil permanece en el flujo normal. Las fotos de pasos también limitan su
+altura a la pantalla. Esto afecta a la presentación, no a los originales subidos.
+La nota del autor cierra más abajo, centrada y en
 cursiva, sin caja, título ni firma. Otras recetas visibles al final. Sin foto
 se elimina la segunda columna y no se reserva un hueco vacío.
 
@@ -541,8 +573,9 @@ el catálogo también puede ofrecer retomar una receta de sus resultados actuale
 Se invalida al cambiar la versión de receta o la identidad/rol de sesión.
 No utiliza almacenamiento persistente: recargar o salir del grupo público
 (por ejemplo, hacia `/cuenta`, `/login` o administración) pierde el progreso.
-Mantenerlo entre esos recorridos o recargas queda pendiente de decisión; no
-se promete persistencia durante toda la vida de la pestaña.
+Decisión cerrada: no conservar el progreso entre esos recorridos ni recargas.
+Se mantiene únicamente la continuidad en memoria dentro del recorrido público;
+salir del modo cocina y volver a abrirlo ahí permite retomarlo.
 
 **El panel**: editor sobre la receta tal como se ve. contentEditable sin
 control de React para título, resumen, pasos y nota; autoguardado con debounce

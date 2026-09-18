@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { IconoGuardar } from "@/components/icono-guardar";
+import { recordarGuardado } from "@/lib/guardado-pendiente";
 
 /**
  * El marcador de guardar: vacío, y se rellena al tocarlo. Vive junto a cada
@@ -43,6 +44,10 @@ export function CorazonGuardar({
     return (
       <Link
         href={`/login?volver=${encodeURIComponent(volverA)}`}
+        onClick={() => {
+          try { recordarGuardado(window.sessionStorage, recetaId, volverA, window.location.origin); }
+          catch { /* El enlace al acceso funciona aunque el navegador bloquee almacenamiento. */ }
+        }}
         aria-label="Guardar receta (con tu cuenta)"
         title="Guardar receta"
         className={clase}

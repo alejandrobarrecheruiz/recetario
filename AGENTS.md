@@ -123,6 +123,10 @@ npm run build
 `.env.local`, accede a servicios reales y puede escribir datos temporales en
 la base de desarrollo. `npm run test:todo` ejecuta ambas suites.
 
+`PROBAR_HTTP=1 npm run test:entorno` añade flujos HTTP con el servidor local
+en `localhost:3000`; crea y limpia cuentas temporales solo en `recetas_dev`.
+No se ejecuta contra Vercel ni contra producción.
+
 Los scripts cargan `.env.local` y se protegen frente a producción. `seed:dev`
 no se ejecuta nunca contra `recetas_prod`. `indices`, `backup` y
 `crear-usuario` solo pueden apuntar a producción con `--permitir-prod` escrito
@@ -158,6 +162,9 @@ No se hace push directo a `main`.
 `recetas_dev` se usa en local y Preview. `recetas_prod` se usa exclusivamente
 en Production. La publicación semanal termina con `npm run backup`; los
 volcados contienen datos reales, permanecen en `backups/` y no se versionan.
+Incluyen documentos, índices y originales de fotografías. `restaurar:ensayo`
+solo admite una base nueva `recetas_restauracion_*`; verifica los originales
+sin subirlos a ImageKit. Procedimientos y límites en `docs/OPERACION.md`.
 
 ## Mantenimiento de la documentación
 

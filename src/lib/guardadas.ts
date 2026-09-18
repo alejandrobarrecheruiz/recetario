@@ -5,6 +5,7 @@ import { resumenParaTarjeta } from "@/lib/datos-tarjetas";
 import type { RecetaParaTarjeta } from "@/components/tarjeta-receta";
 import type { Imagen } from "@/models/imagen";
 import type { Rol } from "@/models/usuario";
+import { rutaImagen } from "@/lib/entrega-imagenes";
 
 /** Datos mínimos de la tarjeta guardada, serializables para el cliente. */
 export type RecetaGuardada = {
@@ -54,7 +55,7 @@ export async function recetasGuardadasDe(
       {
         recetaId: receta._id.toHexString(),
         receta: resumenParaTarjeta(receta),
-        foto: foto ? { url: foto.url, alt: foto.alt, ancho: foto.ancho, alto: foto.alto } : undefined,
+        foto: foto ? { url: rutaImagen(foto._id.toHexString()), alt: foto.alt, ancho: foto.ancho, alto: foto.alto } : undefined,
       },
     ];
   });

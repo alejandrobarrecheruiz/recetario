@@ -3,8 +3,8 @@ import { ObjectId } from "mongodb";
 import { obtenerColecciones } from "@/lib/mongo";
 import { conVisibilidad } from "@/lib/visibilidad";
 import { docAReceta } from "@/lib/recetas";
-import { docAImagen } from "@/lib/imagenes";
-import { rolActual } from "@/lib/sesion";
+import { imagenParaCliente } from "@/lib/imagenes";
+import { rolActual, sesionActual } from "@/lib/sesion";
 import { idSchema } from "@/models/receta";
 import { EditorReceta } from "@/components/editor-receta";
 
@@ -21,6 +21,8 @@ export default async function PaginaEditarReceta({
   if (!idValido.success) notFound();
 
   const rol = await rolActual();
+  const sesion = await sesionActual();
+  if (!sesion || rol !== "admin") notFound();
   const { recetas, imagenes } = await obtenerColecciones();
   const doc = await recetas.findOne(
     conVisibilidad(rol, { _id: new ObjectId(idValido.data) }),
@@ -33,6 +35,6 @@ export default async function PaginaEditarReceta({
   const docsImagenes = await imagenes.find({ _id: { $in: idsImagenes } }).toArray();
 
   return (
-    <EditorReceta receta={docAReceta(doc)} imagenes={docsImagenes.map(docAImagen)} />
+    <EditorReceta usuarioId={sesion.user.id} receta={docAReceta(doc)} imagenes={docsImagenes.map(imagenParaCliente)} />
   );
 }

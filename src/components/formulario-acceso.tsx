@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient, signIn, signUp, useSession } from "@/lib/auth-client";
 import { destinoInterno } from "@/lib/navegacion";
 import { Logo } from "@/components/logo";
+import { guardadoPendiente, olvidarGuardado } from "@/lib/guardado-pendiente";
 
 /**
  * Entrar y crear cuenta, y solo eso: tu cuenta vive en /cuenta (con sesión,
@@ -62,12 +63,42 @@ export function FormularioAcceso({ permiteRegistro }: { permiteRegistro: boolean
   const [segundoFactor, setSegundoFactor] = useState(false);
   const [codigo, setCodigo] = useState("");
   const [usarRecuperacion, setUsarRecuperacion] = useState(false);
+  const [falloGuardado, setFalloGuardado] = useState(false);
+
+  const finalizarEntrada = useCallback(async (destinoPorDefecto = "/") => {
+    entrando.current = true;
+    setEnviando(true);
+    setFalloGuardado(false);
+    let pendiente: string | null = null;
+    const destino = destinoTrasEntrar();
+    try { pendiente = guardadoPendiente(window.sessionStorage, destino, window.location.origin); }
+    catch { /* Acceso funcional también sin almacenamiento. */ }
+    try {
+      if (pendiente) {
+        const respuesta = await fetch(`/api/guardadas/${pendiente}`, { method: "POST" });
+        if (!respuesta.ok) {
+          setError(respuesta.status === 404 ? "Esta receta ya no está disponible para guardar." : "Has entrado, pero no se pudo guardar la receta. Puedes reintentarlo.");
+          setFalloGuardado(true);
+          return;
+        }
+        olvidarGuardado(window.sessionStorage);
+      }
+      router.replace(pendiente || new URLSearchParams(window.location.search).has("volver") ? destino : destinoPorDefecto);
+      router.refresh();
+    } catch {
+      setError("Has entrado, pero se perdió la conexión al guardar. Puedes reintentarlo.");
+      setFalloGuardado(true);
+    } finally { setEnviando(false); }
+  }, [router]);
 
   // Con sesión no hay nada que hacer aquí: tu cuenta es /cuenta.
   const conSesion = Boolean(sesion);
   useEffect(() => {
-    if (conSesion && !entrando.current) router.replace("/cuenta");
-  }, [conSesion, router]);
+    if (conSesion && !entrando.current) {
+      entrando.current = true;
+      void Promise.resolve().then(() => finalizarEntrada("/cuenta"));
+    }
+  }, [conSesion, finalizarEntrada]);
 
   async function enviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -85,8 +116,7 @@ export function FormularioAcceso({ permiteRegistro }: { permiteRegistro: boolean
         setError("No se pudo verificar el código. Compruébalo y vuelve a intentarlo.");
         return;
       }
-      router.replace(destinoTrasEntrar());
-      router.refresh();
+      await finalizarEntrada();
       return;
     }
 
@@ -105,8 +135,7 @@ export function FormularioAcceso({ permiteRegistro }: { permiteRegistro: boolean
         setEnviando(false);
         return;
       }
-      router.push(destinoTrasEntrar());
-      router.refresh();
+      await finalizarEntrada();
       return;
     }
 
@@ -114,7 +143,7 @@ export function FormularioAcceso({ permiteRegistro }: { permiteRegistro: boolean
       name: nombre.trim() === "" ? correo : nombre.trim(),
       email: correo,
       password: contrasena,
-      callbackURL: "/login?verificado=1",
+      callbackURL: `/login?verificado=1&volver=${encodeURIComponent(destinoTrasEntrar())}`,
     });
     if (fallo) {
       setError(traducirFallo(fallo.message, true));
@@ -130,6 +159,18 @@ export function FormularioAcceso({ permiteRegistro }: { permiteRegistro: boolean
     } finally {
       setEnviando(false);
     }
+  }
+
+  if (falloGuardado) {
+    return <main className="pagina-lectura flex flex-1 flex-col justify-center gap-6 py-16">
+      <h1 className="text-2xl">Tu receta guardada</h1>
+      <p role="alert">{error}</p>
+      <button type="button" disabled={enviando} className={claseBotonPrincipal} onClick={() => void finalizarEntrada()}>Reintentar guardado</button>
+      <button type="button" onClick={() => {
+        try { olvidarGuardado(window.sessionStorage); } catch { /* Almacenamiento bloqueado. */ }
+        router.replace(destinoTrasEntrar()); router.refresh();
+      }}>Continuar sin guardar</button>
+    </main>;
   }
 
   if (isPending || conSesion) {

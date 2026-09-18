@@ -79,6 +79,7 @@ export function parsearCantidad(texto: string): number | null {
  * arrastra el driver de Mongo.
  */
 export function urlConAncho(url: string, ancho: number): string {
+  if (url.startsWith("/api/imagenes/")) return `${url}?ancho=${ancho}`;
   const separador = url.includes("?") ? "&" : "?";
   return `${url}${separador}tr=w-${ancho},q-80`;
 }

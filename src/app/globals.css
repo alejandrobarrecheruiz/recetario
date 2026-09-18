@@ -1,11 +1,10 @@
-@import "tailwindcss";
+@import "tailwindcss" source("../");
 
 /*
  * Tokens del sistema visual de «Mi libro de recetas». Se definen UNA vez aquí
  * y todo lo demás los usa; nada de valores sueltos por los componentes.
  *
- * Solo existe el estilo claro (el modo oscuro se retiró a propósito). El
- * recorrido de referencia está en docs/diseno/presentacion.html.
+ * Solo existe el estilo claro. Las decisiones vigentes están en CLAUDE.md.
  */
 :root {
   --papel: #dee6e9; /* el gris azulado de fondo */
@@ -19,9 +18,9 @@
   --ancho-lectura: 720px;
   --ancho-ficha: 1600px;
   --ancho-pasos: 980px;
-  --ancho-ingredientes: 440px;
   --ancho-nota: 560px;
   --margen-ficha: clamp(22px, 4vw, 72px);
+  --alto-foto-ficha: min(760px, calc(100svh - var(--altura-cabecera) - 2 * var(--margen-ficha) - 14px));
   --separacion-ficha: clamp(36px, 5vw, 80px);
   --ancho-amplio: 1100px;
   --ancho-catalogo: 1920px;
@@ -71,10 +70,10 @@ html { scroll-padding-top: calc(var(--altura-cabecera) + 20px); }
 .entrada-cocina { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .boton-cocina { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: 22px; padding: 13px 19px; background: var(--tinta); color: var(--superficie); font-size: 14px; font-weight: 500; cursor: pointer; }
 .boton-cocina:hover { background: var(--acento); }
-.ficha-portada { position: relative; grid-column: 2; grid-row: 1 / span 2; align-self: stretch; min-width: 0; min-height: 440px; }
-.ficha-portada > .marco-foto { position: absolute; inset: 0; }
-.ficha-portada img { width: 100%; height: 100%; object-fit: cover; object-position: 53% 45%; }
-.ficha-ingredientes { grid-column: 1; grid-row: 2; min-width: 0; width: 100%; max-width: var(--ancho-ingredientes); border-top: 1px solid var(--raya-clara); padding-top: 24px; scroll-margin-top: calc(var(--altura-cabecera) + 24px); }
+.ficha-portada { grid-column: 2; grid-row: 1 / span 2; align-self: stretch; min-width: 0; }
+.ficha-portada > .marco-foto { position: sticky; top: calc(var(--altura-cabecera) + 20px); width: fit-content; max-width: 100%; margin-inline: auto; }
+.ficha-portada img { display: block; width: auto; height: auto; max-width: 100%; max-height: var(--alto-foto-ficha); object-fit: contain; }
+.ficha-ingredientes { grid-column: 1; grid-row: 2; min-width: 0; width: 100%; border-top: 1px solid var(--raya-clara); padding-top: 24px; scroll-margin-top: calc(var(--altura-cabecera) + 24px); }
 .ficha-preparacion { grid-column: 1 / -1; grid-row: 3; justify-self: center; min-width: 0; width: min(100%, var(--ancho-pasos)); margin-top: 16px; padding-top: 32px; }
 .ficha-pasos { margin: 0; padding: 0; list-style: none; }
 .ficha-pasos > li { padding-block: 22px; }
@@ -84,7 +83,7 @@ html { scroll-padding-top: calc(var(--altura-cabecera) + 20px); }
 .ficha-paso-titulo { margin-bottom: 10px; font-size: 22px; font-weight: 500; line-height: 1.2; letter-spacing: -.025em; overflow-wrap: anywhere; }
 .ficha-paso-texto { max-width: 64ch; white-space: pre-line; font-size: 18px; line-height: 1.65; color: color-mix(in srgb, var(--tinta) 85%, transparent); overflow-wrap: anywhere; text-wrap: pretty; }
 .ficha-paso-foto { margin-top: 20px; max-width: 760px; }
-.ficha-paso-foto img { width: 100%; height: auto; max-height: 560px; object-fit: contain; }
+.ficha-paso-foto img { width: 100%; height: auto; max-height: min(560px, var(--alto-foto-ficha)); object-fit: contain; }
 .ficha-nota { width: min(100%, var(--ancho-nota)); margin: 72px auto 16px; text-align: center; }
 .ficha-nota p { max-width: 42ch; margin-inline: auto; white-space: pre-line; font-size: 23px; font-style: italic; line-height: 1.5; letter-spacing: -.025em; color: color-mix(in srgb, var(--tinta) 70%, transparent); overflow-wrap: anywhere; text-wrap: balance; }
 .ficha-sin-foto { max-width: calc(var(--ancho-pasos) + 2 * var(--margen-ficha)); grid-template-columns: minmax(0, 1fr); }
@@ -108,6 +107,11 @@ html { scroll-padding-top: calc(var(--altura-cabecera) + 20px); }
 .ingredientes-lista > li { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 16px; padding-block: 11px; border-bottom: 1px solid var(--raya-clara); font-size: 17px; line-height: 1.5; overflow-wrap: anywhere; }
 .ingrediente-cantidad { font-weight: 600; font-variant-numeric: tabular-nums; }
 .ingrediente-nota { display: block; margin-top: 2px; font-size: 14px; color: color-mix(in srgb, var(--tinta) 65%, transparent); }
+@media (min-width: 761px) {
+  .ingredientes-lista { display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 24px; }
+  .ingredientes-lista > li { grid-column: 1 / -1; grid-template-columns: subgrid; column-gap: inherit; }
+  .ingrediente-cantidad { white-space: nowrap; overflow-wrap: normal; }
+}
 @media (max-width: 1050px) and (min-width: 761px) {
   .ingredientes-cabecera .ficha-titulo-seccion { font-size: 23px; }
 }
@@ -119,8 +123,6 @@ html { scroll-padding-top: calc(var(--altura-cabecera) + 20px); }
   .ficha-resumen { margin-top: 16px; font-size: 17px; }
   .ficha-portada { width: 100%; min-height: 0; }
   .ficha-portada > .marco-foto { position: static; }
-  .ficha-portada img { height: auto; aspect-ratio: 4 / 3; object-position: 50% 40%; }
-  .ficha-ingredientes { max-width: none; }
   .ingredientes-cabecera { gap: 12px; }
   .ingredientes-cabecera .ficha-titulo-seccion { font-size: 22px; }
   .control-raciones output { min-width: 36px; gap: 4px; }
@@ -212,7 +214,8 @@ html { scroll-padding-top: calc(var(--altura-cabecera) + 20px); }
   .cuenta-vacia { margin: 44px 0; }
   .cuenta-vacia h3 { font-size: 27px; }
 }
-.seleccion-inicio, .rejilla-recetas { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--separacion-tarjetas); align-items: stretch; }
+.seleccion-inicio, .rejilla-recetas { display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: 1fr; gap: var(--separacion-tarjetas); align-items: stretch; }
+.rejilla-recetas > li { min-width: 0; }
 @media (min-width: 680px) {
   .seleccion-inicio, .rejilla-recetas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -223,18 +226,18 @@ html { scroll-padding-top: calc(var(--altura-cabecera) + 20px); }
 @media (min-width: 1600px) {
   .rejilla-recetas { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
-.tarjeta-receta { position: relative; display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--raya-clara); background: var(--superficie); }
+.tarjeta-receta { position: relative; display: flex; height: 100%; flex-direction: column; min-width: 0; border: 1px solid var(--raya-clara); background: var(--superficie); }
+@media (min-width: 680px) { .rejilla-recetas.ficha-siguientes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .tarjeta-receta-enlace { display: flex; height: 100%; min-width: 0; flex-direction: column; color: var(--tinta); }
-.tarjeta-receta-foto { display: block; padding: 7px 7px 0; }
+.tarjeta-receta-foto { display: block; flex-shrink: 0; padding: 7px 7px 0; }
 .tarjeta-receta-foto img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
 .tarjeta-receta-cuerpo { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 12px; padding: var(--espacio-tarjeta); }
-.tarjeta-receta-sin-foto .tarjeta-receta-cuerpo { padding-top: 24px; }
-.tarjeta-receta-fecha { color: color-mix(in srgb, var(--tinta) 65%, transparent); font-size: 12px; line-height: 1.5; }
+.tarjeta-receta-fecha { min-height: 1lh; color: color-mix(in srgb, var(--tinta) 65%, transparent); font-size: 12px; line-height: 1.5; }
 .tarjeta-receta-sin-foto .tarjeta-receta-fecha { padding-right: 48px; }
 .tarjeta-receta-sin-foto .tarjeta-receta-titulo { padding-right: 36px; }
-.tarjeta-receta-titulo { font-size: clamp(22px, 1.65vw, 30px); line-height: 1.18; font-weight: 600; letter-spacing: -.035em; overflow-wrap: anywhere; }
+.tarjeta-receta-titulo { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; min-height: 2lh; overflow: hidden; font-size: clamp(22px, 1.65vw, 30px); line-height: 1.18; font-weight: 600; letter-spacing: -.035em; overflow-wrap: anywhere; }
 .tarjeta-receta-enlace:hover .tarjeta-receta-titulo { color: var(--acento); }
-.tarjeta-receta-resumen { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; color: color-mix(in srgb, var(--tinta) 70%, transparent); font-size: 15px; line-height: 1.5; }
+.tarjeta-receta-resumen { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; min-height: 2lh; overflow: hidden; overflow-wrap: anywhere; color: color-mix(in srgb, var(--tinta) 70%, transparent); font-size: 15px; line-height: 1.5; }
 .tarjeta-receta-datos { margin-top: auto; padding-top: 8px; }
 .datos-receta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; color: var(--tinta); font-size: 13px; font-variant-numeric: tabular-nums; }
 .datos-receta li { display: inline-flex; align-items: center; gap: 7px; min-height: 24px; }
@@ -312,6 +315,8 @@ html { scroll-padding-top: calc(var(--altura-cabecera) + 20px); }
   header, footer, button, nav { display: none !important; }
   body { background: white; color: black; }
   img { max-height: 240px; object-fit: contain; }
+  .ficha-portada > .marco-foto { position: static; }
+  .ficha-portada img, .ficha-paso-foto img { max-height: 240px; }
   section, li { break-inside: avoid; }
   * { animation: none !important; transform: none !important; }
 }

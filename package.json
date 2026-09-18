@@ -15,7 +15,8 @@
     "indices": "node --env-file=.env.local --import tsx scripts/indices.ts",
     "crear-usuario": "node --env-file=.env.local --import tsx scripts/crear-usuario.ts",
     "seed:dev": "node --env-file=.env.local --import tsx scripts/seed-dev.ts",
-    "backup": "node --env-file=.env.local --import tsx scripts/backup.ts"
+    "backup": "node --env-file=.env.local --import tsx scripts/backup.ts",
+    "restaurar:ensayo": "node --env-file=.env.local --import tsx scripts/restaurar-backup.ts"
   },
   "dependencies": {
     "@imagekit/next": "^2.1.5",

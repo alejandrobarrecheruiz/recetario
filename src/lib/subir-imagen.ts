@@ -39,6 +39,7 @@ export async function subirImagen({
     expire: firma.expire,
     publicKey: firma.publicKey,
     folder: firma.folder,
+    isPrivateFile: true,
   });
   if (!subida.fileId || !subida.url || !subida.filePath || !subida.width || !subida.height) {
     throw new Error("ImageKit no devolvió los metadatos de la subida.");
@@ -72,7 +73,7 @@ export async function subirImagen({
 /** Borra de verdad: fichero en ImageKit, metadatos y referencias. */
 export async function quitarImagen(id: string): Promise<void> {
   const respuesta = await fetch(`/api/imagenes/${id}`, { method: "DELETE" });
-  if (!respuesta.ok) {
+  if (!respuesta.ok && respuesta.status !== 404) {
     const cuerpo = await respuesta.json().catch(() => null);
     throw new Error(cuerpo?.error ?? "No se pudo borrar la imagen.");
   }

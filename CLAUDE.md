@@ -463,8 +463,8 @@ son la referencia vigente, no las maquetas ni el antiguo lienzo de Claude Design
 **Base aprobada e implementada:**
 cubierta ilustrada con scroll, fotos con margen blanco y marco fino,
 título y datos al pie, marcador de guardar en la imagen y contenido blanco.
-Sin botón «Abrir el cuaderno», sin rótulo visible «El cuaderno» ni declaración
-personal destacada. El logo es **circular**, con ancho y alto iguales.
+Sin botón «Abrir el cuaderno» ni rótulo visible «El cuaderno».
+El logo es **circular**, con ancho y alto iguales.
 No se reinicia el diseño. Los cambios de cierre corrigen seguridad, fiabilidad
 y coherencia del recorrido. Volver desde una ficha mediante el icono del catálogo
 recupera filtros y posición del recorrido público; una recarga reinicia esa memoria.
@@ -514,12 +514,18 @@ no se disfraza el acceso al perfil como una lista de guardadas.
 
 **La portada**: conserva la cubierta ilustrada original (`Portada.jpg` /
 `Portada-V.jpg`), aproximadamente una pantalla, parallax y rótulo. Después de
-la banda muestra la última receta publicada y las dos anteriores que el rol
+la banda incluye una presentación personal con `public/Imagen-Persona.png`
+y texto plano editable en `src/contenido/presentacion.ts`. Foto y texto se
+acompañan sobre blanco, sin recuadro ni destacados dentro del texto. En
+escritorio el retrato acompaña el scroll bajo la cabecera, limitado al alto
+disponible de pantalla y al final de la introducción. En móvil se apilan y
+el retrato permanece en el flujo, como las fotos de las fichas.
+Después muestra la última receta publicada y las dos anteriores que el rol
 puede ver. Mongo aplica visibilidad, `estado: publicada`, orden por
 `publicadaEn` e `_id` descendentes y límite tres; no se recorta un listado en
 el cliente. No entran borradores ni siquiera para admins. La selección es
 automática, no se fijan recetas manualmente. No hay buscador inline, filtros,
-numeración ni manifiesto personal en inicio. Una tarjeta de continuación al
+numeración en inicio. Una tarjeta de continuación al
 final enlaza al catálogo completo, con flecha y fondo decorativo desenfocado
 (no fotografías ocultas). Indica cuántas recetas publicadas visibles quedan
 fuera de la selección; si no quedan más, muestra «Explorar recetas». El recuento
@@ -540,7 +546,7 @@ envía con `next/form` sin recargar el documento. El enlace alternativo
 `/recetas?buscar=1` muestra un formulario funcional incluso sin JavaScript.
 
 **Tarjeta de receta** (`tarjeta-receta.tsx`): componente común de inicio,
-catálogo y guardadas, con fotografía 4:3 enmarcada, título, resumen breve, fecha secundaria
+catálogo, guardadas y relacionadas, con fotografía 4:3 enmarcada, título, resumen breve, fecha secundaria
 y datos visuales de tiempo, raciones y dificultad (`datos-receta.tsx`). La
 dificultad se representa por niveles y su nombre, no solo por color. Guardar
 es hermano del enlace, nunca está anidado en él. Sin flechas ni «Ver receta».
@@ -550,6 +556,14 @@ ambos textos se limitan visualmente a dos líneas, con el texto completo en la f
 Sin foto conservan la información tipográfica y se igualan en altura a las
 demás del listado, sin simular una imagen. No se filtran ni retocan los colores
 de la comida.
+La variante `compacta` de «Sigue por aquí» reduce la foto a 3:2 y conserva
+título, datos y guardado, sin fecha, resumen ni huecos reservados para ellos.
+Las recomendaciones forman una fila deslizable con flechas de 44 px en
+escritorio y móvil, accesible con teclado y respetando movimiento reducido.
+Se consultan como máximo cuatro publicadas visibles, excluyendo la ficha
+actual, con orden por fecha e identificador descendentes y límite en Mongo.
+La fila termina con un enlace a `/recetas`; no carga más recomendaciones ni
+redirige automáticamente al deslizar.
 
 **Anchuras**: inicio y catálogo usan márgenes fluidos y hasta 1920 px; tres
 columnas en el inicio de escritorio, hasta cuatro en catálogo y una en móvil.
@@ -678,8 +692,7 @@ de ~4 MB; los bytes no pasan por ellas). Esa ruta comprueba sesión y rol
 No darlas por cerradas sin querer.
 
 - **Ampliación del pie**: definir contenido útil de ayuda y finalizar privacidad,
-  sin enlaces vacíos. Extender la tarjeta común a relacionadas; guardadas ya
-  reutiliza el componente de inicio y catálogo.
+  sin enlaces vacíos.
 
 - **Dónde se decide la autorización**: reglas en la base de datos frente a
   comprobaciones en las rutas de API. De momento, todo pasa por el servidor.

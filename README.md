@@ -109,6 +109,13 @@ cuadrícula de la cabecera abre el catálogo completo, la lupa abre la búsqueda
 y el perfil lleva a la cuenta. Los borradores solo aparecen en administración.
 `/recetas?buscar=1` permite buscar sin JavaScript. El catálogo y el inicio
 comparten tarjetas y márgenes adaptados a pantallas grandes.
+La presentación personal aparece entre la cubierta y las recetas, junto a
+`public/Imagen-Persona.png`. Edita el título y el texto en
+`src/contenido/presentacion.ts`; las líneas en blanco separan párrafos y no
+hace falta añadir etiquetas ni formato. En escritorio el retrato acompaña el
+scroll hasta el final de la introducción; en móvil se apila sobre el texto.
+«Sigue por aquí», al final de cada ficha, muestra hasta cuatro recomendaciones
+en tarjetas compactas: fila deslizable con flechas y enlace final al catálogo.
 Las categorías del catálogo usan una tira ilustrada deslizable, conservando
 los nombres reales y la búsqueda. La cuenta muestra identidad y guardadas con
 las mismas tarjetas; el engranaje abre perfil, seguridad y cierre de sesión.

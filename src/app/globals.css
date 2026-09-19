@@ -28,6 +28,11 @@
   --margen-catalogo: clamp(18px, 3vw, 64px);
   --separacion-tarjetas: clamp(18px, 2vw, 32px);
   --espacio-tarjeta: clamp(16px, 1.4vw, 24px);
+  --ancho-tarjeta-compacta: 280px;
+  --espacio-tarjeta-compacta: 14px;
+  --separacion-carrusel: 16px;
+  --ancho-retrato: 340px;
+  --espacio-presentacion: clamp(40px, 6vw, 88px);
   --radio-control: 999px;
   --velocidad-marquesina: 190s;
   --altura-cabecera: 64px;
@@ -227,7 +232,6 @@ html { scroll-padding-top: calc(var(--altura-cabecera) + 20px); }
   .rejilla-recetas { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 .tarjeta-receta { position: relative; display: flex; height: 100%; flex-direction: column; min-width: 0; border: 1px solid var(--raya-clara); background: var(--superficie); }
-@media (min-width: 680px) { .rejilla-recetas.ficha-siguientes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .tarjeta-receta-enlace { display: flex; height: 100%; min-width: 0; flex-direction: column; color: var(--tinta); }
 .tarjeta-receta-foto { display: block; flex-shrink: 0; padding: 7px 7px 0; }
 .tarjeta-receta-foto img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
@@ -243,6 +247,42 @@ html { scroll-padding-top: calc(var(--altura-cabecera) + 20px); }
 .datos-receta li { display: inline-flex; align-items: center; gap: 7px; min-height: 24px; }
 .datos-receta svg { flex-shrink: 0; }
 .tarjeta-receta-guardar { position: absolute; top: 14px; right: 14px; }
+.tarjeta-receta-compacta { height: auto; }
+.tarjeta-receta-compacta .tarjeta-receta-foto img { aspect-ratio: 3 / 2; }
+.tarjeta-receta-compacta .tarjeta-receta-cuerpo { gap: 10px; padding: var(--espacio-tarjeta-compacta); }
+.tarjeta-receta-compacta .tarjeta-receta-titulo { min-height: 0; font-size: 20px; }
+.tarjeta-receta-compacta .tarjeta-receta-datos { margin-top: 0; padding-top: 2px; }
+.tarjeta-receta-compacta .datos-receta { gap: 6px 12px; font-size: 12px; }
+.tarjeta-receta-compacta .tarjeta-receta-guardar { top: 10px; right: 10px; }
+.tarjeta-receta-compacta.tarjeta-receta-sin-foto .tarjeta-receta-titulo { padding-right: 48px; min-height: 44px; }
+.ficha-relacionadas { border-top: 1px solid var(--raya-clara); padding-block: 24px 48px; }
+.carrusel-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.carrusel-cabecera h2 { font-size: 13px; font-weight: 500; }
+.carrusel-controles { display: flex; gap: 8px; }
+.carrusel-controles button, .carrusel-flecha-final { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex-shrink: 0; border: 1px solid var(--raya-oscura); border-radius: var(--radio-control); }
+.carrusel-controles button { cursor: pointer; }
+.carrusel-controles button:hover:not(:disabled) { background: var(--papel); }
+.carrusel-controles button:active:not(:disabled) { background: var(--lateral); }
+.carrusel-controles button:disabled { opacity: .3; cursor: default; }
+.carrusel-recetas { display: flex; align-items: flex-start; gap: var(--separacion-carrusel); overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; padding: 4px 4px 16px; margin-inline: -4px; scrollbar-width: thin; scrollbar-color: var(--raya-oscura) transparent; }
+.carrusel-recetas > li { flex: 0 0 min(78vw, var(--ancho-tarjeta-compacta)); min-width: 0; scroll-snap-align: start; }
+.carrusel-recetas > .carrusel-destino { align-self: stretch; display: flex; }
+.carrusel-ver-todas { display: flex; flex: 1; min-height: 112px; align-items: center; justify-content: center; gap: 20px; padding: var(--espacio-tarjeta-compacta); font-size: 20px; line-height: 1.25; letter-spacing: -.035em; }
+.carrusel-ver-todas:hover, .carrusel-ver-todas:focus-visible { color: var(--acento); }
+.carrusel-ver-todas:active .carrusel-flecha-final { transform: translateX(2px); }
+.carrusel-recetas:focus-visible, .carrusel-recetas a:focus-visible, .carrusel-controles button:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+.presentacion-personal { display: grid; grid-template-columns: minmax(0, var(--ancho-retrato)) minmax(0, 1fr); align-items: center; gap: var(--espacio-presentacion); padding-block: var(--espacio-presentacion); }
+.presentacion-retrato { position: sticky; top: calc(var(--altura-cabecera) + 20px); align-self: start; display: block; width: 100%; height: auto; max-height: calc(100svh - var(--altura-cabecera) - 40px); object-fit: contain; object-position: top; }
+.presentacion-contenido { min-width: 0; max-width: 52ch; }
+.presentacion-contenido h2 { margin-bottom: 24px; font-size: clamp(30px, 3vw, 42px); font-weight: 500; line-height: 1.15; letter-spacing: -.04em; overflow-wrap: anywhere; }
+.presentacion-texto { white-space: pre-line; font-size: 18px; line-height: 1.8; overflow-wrap: anywhere; }
+@media (max-width: 700px) {
+  .presentacion-personal { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .presentacion-retrato { position: static; width: min(100%, 240px); max-height: none; justify-self: center; }
+  .presentacion-contenido { width: 100%; margin-inline: auto; }
+  .presentacion-contenido h2 { margin-bottom: 18px; }
+  .presentacion-texto { font-size: 17px; line-height: 1.75; }
+}
 .continuar-recetas { position: relative; isolation: isolate; display: flex; min-height: 112px; margin-top: var(--separacion-tarjetas); padding: 20px var(--espacio-tarjeta); align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--raya-clara); background: var(--papel); color: var(--tinta); }
 .continuar-recetas-fondo { position: absolute; z-index: -1; inset: -12px -24px; display: flex; align-items: center; justify-content: space-around; gap: 24px; opacity: .65; filter: blur(4px); pointer-events: none; }
 .continuar-recetas-fondo > span { flex: 0 0 clamp(90px, 16vw, 220px); height: 150px; border: 6px solid var(--superficie); background: var(--lateral); box-shadow: var(--sombra-foto); transform: translateY(25px) rotate(-8deg); }
@@ -327,6 +367,7 @@ html { scroll-padding-top: calc(var(--altura-cabecera) + 20px); }
   .ficha-portada { margin-block: 6mm; }
   img { max-height: 240px; object-fit: contain; }
   .ficha-portada > .marco-foto { position: static; }
+  .presentacion-retrato { position: static; }
   .ficha-portada img, .ficha-paso-foto img { max-height: 240px; }
   .ficha-preparacion { width: 100%; margin-top: 6mm; padding-top: 0; }
   .ficha-pasos > li { padding-block: 3mm; }

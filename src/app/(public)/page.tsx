@@ -11,6 +11,7 @@ import { CabeceraPublica } from "@/components/cabecera-publica";
 import { RetomarPreparacion } from "@/components/progreso-cocina";
 import { Marquesina } from "@/components/marquesina";
 import { CapaParallax } from "@/components/parallax";
+import { PresentacionPersonal } from "@/components/presentacion-personal";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
@@ -66,6 +67,7 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
       <main id="contenido" tabIndex={-1} className="bg-superficie">
         <Cubierta />
         <Marquesina frases={["Cocina de casa", "Una receta a la semana", "Mi libro de recetas"]} />
+        <PresentacionPersonal />
         <section id="recetas" className="pagina-catalogo scroll-mt-24 py-10 sm:py-14" aria-labelledby="titulo-recetas">
           <h2 id="titulo-recetas" className="sr-only">Recetas recientes</h2>
           {/* En inicio solo se puede retomar una de las tres recetas consultadas.

@@ -19,6 +19,7 @@ import { Revelado } from "@/components/revelado";
 import { rutaImagen } from "@/lib/entrega-imagenes";
 import { datosParaTarjetas, resumenParaTarjeta } from "@/lib/datos-tarjetas";
 import { TarjetaReceta } from "@/components/tarjeta-receta";
+import { CarruselRecetas } from "@/components/carrusel-recetas";
 
 // La ficha: lectura vertical, fotografía enmarcada, ingredientes con escalador
 // compartido con el modo cocina, pasos con rotulillo, nota
@@ -141,11 +142,11 @@ export default async function PaginaReceta({
   const pasos = [...receta.pasos].sort((a, b) => a.orden - b.orden);
   const fecha = fechaDePublicacion(receta.publicadaEn);
 
-  // «Sigue por aquí»: las dos publicadas más recientes que no son esta.
+  // Mismo límite en móvil y escritorio, aplicado en Mongo tras la visibilidad.
   const siguientes = await recetas
     .find(conVisibilidad(rol, { slug: { $ne: slug }, estado: "publicada" }))
-    .sort({ publicadaEn: -1 })
-    .limit(2)
+    .sort({ publicadaEn: -1, _id: -1 })
+    .limit(4)
     .toArray();
   const { fotos: fotosDeSiguientes, guardadas: siguientesGuardadas } = await datosParaTarjetas(siguientes, sesion?.user.id);
 
@@ -249,23 +250,20 @@ export default async function PaginaReceta({
       </article>
 
       {siguientes.length > 0 && (
-        <section className="ficha-relacionadas pagina-amplia border-t border-tinta/15 pb-14 pt-8" aria-labelledby="titulo-relacionadas">
-          <h2 id="titulo-relacionadas" className="mb-7 font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.2em] text-tinta/65">
-            Sigue por aquí
-          </h2>
-          <div className="rejilla-recetas ficha-siguientes">
-            {siguientes.map((otra) => {
-              const fotoDeOtra = otra.portadaId
-                ? fotosDeSiguientes.get(otra.portadaId.toHexString())
-                : undefined;
-              return (
-                <TarjetaReceta key={otra._id.toHexString()} receta={resumenParaTarjeta(otra)} foto={fotoDeOtra}
+        <CarruselRecetas>
+          {siguientes.map((otra) => {
+            const fotoDeOtra = otra.portadaId
+              ? fotosDeSiguientes.get(otra.portadaId.toHexString())
+              : undefined;
+            return (
+              <li key={otra._id.toHexString()}>
+                <TarjetaReceta receta={resumenParaTarjeta(otra)} foto={fotoDeOtra}
                   guardada={siguientesGuardadas.has(otra._id.toHexString())} haySesion={sesion !== null}
-                  volverA={`/recetas/${receta.slug}`} nivelTitulo={3} />
-              );
-            })}
-          </div>
-        </section>
+                  volverA={`/recetas/${receta.slug}`} nivelTitulo={3} variante="compacta" />
+              </li>
+            );
+          })}
+        </CarruselRecetas>
       )}
     </main>
     </PreparacionReceta>

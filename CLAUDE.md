@@ -519,7 +519,9 @@ y texto plano editable en `src/contenido/presentacion.ts`. Foto y texto se
 acompañan sobre blanco, sin recuadro ni destacados dentro del texto. En
 escritorio el retrato acompaña el scroll bajo la cabecera, limitado al alto
 disponible de pantalla y al final de la introducción. En móvil se apilan y
-el retrato permanece en el flujo, como las fotos de las fichas.
+el retrato permanece en el flujo, como las fotos de las fichas. La foto queda
+centrada; el nombre, a 26 px, y los párrafos comparten alineación a la izquierda
+con márgenes laterales de 24 px, conservando tamaño e interlineado de lectura.
 Después muestra la última receta publicada y las dos anteriores que el rol
 puede ver. Mongo aplica visibilidad, `estado: publicada`, orden por
 `publicadaEn` e `_id` descendentes y límite tres; no se recorta un listado en

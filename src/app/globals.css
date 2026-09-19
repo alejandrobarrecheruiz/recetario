@@ -33,6 +33,7 @@
   --separacion-carrusel: 16px;
   --ancho-retrato: 340px;
   --espacio-presentacion: clamp(40px, 6vw, 88px);
+  --margen-presentacion-movil: 24px;
   --radio-control: 999px;
   --velocidad-marquesina: 190s;
   --altura-cabecera: 64px;
@@ -277,10 +278,10 @@ html { scroll-padding-top: calc(var(--altura-cabecera) + 20px); }
 .presentacion-contenido h2 { margin-bottom: 24px; font-size: clamp(30px, 3vw, 42px); font-weight: 500; line-height: 1.15; letter-spacing: -.04em; overflow-wrap: anywhere; }
 .presentacion-texto { white-space: pre-line; font-size: 18px; line-height: 1.8; overflow-wrap: anywhere; }
 @media (max-width: 700px) {
-  .presentacion-personal { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .presentacion-personal { grid-template-columns: minmax(0, 1fr); gap: 28px; padding-inline: var(--margen-presentacion-movil); }
   .presentacion-retrato { position: static; width: min(100%, 240px); max-height: none; justify-self: center; }
   .presentacion-contenido { width: 100%; margin-inline: auto; }
-  .presentacion-contenido h2 { margin-bottom: 18px; }
+  .presentacion-contenido h2 { margin-bottom: 18px; font-size: 26px; text-align: left; text-wrap: balance; }
   .presentacion-texto { font-size: 17px; line-height: 1.75; }
 }
 .continuar-recetas { position: relative; isolation: isolate; display: flex; min-height: 112px; margin-top: var(--separacion-tarjetas); padding: 20px var(--espacio-tarjeta); align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--raya-clara); background: var(--papel); color: var(--tinta); }

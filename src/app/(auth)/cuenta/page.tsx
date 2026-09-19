@@ -19,7 +19,7 @@ export default async function PaginaCuenta() {
 
   return <>
     <CabeceraPublica />
-    <main className="flex-1 bg-superficie">
+    <main id="contenido" tabIndex={-1} className="flex-1 bg-superficie">
       <div className="pagina-cuenta">
         <section className="cuenta-identidad" aria-label="Tu cuenta">
           <div className="cuenta-avatar" aria-hidden="true">{inicialesDelNombre(sesion.user.name)}</div>

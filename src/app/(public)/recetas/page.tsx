@@ -35,7 +35,7 @@ export default async function PaginaCatalogo({ searchParams }: {
       <CabeceraPublica />
       <main id="recetas" className="min-h-svh bg-superficie">
         <RecordarCatalogo ruta={volverA}>
-        <div className="pagina-catalogo py-8 sm:py-12">
+        <div id="contenido" tabIndex={-1} className="pagina-catalogo py-8 sm:py-12">
           <div className="catalogo-encabezado"><h1>Recetas</h1><p role="status">{docs.length} {docs.length === 1 ? "receta" : "recetas"}</p></div>
           {/* La lupa es la entrada habitual. Esta ruta también funciona sin JS. */}
           {formularioVisible && (

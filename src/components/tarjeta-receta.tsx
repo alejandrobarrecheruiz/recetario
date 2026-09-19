@@ -26,7 +26,10 @@ export function TarjetaReceta({ receta, foto, guardada, haySesion, volverA, nive
         {foto && <span className="tarjeta-receta-foto">
           {/* ImageKit entrega el tamaño adecuado sin pasar por otro optimizador. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={urlConAncho(foto.url, 960)} alt={foto.alt} width={foto.ancho} height={foto.alto} loading="lazy" />
+          <img src={urlConAncho(foto.url, 960)}
+            srcSet={[240, 640, 960, 1200].map(ancho => `${urlConAncho(foto.url, ancho)} ${ancho}w`).join(", ")}
+            sizes="auto, (max-width: 679px) calc(100vw - 50px), (max-width: 1079px) 50vw, 33vw"
+            alt={foto.alt} width={foto.ancho} height={foto.alto} loading="lazy" decoding="async" />
         </span>}
         <div className="tarjeta-receta-cuerpo">
           <div className="tarjeta-receta-fecha" aria-hidden={receta.publicadaEn ? undefined : true}>

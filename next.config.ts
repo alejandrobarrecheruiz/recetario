@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  images: { qualities: [75, 80] },
+  images: { qualities: [60, 75, 80] },
   async headers() {
     return [{
       source: "/:path*",

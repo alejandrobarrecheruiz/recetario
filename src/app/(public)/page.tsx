@@ -16,8 +16,8 @@ export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 /** La ilustración original: horizontal en escritorio, vertical en móvil. */
 function ImagenDeCubierta() {
-  const { props: horizontal } = getImageProps({ src: "/Portada.jpg", alt: "", width: 1536, height: 1024, sizes: "100vw", quality: 80, loading: "eager", fetchPriority: "high" });
-  const { props: vertical } = getImageProps({ src: "/Portada-V.jpg", alt: "", width: 1024, height: 1536, sizes: "100vw", quality: 80 });
+  const { props: horizontal } = getImageProps({ src: "/Portada.jpg", alt: "", width: 1536, height: 1024, sizes: "100vw", quality: 60, loading: "eager", fetchPriority: "high" });
+  const { props: vertical } = getImageProps({ src: "/Portada-V.jpg", alt: "", width: 1024, height: 1536, sizes: "100vw", quality: 60 });
   return (
     <picture className="block h-full w-full">
       <source media="(max-width: 700px)" srcSet={vertical.srcSet} sizes={vertical.sizes} />
@@ -63,7 +63,7 @@ export default async function PaginaPortada({ searchParams }: PageProps<"/">) {
   return (
     <>
       <CabeceraPublica />
-      <main className="bg-superficie">
+      <main id="contenido" tabIndex={-1} className="bg-superficie">
         <Cubierta />
         <Marquesina frases={["Cocina de casa", "Una receta a la semana", "Mi libro de recetas"]} />
         <section id="recetas" className="pagina-catalogo scroll-mt-24 py-10 sm:py-14" aria-labelledby="titulo-recetas">

@@ -5,6 +5,12 @@ contacto como sustituto de la información del registro. No constituye una
 certificación legal. Los datos de identidad/contacto están confirmados; los
 apartados marcados como pendientes requieren decisiones y comprobaciones.
 
+Inventario técnico revisado el 19/09/2026 en
+[docs/INVENTARIO-PRIVACIDAD.md](./docs/INVENTARIO-PRIVACIDAD.md): cookies,
+almacenamiento local, colecciones, destinatarios y límites del borrado.
+Correo y activación del segundo factor del administrador quedan aplazados;
+el registro permanece cerrado. Este documento sigue sin publicarse.
+
 ## Identidad y contacto confirmados
 
 Responsable: Alejandro Barreche Ruiz.
@@ -29,13 +35,21 @@ el correo y recuperar el acceso. No se utiliza como newsletter.
 
 - Cuenta: nombre, dirección de correo y contraseña almacenada mediante hash,
   no en texto claro; estado de verificación y rol de acceso.
-- Sesión y seguridad: identificadores, fechas de creación/caducidad y datos
-  técnicos de acceso que registra la autenticación, como IP y navegador.
+- Sesión y seguridad: identificadores y fechas de creación/caducidad. El cambio
+  de minimización deja IP y navegador a `null` en nuevas sesiones. No se ha
+  probado creando sesiones en producción. Las anteriores no se han limpiado. El límite de intentos
+  sigue utilizando IP y ruta, y los proveedores pueden conservar logs técnicos.
 - Preferencias: referencias a las recetas guardadas.
 - Segundo factor, si se activa: datos necesarios para TOTP y recuperación.
 - Contacto: remitente, contenido y datos que se incluyan en el correo enviado.
 - Navegación: datos técnicos que puedan tratar el alojamiento y la entrega de
-  imágenes. **Pendiente:** inventariar exactamente logs y cookies efectivos.
+  imágenes; las búsquedas forman parte de la URL. **Pendiente:** comprobar
+  configuración/retención de logs y cookies autenticadas en HTTPS.
+- Dispositivo: intención temporal de guardar tras acceder, avisos técnicos de
+  sesión entre pestañas y, solo en administración, borradores locales del editor.
+  Estos últimos no tienen caducidad automática ni se borran al cerrar sesión.
+- Contenido editorial: textos, fotografías originales, posibles metadatos EXIF
+  y referencias al autor o a quien sube la imagen.
 
 ### Bases jurídicas — pendientes de validar
 
@@ -49,6 +63,10 @@ ni añadir una casilla genérica de «acepto» como sustituto de este análisis.
 
 La aplicación permite al lector eliminar su cuenta y sus guardadas. Esto no
 demuestra eliminación inmediata en backups, logs o proveedores.
+El backup incluye todas las colecciones no internas, con datos de cuentas y
+sesiones, además de originales de fotografías. El script no cifra el conjunto
+ni elimina copias antiguas. Los avisos técnicos de Better Auth en almacenamiento
+local tampoco tienen una caducidad definida.
 
 Antes de publicar, fijar y comprobar plazos o criterios para cuentas activas e
 inactivas, sesiones caducadas, verificaciones, contadores de intentos, correos
@@ -67,7 +85,7 @@ se respetan las solicitudes de supresión si se restaura una copia antigua.
 
 Verificar entidades contratantes, condiciones aplicables, roles, regiones,
 subencargados y garantías de transferencias internacionales cuando proceda.
-No se han inspeccionado los paneles ni contratos reales. Usar proveedores
+No se ha completado la revisión de configuraciones y contratos reales. Usar proveedores
 conocidos no demuestra por sí solo cumplimiento o alojamiento dentro de la UE.
 
 ### Solicitudes sobre tus datos
@@ -86,8 +104,11 @@ al interesado. No pedir documentos de identidad de manera automática.
 ### Cookies y decisiones automatizadas
 
 No hay publicidad, newsletter ni analítica de conversión añadidas por el
-proyecto. Antes de describir todas las cookies como necesarias, comprobar
-nombres, finalidades y duraciones en navegación anónima, acceso y TOTP.
+proyecto. Las seis respuestas HTTP anónimas comprobadas en producción no
+emitieron cookies, lo que no sustituye revisar el navegador tras ejecutar
+JavaScript. El inventario distingue cookies configuradas, observadas localmente
+y funciones condicionales; falta contrastar el acceso HTTPS y el almacenamiento
+del navegador. No activar TOTP para esta revisión ni añadir un banner por defecto.
 No hay decisiones automatizadas de perfilado identificadas en el código
 revisado; contrastarlo con la configuración efectiva de servicios externos.
 

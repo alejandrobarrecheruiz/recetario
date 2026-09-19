@@ -2,6 +2,15 @@
 
 ## Desplegar las imágenes protegidas sin romper las actuales
 
+**Estado vigente (19/09/2026):** entrega protegida desplegada en producción.
+La cuenta ImageKit es exclusiva de Recetario y tiene **Restrict all requests**
+activado para imágenes. Se invalidó la caché de los siete archivos existentes;
+los originales y variantes probadas sin firma responden 401, mientras las dos
+fotos públicas del sitio responden 200. No se modificaron los originales.
+Queda repetir en Vercel el recorrido de cambio de visibilidad y roles.
+
+Procedimiento para nuevos entornos o cambios de proveedor:
+
 1. Integrar por `feature/*` → `develop`. Probar la entrega de fotos por
    `/api/imagenes/[id]`: pública sin sesión, restringida 404 sin sesión y 200
    con una cuenta autorizada. Comprobar también portada, pasos, tarjetas y OG.
@@ -31,14 +40,19 @@ firma: conservar una versión de respaldo que use el endpoint protegido.
 
 ## Acceso y permisos
 
-- Configurar un dominio verificado en Resend, `RESEND_API_KEY` y
-  `CORREO_REMITENTE`. Sin remitente, mantener cerrado el registro.
+- El correo queda aplazado por decisión del propietario: sin dominio ni
+  proveedor transaccional, sin integración de Gmail personal. Mantener cerrado
+  el registro y no ofrecer recuperación automática; las cuentas existentes
+  conservan el acceso y el cambio autenticado de contraseña.
+- Cuando se retome el correo, configurar un dominio verificado en Resend,
+  `RESEND_API_KEY` y `CORREO_REMITENTE`.
 - Usar `BETTER_AUTH_URL` de cada entorno: localhost, el alias de develop
   `https://recetario-git-develop-barrechee.vercel.app` o el dominio de producción.
 - Probar recepción real, caducidad/reutilización de enlaces, cuentas antiguas
   no verificadas y revocación de sesiones al recuperar contraseña.
-- Activar TOTP del administrador desde su cuenta y guardar los códigos en su
-  gestor seguro. La prueba con una cuenta temporal no activa el admin real.
+- TOTP del administrador queda aplazado por decisión del propietario. Cuando
+  se retome, activarlo desde su cuenta y guardar los códigos en su gestor seguro.
+  La prueba con una cuenta temporal no activa el admin real.
 - Sustituir el usuario Mongo de desarrollo con rol `atlasAdmin` por uno con
   `readWrite` solo en `recetas_dev`; Production necesita otro limitado a
   `recetas_prod`. Usar credenciales operativas separadas para tareas como un
@@ -94,31 +108,15 @@ cuando se hayan comprobado los resultados.
 Quedan por acordar retención de copias, copia externa cifrada y procedimiento
 para no reintroducir cuentas eliminadas al recuperar una copia antigua.
 
-## Cookies y almacenamiento: inventario técnico inicial
+## Cookies y almacenamiento
 
-Observado por HTTP local con Better Auth instalado (sin registrar valores):
+El [inventario técnico de privacidad](./INVENTARIO-PRIVACIDAD.md) centraliza
+cookies, almacenamiento propio y de Better Auth, datos del servidor,
+destinatarios, eliminación y evidencias locales/de producción. Incluye las
+comprobaciones reproducibles pendientes, sin registrar valores de sesión.
 
-| Nombre | Finalidad | Duración observada |
-|---|---|---|
-| `better-auth.session_token` | Sesión de acceso | 604800 s; HttpOnly, SameSite=Lax |
-| `better-auth.two_factor` | Desafío del segundo factor | 600 s; HttpOnly, SameSite=Lax |
-| `better-auth.session_data` | Nombre enviado en limpieza de sesión | Solo borrado, Max-Age=0; no se observó persistencia |
-
-Es una observación local HTTP: verificar prefijos, Secure, alcance y duraciones
-reales en HTTPS/producción y otros flujos antes de publicar el inventario.
-No hay analítica comercial incorporada.
-
-- `sessionStorage`: intención de guardar tras acceso, válida como máximo una
-  hora, se elimina tras completar/cancelar el guardado.
-- `localStorage`: borradores del editor, separados por cuenta, receta y pestaña.
-  Se retira la copia de esa pestaña tras guardado completo; otras copias se
-  recuperan o descartan expresamente. Solo se usan en administración.
-- Memoria React: preparación y retorno al catálogo; no sobreviven a recarga o
-  salida del recorrido público. No se añade persistencia a modo cocina.
-
-Este inventario no constituye una decisión jurídica sobre consentimiento. La
-política de privacidad sigue en borrador hasta confirmar conservación,
-proveedores/regiones, autoría y derechos. No publicar un banner por defecto.
+La política sigue en borrador. No publicar un banner por defecto ni presentar
+la caducidad de una cookie/token como eliminación de registros o backups.
 
 ## CI, avisos y siguientes revisiones
 
@@ -132,6 +130,7 @@ de aplicación y una política de retención de logs sin datos privados.
 
 Pendientes de prueba manual: red lenta y cortes durante subidas simultáneas,
 recuperación de borrador en navegador, carreras de limpieza de imágenes,
-Safari/iPhone y Android reales, lector de pantalla, zoom, impresión y tarjeta
-social externa. Añadir paginación cuando el tamaño del catálogo lo justifique;
+Safari/iPhone y Android en móviles físicos, lector de pantalla, zoom y tarjeta
+social externa. Safari de escritorio, teclado, anchuras móviles e impresión
+tienen evidencias en [REVISION-FINAL.md](./REVISION-FINAL.md). Añadir paginación cuando el tamaño del catálogo lo justifique;
 no introducir nuevas secciones por cerrar esta lista.

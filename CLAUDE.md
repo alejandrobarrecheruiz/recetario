@@ -184,9 +184,19 @@ Sobre los roles (`src/models/usuario.ts`):
   recetas de visibilidad `registrada` las ve cualquiera que se registre; ya no
   equivalen a «gente invitada». El admin solo se crea con
   `npm run crear-usuario -- --rol admin`; el registro nunca da ese rol.
+- **Correo aplazado por decisión de producto**: no se configura por ahora un
+  dominio ni un proveedor transaccional, tampoco se integra Gmail personal.
+  El registro permanece cerrado y no hay recuperación automática por correo;
+  las cuentas existentes conservan el acceso y el cambio autenticado de contraseña.
 
 ### Protección del acceso y edición
 
+- **Minimización de datos:** conservar lo necesario para acceso, guardadas y
+  edición; no añadir seguimiento. Al crear una sesión, `minimizarNuevaSesion`
+  deja `ipAddress` y `userAgent` a `null` antes de persistirla. No desactivar
+  la detección de IP global: el límite de intentos sigue utilizándola en
+  `rateLimit`. No se migran sesiones anteriores ni se borran backups.
+  La configuración y retención de logs de proveedores requieren revisión aparte.
 - Better Auth limita intentos con almacenamiento en MongoDB (`rateLimit`),
   también en desarrollo: login 5/min y alta/recuperación/reenvío 3/min. Verificar
   IP fiable y comportamiento entre instancias antes de producción; las APIs
@@ -198,7 +208,8 @@ Sobre los roles (`src/models/usuario.ts`):
 - `/cuenta` permite cambiar nombre y contraseña, activar TOTP con códigos de
   recuperación y eliminar una cuenta lectora. No se permite eliminar admins
   desde esta interfaz. La activación de TOTP no es obligatoria ni automática;
-  el administrador debe completarla y conservar los códigos fuera del sitio.
+  el administrador ha aplazado su activación. Cuando se retome, debe completarla
+  y conservar los códigos fuera del sitio.
 - Las mutaciones propias comprueban Origin y Fetch Metadata además de sesión.
   El destino de retorno del login se restringe al origen propio.
 - `src/proxy.ts` aplica CSP con nonce, `frame-ancestors 'none'` y restricciones
@@ -221,14 +232,23 @@ Sobre los roles (`src/models/usuario.ts`):
   El cliente recibe `/api/imagenes/[id]`, nunca una firma reutilizable de ImageKit.
   La ruta autoriza cada descarga, entrega sin caché compartida y solicita al
   proveedor una versión de hasta 1600 px. El original se conserva para backup.
-  Las nuevas subidas son privadas. Las URLs antiguas solo quedan cerradas al
-  activar la restricción global de peticiones sin firma en ImageKit y revisar
-  su caché: configuración externa todavía pendiente. Véase `docs/OPERACION.md`.
+  Las nuevas subidas son privadas. La cuenta ImageKit se usa solo para Recetario
+  y tiene activado **Restrict all requests** para imágenes desde el 19/09/2026.
+  Se invalidó la caché de los siete archivos existentes: originales y variantes
+  probadas sin firma devuelven 401; la entrega pública del sitio devuelve 200.
+  No volver a una versión que dependa de URLs directas sin firma.
+  Véase `docs/OPERACION.md`.
 - Guardar sin sesión registra una intención temporal en `sessionStorage`.
   Después del acceso (también con TOTP) se completa el guardado, con reintento
   explícito si falla. No se ejecutan guardados por un parámetro de URL aislado.
 - `icon`, `apple-icon` y `opengraph-image` reutilizan `public/Logo.png`. Las
   portadas locales pasan por el optimizador de Next; no se modifica el original.
+  La cubierta usa calidad 60; las tarjetas solicitan variantes adaptativas por
+  ancho mediante el endpoint protegido. La cabecera permite saltar al contenido
+  con teclado. Las listas de ingredientes/pasos conservan semántica explícita
+  para Safari; las subidas del editor son alcanzables por teclado. Impresión
+  muestra todos los pasos sin depender de animaciones ni del recorrido previo,
+  y excluye controles y recetas relacionadas. Evidencias en `docs/REVISION-FINAL.md`.
   Cuenta, acceso, admin y Preview se marcan para no indexar.
 
 La lista de cierre y las validaciones pendientes están en [AUDITORIA.md](./AUDITORIA.md).
@@ -239,6 +259,11 @@ las páginas de acceso/cuenta. No es el remitente automático de Resend.
 El borrador [PRIVACIDAD.md](./PRIVACIDAD.md) queda fuera de las rutas públicas:
 faltan bases jurídicas validadas, conservación, cookies y condiciones reales de
 proveedores. Contacto no sustituye una política de privacidad completa.
+El inventario técnico está en
+[docs/INVENTARIO-PRIVACIDAD.md](./docs/INVENTARIO-PRIVACIDAD.md): distingue
+cookies/almacenamiento configurados de observaciones HTTP y comprobaciones
+pendientes. Incluye el aviso local `better-auth.message` de la dependencia,
+los borradores sin caducidad y los límites del borrado en backups.
 
 ### Índices
 

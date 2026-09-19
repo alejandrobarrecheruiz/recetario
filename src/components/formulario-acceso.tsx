@@ -20,7 +20,7 @@ import { guardadoPendiente, olvidarGuardado } from "@/lib/guardado-pendiente";
  */
 
 const claseEtiqueta =
-  "flex flex-col gap-2 font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.2em] text-tinta/50";
+  "flex flex-col gap-2 font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.2em] text-tinta/65";
 const claseCampo =
   "border-b border-tinta/25 bg-transparent pb-2.5 font-[family-name:var(--font-cuerpo)] text-base normal-case tracking-normal text-tinta outline-none focus:border-tinta";
 const claseBotonPrincipal =
@@ -185,7 +185,7 @@ export function FormularioAcceso({ permiteRegistro }: { permiteRegistro: boolean
           <span className="font-display text-xl font-medium leading-tight tracking-tight">
             Mi libro de recetas
           </span>
-          <h1 className="font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.3em] text-tinta/50">
+          <h1 className="font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.3em] text-tinta/65">
             {modo === "entrar" ? "Entrar" : "Crear cuenta"}
           </h1>
         </div>

@@ -1,21 +1,31 @@
 # Checklist para completar Recetario
 
-Actualizado: 19 de septiembre de 2026. Producción confirmada `Ready` en Vercel
-tras el PR #7 (`da5854e`). Los cambios de cierre posteriores están en la rama
-`feature/cierre-seguridad-fiabilidad`, aún no desplegados. Las decisiones
+Actualizado: 19 de septiembre de 2026. Los cambios de cierre están integrados
+en `main` y desplegados según confirmación del propietario. La entrega protegida
+de imágenes se ha comprobado en producción y el bloqueo de ImageKit está activo. Las decisiones
 vigentes están en [CLAUDE.md](./CLAUDE.md) y los procedimientos en
 [docs/OPERACION.md](./docs/OPERACION.md).
 
 **La web aún no está terminada.** Los dos problemas P0 identificados se han
-corregido localmente. Quedan configuración externa, contenidos y pruebas de
-flujos completos. Una casilla marcada significa corrección local comprobada,
-no certificación de seguridad ni verificación de producción.
+corregido. Quedan configuración externa, contenidos y pruebas de flujos completos.
+Cada punto distingue las comprobaciones locales de las de producción; una casilla
+marcada no es una certificación de seguridad.
 
 Prioridades: P0 inmediata; P1 necesaria para cerrar la web; P2 mejora posterior.
 Se conservan los identificadores de los 39 puntos de la revisión inicial.
 
 ## Validación realizada
 
+- Minimización de nuevas sesiones implementada: IP y navegador
+  nulos antes de persistir; no se modifica el limitador de intentos. 84 pruebas
+  unitarias correctas, incluidas sesión autenticada y límite por IP con el
+  adaptador en memoria de Better Auth. Sin borrados históricos ni pruebas nuevas
+  en producción para este cambio.
+- Revisión de entrega del 19/09: anchuras 320/390/768/1440 px sin desbordamiento
+  en catálogo y con tarjetas iguales; ficha estrecha, teclado y Safari de escritorio.
+  Corregidos impresión de pasos no visitados, etiquetas del editor, salto al
+  contenido, listas en Safari e imágenes adaptativas. Evidencias y límites en
+  [docs/REVISION-FINAL.md](./docs/REVISION-FINAL.md).
 - 82 pruebas unitarias correctas, incluidos intención de guardado tras acceso,
   aislamiento/recuperación de borradores y tamaños de imágenes permitidos.
 - TypeScript y ESLint correctos; `git diff --check` sin errores.
@@ -41,8 +51,12 @@ Se conservan los identificadores de los 39 puntos de la revisión inicial.
 - Backup de desarrollo restaurado en base temporal: documentos e índices
   recuperados y cuatro originales verificados. La base temporal se eliminó;
   el backup local se conserva fuera de Git. No se ensayó reconstruir ImageKit.
-- No se modificaron producción, cuentas reales, secretos ni configuración de
-  proveedores. Los workflows y correcciones nuevas requieren integración.
+- ImageKit: activado el bloqueo de todas las peticiones de imágenes sin firma
+  e invalidada la caché de los siete archivos existentes. Los siete originales y
+  sus variantes probadas devuelven 401 sin firma; las dos fotografías públicas
+  responden 200 mediante el endpoint de producción. No se borraron originales
+  ni se cambiaron recetas, cuentas o secretos. Esto no sustituye probar todos
+  los roles y cambios de visibilidad en Vercel.
 
 Las comprobaciones de integración y HTTP necesitaron acceso de red fuera del
 sandbox. Los primeros fallos de DNS/conexión no eran fallos de credenciales.
@@ -54,12 +68,14 @@ sandbox. Los primeros fallos de DNS/conexión no eran fallos de credenciales.
 - [x] **S2 · P0 · Retorno del login.** `src/lib/navegacion.ts` exige el mismo
   origen y rechaza barras invertidas, controles y destinos externos. Pruebas
   de regresión para el caso original `/\\example.org`.
-- [ ] **S3 · P1 · Correo verificado — preparado, falta activación.**
+- [ ] **S3 · P1 · Correo verificado — aplazado por decisión del propietario.**
+  Por ahora no se configura dominio/proveedor ni se integra Gmail personal.
   Configurar `RESEND_API_KEY` y `CORREO_REMITENTE`, DNS y entrega. Sin ambos
   valores, altas cerradas y acceso existente conservado. Al habilitarlos,
   las cuentas antiguas no verificadas deben confirmar su dirección; un login
   válido inicia el envío. Probar enlace, reenvío, caducidad y correo recibido.
-- [ ] **S4 · P1 · Recuperación — preparada, falta prueba real.**
+- [ ] **S4 · P1 · Recuperación — aplazada junto al correo.**
+  No hay recuperación automática disponible mientras no se configure remitente.
   Existe `/recuperar`, enlaces de una hora y revocación de sesiones tras el
   cambio; cambio autenticado disponible en cuenta. Probar caducidad,
   reutilización, sesión revocada y fallo de entrega con remitente real.
@@ -70,7 +86,7 @@ sandbox. Los primeros fallos de DNS/conexión no eran fallos de credenciales.
 - [ ] **S6 · P1 · Límites — implementación parcial.** Better Auth usa Mongo
   para contadores y reglas específicas. Verificar IP fiable, 429 y varias
   instancias de Vercel. Faltan límites de consumo de las APIs propias.
-- [ ] **S7 · P1 · Segundo factor — disponible, no activado.** Configurarlo en
+- [ ] **S7 · P1 · Segundo factor — activación aplazada por el propietario.** Al retomarlo, configurarlo en
   la cuenta administradora, probar códigos de recuperación y guardarlos fuera
   del sitio. Revisar también MFA de Vercel, Atlas, ImageKit y correo.
 - [ ] **S8 · P1 · Separar credenciales dev/prod.** Verificar permisos reales,
@@ -86,11 +102,14 @@ sandbox. Los primeros fallos de DNS/conexión no eran fallos de credenciales.
   Mutaciones propias comprueban Origin/Fetch Metadata y mantienen guards.
   Pruebas unitarias para origen ajeno/subdominios; falta comprobar cookies y
   llamadas autenticadas en Preview.
-- [ ] **S11 · P1 · Fotos restringidas — decisión aprobada, código preparado.**
+- [x] **S11 · P1 · Fotos restringidas — desplegado y bloqueo externo activado.**
   Entrega por endpoint con autorización por receta y firma servidor-servidor,
   tamaños acotados y sin caché compartida; probado 404/200 con cuentas de prueba.
-  Nuevas subidas privadas. Falta desplegar y bloquear URLs sin firma en ImageKit,
-  revisar caché y comprobar enlaces antiguos. No se ha migrado ningún fichero.
+  Nuevas subidas privadas. Cuenta ImageKit exclusiva de Recetario con
+  **Restrict all requests** activo y caché de siete archivos invalidada.
+  Originales y variantes probadas sin firma: 401; fotografías públicas por
+  Recetario: 200. Sin migrar ni destruir originales. Los roles y cambios de
+  visibilidad se probaron localmente; falta repetir ese recorrido en Vercel.
 - [ ] **S12 · P2 · Integridad de imágenes — implementación parcial.** El alta
   contrasta fileId, origen, carpeta, tipo, tamaño y dimensiones con ImageKit;
   rechaza SVG. Hay límites de textos/arrays y comprobación de fotos existentes
@@ -150,11 +169,12 @@ comprobaciones de los tratamientos reales para convertirlo en política definiti
   contraseña y eliminar lectores (incluidas guardadas y limpieza de TOTP).
   Contacto visible añadido; faltan procedimiento de atención y política de backups.
   Probar borrado, reautenticación y sesiones; admin no se borra desde la cuenta.
-- [ ] **L3 · P1 · Inventario de cookies.** Observar navegación anónima, sesión,
-  persistencia y TOTP: nombre, finalidad, duración y destinatario. Decidir con
-  ese inventario si hacen falta medidas de consentimiento. No se añadió
-  automáticamente un banner. Inventario HTTP local inicial en `docs/OPERACION.md`;
-  verificar HTTPS y todos los flujos en producción antes de publicarlo.
+- [ ] **L3 · P1 · Inventario de cookies — documentado, contraste parcial.**
+  [Inventario técnico](./docs/INVENTARIO-PRIVACIDAD.md) de cookies, almacenamiento
+  propio y de Better Auth, datos, destinatarios y borrado. Seis respuestas HTTP
+  anónimas de producción sin `Set-Cookie`; acceso/TOTP observados previamente
+  solo en HTTP local. Falta navegador limpio y HTTPS autenticado, sin activar
+  2FA al administrador. No se añadió un banner ni se cerró la decisión jurídica.
 - [ ] **L4 · P1 · Información del sitio.** Contacto y titular disponibles.
   Faltan autoría/licencia de textos y fotos; valorar condiciones de cuenta y aplicabilidad del aviso
   legal. No añadir políticas de compra o devolución a este blog sin comercio.
@@ -179,7 +199,9 @@ Referencias para revisión del texto, no certificación legal:
 
 - [ ] **V1 · P1:** icono sustituido; comprobar tamaño pequeño. Foto/bucle retirados.
 - [ ] **V2 · P1:** Apple/OG generados y alt editable; falta revisión en dispositivos.
-- [ ] **V3 · P1:** optimización implementada; faltan mediciones móviles.
+- [x] **V3 · P1:** medición móvil de laboratorio realizada: portada 90 de
+  rendimiento, LCP 3,6 s y CLS 0 antes de esta entrega. Reducidos peso de cubierta
+  y tamaños solicitados por tarjetas. No hay datos de usuarios reales.
 - [ ] **V4 · P1:** confirmar derechos de uso y revisar EXIF/ubicación.
   No se ha afirmado que los originales contengan GPS.
 
@@ -188,22 +210,23 @@ en Git. Manifest/PWA es opcional, no condición para cerrar el blog.
 
 ## 5. Accesibilidad y buscadores
 
-- [ ] **U1 · P1 · Modo cocina — implementado, falta comprobación.** Diálogo
-  modal, foco inicial/retorno, captura de Tab, fondo inert y Escape. Probar
-  teclado y lector de pantalla, incluidos los ingredientes.
+- [ ] **U1 · P1 · Modo cocina — teclado comprobado.** Apertura, navegación,
+  ingredientes, Escape y retorno del foco comprobados en Chrome; apertura/cierre
+  en Safari de escritorio. Falta lector de pantalla, incluidos los ingredientes.
 - [ ] **U2 · P1 · Controles — parcial.** aria-pressed, mensajes de estado,
   foco visible, escalador táctil y botones para reordenar. Revisar todas las
   etiquetas de campos del panel y anuncios con lector de pantalla.
 - [ ] **U3 · P1 · Revisión visual.** Móvil estrecho, escritorio, zoom, contraste,
   texto sobre fotos, movimiento reducido, Safari/iPhone y Chrome/Android.
-  Medir Lighthouse/Core Web Vitals; todavía no hay medición real.
+  Lighthouse móvil medido; no hay datos de campo ni prueba en móviles físicos.
 - [ ] **E1 · P1 · Metadatos — implementados, falta validación externa.**
   Canónicas, OG global y descripción alternativa. Probar tarjetas compartidas
   y datos estructurados con recetas reales.
 - [x] **E2 · P1 · Indexación en código.** noindex en cuenta/login/admin y recetas
   restringidas; Preview disallow y X-Robots-Tag. Sitemap sigue solo público.
   Verificar cabeceras del despliegue; robots no sustituye autorización.
-- [ ] **E3 · P2 · Extras.** Estilos de impresión añadidos, pendientes de revisión.
+- [x] **E3 · P2 · Impresión.** Previsualización de Chrome comprobada: pasos
+  completos aunque no se hayan visitado, sin controles ni recetas relacionadas.
   Dominio propio, Search Console, compartir y PWA siguen siendo opcionales.
 
 ## 6. Operación y cierre
@@ -226,16 +249,17 @@ en Git. Manifest/PWA es opcional, no condición para cerrar el blog.
   ejecutarlo en GitHub y exigir su resultado en las ramas protegidas.
   No se añadieron frameworks ni dependencias nuevas.
 
-## Siguiente revisión antes de desplegar
+## Alcance de la entrega y trabajo aplazado
 
-1. Configurar permisos de entorno y desplegar/probar entrega protegida antes de
-   bloquear URLs sin firma en ImageKit. Confirmar el remitente y verificar correo.
-2. Probar con cuentas temporales: lector, admin, TOTP, recuperación y borrado.
-3. Probar visibilidad por API y páginas: una receta no visible debe devolver 404.
-4. Simular dos pestañas, red lenta, caída de Mongo/ImageKit y limpieza fallida.
-5. Revisar móvil, teclado, imágenes, contraste, CSP y cookies en Preview.
-6. Separar secretos, confirmar backup recuperable e índices de producción.
-7. Repetir pruebas, audit y build; integrar por feature → develop → PR → main.
+La entrega actual es la revisión visual, accesibilidad, rendimiento, impresión
+y metadatos descrita en `docs/REVISION-FINAL.md`, integrada por
+feature → develop → PR → main. La comprobación de producción debe confirmar
+los marcadores de esta versión y las rutas públicas, no solo un HTTP 200.
+
+Por decisión del propietario no se reabren ahora correo, activación de TOTP,
+retención/política de privacidad ni pruebas adicionales de fiabilidad del editor.
+Siguen aplazados, no completados. Tampoco se dan por verificadas las pruebas
+que requieren móviles físicos o un lector de pantalla.
 
 Se mantiene el alcance del producto: blog personal, sin anuncios, pagos,
 newsletter, analítica de conversión ni funciones comerciales.

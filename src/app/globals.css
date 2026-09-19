@@ -96,7 +96,7 @@ html { scroll-padding-top: calc(var(--altura-cabecera) + 20px); }
 .ficha-desglose-tiempo { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 12px; font-size: 13px; color: color-mix(in srgb, var(--tinta) 70%, transparent); }
 .ficha-desglose-tiempo > div { display: flex; gap: 8px; }
 .ficha-desglose-tiempo dd { font-weight: 500; color: var(--tinta); }
-.ingredientes-cabecera { display: flex; align-items: center; justify-content: flex-start; gap: 20px; margin-bottom: 16px; }
+.ingredientes-cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 20px; margin-bottom: 16px; }
 .ingredientes-cabecera .ficha-titulo-seccion { font-size: 26px; white-space: nowrap; }
 .control-raciones { display: inline-flex; flex-shrink: 0; align-items: center; border: 1px solid var(--raya-oscura); border-radius: var(--radio-control); padding: 2px; }
 .control-raciones button { display: flex; width: 44px; height: 44px; align-items: center; justify-content: center; border-radius: var(--radio-control); cursor: pointer; }
@@ -260,6 +260,8 @@ html { scroll-padding-top: calc(var(--altura-cabecera) + 20px); }
 }
 .marco-foto { display: block; padding: 6px; border: 1px solid var(--raya-oscura); background: var(--superficie); box-shadow: var(--sombra-foto); }
 .cabecera-publica { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--raya-oscura); background: var(--papel); }
+.saltar-contenido { position: absolute; left: var(--margen-pagina); top: 8px; z-index: 2; padding: 12px 16px; background: var(--superficie); color: var(--tinta); transform: translateY(-200%); }
+.saltar-contenido:focus { transform: none; }
 .cabecera-publica-interior { max-width: var(--ancho-catalogo); min-height: var(--altura-cabecera); padding: 8px var(--margen-catalogo); margin-inline: auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .navegacion-publica { display: flex; align-items: center; gap: 4px; }
 .icono-cabecera { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex-shrink: 0; border: 0; border-radius: var(--radio-control); color: var(--tinta); background: transparent; cursor: pointer; }
@@ -294,6 +296,8 @@ html { scroll-padding-top: calc(var(--altura-cabecera) + 20px); }
 }
 @media (prefers-reduced-motion: reduce) {
   .cubierta-portada-rotulo { position: relative; top: auto; }
+  .revelado { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .capa-parallax { transform: none !important; }
 }
 
 /* En @layer base para que cualquier utilidad de color de Tailwind las gane. */
@@ -312,12 +316,27 @@ html { scroll-padding-top: calc(var(--altura-cabecera) + 20px); }
 }
 
 @media print {
-  header, footer, button, nav { display: none !important; }
-  body { background: white; color: black; }
+  @page { margin: 15mm; }
+  header, footer, button, nav, dialog, [role="dialog"], .ficha-acciones, .ficha-relacionadas { display: none !important; }
+  body { background: white; color: black; overflow: visible !important; }
+  main { overflow: visible !important; }
+  .revelado { opacity: 1 !important; }
+  .pagina-ficha { display: block; max-width: none; padding: 0; }
+  .ficha-titulo { max-width: none; font-size: 26pt; }
+  .ficha-resumen, .ficha-paso-texto, .ingredientes-lista > li { font-size: 11pt; }
+  .ficha-portada { margin-block: 6mm; }
   img { max-height: 240px; object-fit: contain; }
   .ficha-portada > .marco-foto { position: static; }
   .ficha-portada img, .ficha-paso-foto img { max-height: 240px; }
-  section, li { break-inside: avoid; }
+  .ficha-preparacion { width: 100%; margin-top: 6mm; padding-top: 0; }
+  .ficha-pasos > li { padding-block: 3mm; }
+  .ficha-nota { margin-top: 8mm; }
+  .control-raciones { border: 0; }
+  .control-raciones output svg { display: none; }
+  .control-raciones output .sr-only { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip: auto; clip-path: none; white-space: normal; }
+  section { break-inside: auto; }
+  li, figure { break-inside: avoid; }
+  h1, h2, h3 { break-after: avoid; }
   * { animation: none !important; transform: none !important; }
 }
 

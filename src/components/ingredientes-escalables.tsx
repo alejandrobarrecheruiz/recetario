@@ -29,7 +29,7 @@ export function IngredientesEscalables({ ingredientes, racionesBase }: {
           </button>
         </div>
       </div>
-      <ul className="ingredientes-lista">
+      <ul role="list" className="ingredientes-lista">
         {ingredientes.map((ingrediente) => {
           const cantidad = medida(ingrediente.cantidad * factor, ingrediente.unidad);
           return (

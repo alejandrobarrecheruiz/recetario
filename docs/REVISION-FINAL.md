@@ -20,6 +20,10 @@ ni sustituye pruebas en dispositivos físicos.
 - Cubierta: calidad 60 en el optimizador, sin alterar originales. Una comparación
   local del recurso vertical a 750 px pasa de 284.630 a 208.828 bytes (−26,6 %).
 - Metadatos de receta: URL, nombre del sitio e idioma explícitos en Open Graph.
+- Rastreo: `robots.txt` permite las fotografías servidas por el endpoint propio,
+  necesarias para Recipe/OG; conserva el bloqueo del resto de la API, firma y
+  Preview. La autorización de imágenes no cambia. Referencia:
+  [directrices de imágenes de Recipe](https://developers.google.com/search/docs/appearance/structured-data/recipe).
 
 ## Comprobaciones realizadas
 

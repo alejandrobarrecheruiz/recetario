@@ -250,6 +250,9 @@ Sobre los roles (`src/models/usuario.ts`):
   muestra todos los pasos sin depender de animaciones ni del recorrido previo,
   y excluye controles y recetas relacionadas. Evidencias en `docs/REVISION-FINAL.md`.
   Cuenta, acceso, admin y Preview se marcan para no indexar.
+  `robots.txt` permite `/api/imagenes/` para las fotos públicas de Recipe/OG,
+  salvo `/api/imagenes/firma`; el resto de la API se excluye. Esto no sustituye
+  la autorización por visibilidad que se aplica en cada descarga.
 
 La lista de cierre y las validaciones pendientes están en [AUDITORIA.md](./AUDITORIA.md).
 `src/lib/sitio.ts` centraliza la identidad y el correo públicos confirmados:

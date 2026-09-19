@@ -13,7 +13,7 @@ export default function PaginaContacto() {
   return (
     <>
     <CabeceraPublica />
-    <main className="flex-1 bg-superficie py-10 sm:py-14">
+    <main id="contenido" tabIndex={-1} className="flex-1 bg-superficie py-10 sm:py-14">
       <div className="pagina-lectura flex flex-col gap-9">
 
       <header className="flex flex-col gap-4">

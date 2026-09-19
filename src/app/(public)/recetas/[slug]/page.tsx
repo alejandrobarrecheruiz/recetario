@@ -64,6 +64,9 @@ export async function generateMetadata({
       title: receta.titulo,
       description: receta.seo.descripcion || receta.resumen || receta.titulo,
       type: "article",
+      url: `/recetas/${receta.slug}`,
+      siteName: "Mi libro de recetas",
+      locale: "es_ES",
       images: portada ? [{ url: urlConAncho(portada.url, 1200), alt: portada.alt }] : undefined,
     },
   };
@@ -162,7 +165,7 @@ export default async function PaginaReceta({
   return (
     <PreparacionReceta recetaId={receta._id.toHexString()} version={receta.actualizadaEn.toISOString()} racionesBase={receta.raciones} pasoIds={pasos.map((paso) => paso.id)}>
     <CabeceraPublica />
-    <main className="flex flex-col overflow-x-clip bg-superficie">
+    <main id="contenido" tabIndex={-1} className="flex flex-col overflow-x-clip bg-superficie">
       {receta.estado === "publicada" && (
         <script
           nonce={(await headers()).get("x-nonce") ?? undefined}
@@ -219,7 +222,7 @@ export default async function PaginaReceta({
 
         <section className="ficha-preparacion" aria-labelledby="titulo-pasos">
           <h2 id="titulo-pasos" className="sr-only">Preparación</h2>
-          <ol className="ficha-pasos">
+          <ol role="list" className="ficha-pasos">
             {pasos.map((paso, indice) => {
               const foto = paso.imagenId ? fotos.get(paso.imagenId.toHexString()) : undefined;
               return (
@@ -246,10 +249,10 @@ export default async function PaginaReceta({
       </article>
 
       {siguientes.length > 0 && (
-        <section className="pagina-amplia border-t border-tinta/15 pb-14 pt-8">
-          <div className="mb-7 font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.2em] text-tinta/50">
+        <section className="ficha-relacionadas pagina-amplia border-t border-tinta/15 pb-14 pt-8" aria-labelledby="titulo-relacionadas">
+          <h2 id="titulo-relacionadas" className="mb-7 font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.2em] text-tinta/65">
             Sigue por aquí
-          </div>
+          </h2>
           <div className="rejilla-recetas ficha-siguientes">
             {siguientes.map((otra) => {
               const fotoDeOtra = otra.portadaId

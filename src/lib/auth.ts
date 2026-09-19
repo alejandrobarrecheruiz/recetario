@@ -9,6 +9,7 @@ import { obtenerCliente, obtenerDb } from "@/lib/mongo";
 import { ROL_POR_DEFECTO } from "@/models/usuario";
 import { after } from "next/server";
 import { correoConfigurado, enviarCorreoAcceso } from "@/lib/correo";
+import { minimizarNuevaSesion } from "@/lib/privacidad-sesion";
 
 /**
  * Instancia de servidor de Better Auth.
@@ -41,6 +42,9 @@ export const auth = betterAuth({
   database: mongodbAdapter(db, { client: cliente }),
   advanced: {
     backgroundTasks: { handler: (tarea) => { after(async () => { await tarea; }); } },
+  },
+  databaseHooks: {
+    session: { create: { before: minimizarNuevaSesion } },
   },
   rateLimit: {
     enabled: true,

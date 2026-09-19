@@ -9,6 +9,7 @@ export function CabeceraPublica({ children, navegacion = true }: {
 }) {
   return (
     <header className="cabecera-publica">
+      <a href="#contenido" className="saltar-contenido">Saltar al contenido</a>
       <div className="cabecera-publica-interior">
         <Logo tamano={44} />
         <div className="flex shrink-0 items-center gap-2">

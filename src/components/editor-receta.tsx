@@ -191,6 +191,7 @@ function GrupoChips({
             key={valor}
             type="button"
             title="Quitar"
+            aria-label={`Quitar ${valor}`}
             onClick={() => onCambio(valores.filter((otro) => otro !== valor))}
             className="rounded-full bg-tinta/10 px-3 py-1.5 text-[12.5px] hover:bg-tinta/20"
           >
@@ -200,6 +201,7 @@ function GrupoChips({
         {anadiendo ? (
           <input
             autoFocus
+            aria-label={`Añadir a ${rotulo.toLocaleLowerCase("es")}`}
             value={texto}
             onChange={(evento) => setTexto(evento.target.value)}
             onBlur={anadir}
@@ -801,6 +803,7 @@ export function EditorReceta({
           <div>
             <RotuloLateral>Para buscadores</RotuloLateral>
             <textarea
+              aria-label="Descripción para buscadores"
               rows={3}
               value={datos.seoDescripcion}
               onChange={(evento) => tocar({ seoDescripcion: evento.target.value })}
@@ -839,11 +842,12 @@ export function EditorReceta({
             )}
             <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(222,230,233,0.95),rgba(222,230,233,0.3))]" />
             <div className="absolute right-4 top-4 flex gap-2 font-[family-name:var(--font-dm-mono)] text-[10.5px] uppercase tracking-[0.12em]">
-              <label className="cursor-pointer whitespace-nowrap rounded-full border border-tinta/20 bg-superficie/90 px-3.25 py-1.75 text-tinta hover:border-tinta/50">
+              <label className="cursor-pointer whitespace-nowrap rounded-full border border-tinta/20 bg-superficie/90 px-3.25 py-1.75 text-tinta hover:border-tinta/50 focus-within:outline-2 focus-within:outline-acento focus-within:outline-offset-4">
                 <input
                   type="file"
+                  aria-label="Foto de portada"
                   accept="image/*"
-                  className="hidden"
+                  className="sr-only"
                   disabled={subiendo.portada === true}
                   onChange={(evento) => {
                     const fichero = evento.target.files?.[0];
@@ -1091,11 +1095,12 @@ export function EditorReceta({
                       />
                     </div>
                     <div className="flex flex-col items-stretch gap-1.5">
-                      <label className="relative block aspect-square cursor-pointer overflow-hidden bg-raya-clara">
+                      <label className="relative block aspect-square cursor-pointer overflow-hidden bg-raya-clara focus-within:outline-2 focus-within:outline-acento focus-within:outline-offset-4">
                         <input
                           type="file"
+                          aria-label={`Foto del paso ${indice + 1}`}
                           accept="image/*"
-                          className="hidden"
+                          className="sr-only"
                           disabled={subiendo[paso.id] === true}
                           onChange={(evento) => {
                             const fichero = evento.target.files?.[0];

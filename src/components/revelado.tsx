@@ -57,7 +57,7 @@ export function Revelado({
   }, [orden]);
 
   return (
-    <div ref={ref} className={className}>
+    <div ref={ref} className={`revelado ${className ?? ""}`}>
       {children}
     </div>
   );

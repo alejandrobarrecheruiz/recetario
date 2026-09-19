@@ -20,7 +20,7 @@ export function DatosReceta({ minutos, raciones, dificultad, variante = "compact
 }) {
   const nivel = niveles[dificultad];
   return (
-    <ul className={`datos-receta${variante === "ficha" ? " datos-receta-ficha" : ""}`} aria-label="Datos de la receta">
+    <ul role="list" className={`datos-receta${variante === "ficha" ? " datos-receta-ficha" : ""}`} aria-label="Datos de la receta">
       {minutos > 0 && <li>
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7v5l3 2" /></svg>
         <span><span className="sr-only">Tiempo total: </span>{duracion(minutos)}</span>

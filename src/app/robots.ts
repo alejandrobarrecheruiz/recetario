@@ -7,9 +7,10 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
-        // El panel, la API y las paginas de cuenta no pintan nada en un indice.
-        disallow: ["/admin", "/api/", "/login", "/cuenta"],
+        // Las fotos públicas de Recipe/OG deben poder rastrearse. El endpoint
+        // sigue aplicando visibilidad y devuelve 404 para fotos restringidas.
+        allow: ["/", "/api/imagenes/"],
+        disallow: ["/admin", "/api/", "/api/imagenes/firma", "/login", "/cuenta"],
       },
     ],
     sitemap: `${base}/sitemap.xml`,

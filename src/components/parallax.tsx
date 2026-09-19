@@ -34,7 +34,7 @@ export function CapaParallax({
   }, [factor]);
 
   return (
-    <div ref={ref} className={className}>
+    <div ref={ref} className={`capa-parallax ${className ?? ""}`}>
       {children}
     </div>
   );

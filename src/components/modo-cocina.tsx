@@ -256,7 +256,7 @@ export function ModoCocina({
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="mb-[clamp(10px,2vh,20px)] flex items-baseline gap-4">
-                    <span className="font-[family-name:var(--font-bricolage)] text-[clamp(40px,6vw,88px)] font-extrabold leading-none tracking-[-0.05em] text-tinta/15">
+                    <span aria-hidden="true" className="font-[family-name:var(--font-bricolage)] text-[clamp(40px,6vw,88px)] font-extrabold leading-none tracking-[-0.05em] text-tinta/15">
                       {String(actual + 1).padStart(2, "0")}
                     </span>
                     <h2 className="min-w-0 font-[family-name:var(--font-bricolage)] text-[clamp(24px,3vw,36px)] font-medium tracking-tight">
@@ -272,7 +272,7 @@ export function ModoCocina({
           )}
 
           <div className="flex items-center justify-between gap-4 border-t border-tinta/10 px-[clamp(16px,5vw,48px)] pb-[max(clamp(14px,3vh,28px),env(safe-area-inset-bottom))] pt-[clamp(12px,2.5vh,22px)]">
-            <div className="hidden font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.16em] text-tinta/50 sm:block">
+            <div className="hidden font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.16em] text-tinta/65 sm:block">
               {raciones} raciones · {duracion(minutos)}
             </div>
             <div className="flex flex-1 justify-between gap-2.5 sm:flex-none sm:justify-end">

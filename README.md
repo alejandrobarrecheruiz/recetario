@@ -36,6 +36,7 @@ npm run dev                           # http://localhost:3000
 | `npm run test:entorno` | Comprueba `.env.local` contra Atlas e ImageKit de verdad |
 | `npm run test:todo` | Las dos anteriores |
 | `npm run indices` | Crea los índices de MongoDB (idempotente) |
+| `npm run integridad:imagenes` | Revisa duplicados, referencias y archivos de imágenes; solo lectura |
 | `npm run crear-usuario` | Alta de usuario (`-- --rol admin` para el admin) |
 | `npm run seed:dev` | Datos de ejemplo (solo `recetas_dev`) |
 | `npm run backup` | Copia de documentos, índices y originales de fotografías |
@@ -82,6 +83,12 @@ en `BETTER_AUTH_URL`, no las URLs temporales de cada despliegue.
 
 La secuencia para proteger las fotos sin romperlas, las pruebas HTTP y el
 procedimiento de recuperación están en [docs/OPERACION.md](./docs/OPERACION.md).
+También incluye el despliegue del índice único de imágenes. Antes de crearlo,
+ejecuta `npm run integridad:imagenes`: informa de incidencias sin borrar ni
+fusionar datos. `npm run --silent integridad:imagenes -- --json` entrega el informe
+como JSON. Códigos de salida: 0 sin incidencias, 1 con incidencias y 2 si la
+comprobación no pudo completarse. Producción requiere configuración propia y
+`-- --permitir-prod` explícito.
 
 ## Ramas
 

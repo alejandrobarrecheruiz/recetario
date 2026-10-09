@@ -3,11 +3,10 @@ import { comprobarOrigen } from "@/lib/origen";
 import { obtenerColecciones } from "@/lib/mongo";
 import { conVisibilidad } from "@/lib/visibilidad";
 import { detallesDeImageKit } from "@/lib/imagekit";
-import { imagenADoc } from "@/lib/imagenes";
+import { imagenADoc, imagenParaCliente, registrarImagen } from "@/lib/imagenes";
 import { sesionActual } from "@/lib/sesion";
 import { rolDeSesion } from "@/models/usuario";
 import { imagenEntradaSchema, imagenSchema } from "@/models/imagen";
-import { rutaImagen } from "@/lib/entrega-imagenes";
 
 // Alta de los METADATOS de una imagen que el navegador ya subio a ImageKit con
 // la firma de /api/imagenes/firma. Los bytes nunca pasan por aqui.
@@ -57,7 +56,6 @@ export async function POST(peticion: Request) {
     subidaPor: sesion.user.id,
   });
 
-  await coleccion.insertOne(imagenADoc(imagen));
-
-  return Response.json({ ...imagen, url: rutaImagen(imagen._id) }, { status: 201 });
+  const resultado = await registrarImagen(coleccion, imagenADoc(imagen));
+  return Response.json(imagenParaCliente(resultado.imagen), { status: resultado.creada ? 201 : 200 });
 }

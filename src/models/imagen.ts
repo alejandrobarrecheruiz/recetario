@@ -6,8 +6,8 @@ import { idSchema } from "@/models/receta";
  * Metadatos de una imagen. Coleccion `images`.
  *
  * Coleccion separada, NO subdocumentos dentro de la receta: asi se pueden
- * reutilizar imagenes entre recetas y detectar huerfanas (las que tienen
- * `recetaId: null` y nadie referencia).
+ * reutilizar imagenes entre recetas y detectar las que nadie referencia,
+ * independientemente de que `recetaId` siga asignado o sea null.
  *
  * Los bytes viven en ImageKit; aqui solo viven los metadatos.
  */
@@ -19,11 +19,13 @@ export const tipoImagenSchema = z.enum(["portada", "paso", "galeria"]);
 export const imagenSchema = z.object({
   /** Identificador compartido con la receta: `portadaId` y `paso.imagenId` apuntan aqui. */
   _id: idSchema,
+  /** Receta de origen para limpieza; los usos reales están en portadaId/pasos. */
   recetaId: idSchema.nullable(),
   proveedor: proveedorSchema,
   /**
    * Id del fichero en ImageKit. OBLIGATORIO: sin el no se puede borrar alli, y
    * al eliminar una receta la foto se quedaria ocupando espacio para siempre.
+   * Único junto a proveedor mediante índice en MongoDB.
    */
   fileId: z.string().min(1),
   url: z.url().refine((valor) => valor.startsWith("https://"), "La imagen debe usar HTTPS."),

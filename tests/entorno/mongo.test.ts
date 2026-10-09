@@ -10,6 +10,9 @@
  */
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
+import { ObjectId } from "mongodb";
+import { registrarImagen } from "@/lib/imagenes";
+import type { ImagenDoc } from "@/models/imagen";
 
 import {
   BASE_PRODUCCION,
@@ -113,7 +116,7 @@ describe("conexion con MongoDB", () => {
 });
 
 describe("indices", () => {
-  test("crearIndices() deja los tres indices y es idempotente", async () => {
+  test("crearIndices() deja los índices de recetas e imágenes y es idempotente", async () => {
     assert.equal(esBaseDeProduccion(), false);
 
     const primera = await crearIndices();
@@ -134,6 +137,7 @@ describe("indices", () => {
       "falta el indice que cubre la consulta de portada (visibilidad + fecha)",
     );
     assert.ok(enImagenes.includes("recetaId"), `faltan indices en images: ${enImagenes.join(", ")}`);
+    assert.ok(enImagenes.includes("proveedor_fileId_unico"), "falta el índice único de archivos del proveedor");
   });
 
   test("el indice de slug rechaza duplicados de verdad", async () => {
@@ -154,6 +158,33 @@ describe("indices", () => {
       );
     } finally {
       await recetas.deleteMany({ marca: MARCA }).catch(() => {});
+    }
+  });
+
+  test("el alta de imágenes es idempotente incluso en paralelo y conserva sus metadatos", async () => {
+    assert.equal(process.env.MONGODB_DB, "recetas_dev");
+    await crearIndices();
+    const db = await obtenerDb();
+    const imagenes = db.collection<ImagenDoc>(COLECCIONES.imagenes);
+    const fileId = `${MARCA}-${new ObjectId()}`;
+    const nueva = (): ImagenDoc => ({
+      _id: new ObjectId(), recetaId: new ObjectId(), proveedor: "imagekit", fileId,
+      url: "https://example.invalid/prueba.jpg", path: "/dev/prueba.jpg", alt: "Descripción original",
+      ancho: 1, alto: 1, bytes: 1, tipo: "portada", orden: 0, subidaEn: new Date(), subidaPor: new ObjectId(),
+    });
+    try {
+      const resultados = await Promise.all(Array.from({ length: 6 }, () => registrarImagen(imagenes, nueva())));
+      const primera = resultados.find(resultado => resultado.creada)!;
+      assert.ok(primera);
+      assert.equal(resultados.filter(resultado => resultado.creada).length, 1);
+      assert.ok(resultados.every(resultado => resultado.imagen._id.equals(primera.imagen._id)));
+      const repetida = await registrarImagen(imagenes, { ...nueva(), alt: "No sustituir la descripción" });
+      assert.equal(repetida.creada, false);
+      assert.deepEqual(repetida.imagen, primera.imagen);
+      assert.equal(await imagenes.countDocuments({ proveedor: "imagekit", fileId }), 1);
+      await assert.rejects(imagenes.insertOne(nueva()), /duplicate key/i);
+    } finally {
+      await imagenes.deleteMany({ proveedor: "imagekit", fileId });
     }
   });
 });

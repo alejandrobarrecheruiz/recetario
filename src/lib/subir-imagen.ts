@@ -70,7 +70,7 @@ export async function subirImagen({
   return respuestaMetadatos.json();
 }
 
-/** Borra de verdad: fichero en ImageKit, metadatos y referencias. */
+/** Borra fichero y metadatos; el servidor rechaza imágenes aún referenciadas. */
 export async function quitarImagen(id: string): Promise<void> {
   const respuesta = await fetch(`/api/imagenes/${id}`, { method: "DELETE" });
   if (!respuesta.ok && respuesta.status !== 404) {

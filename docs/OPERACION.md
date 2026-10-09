@@ -38,6 +38,70 @@ Referencia del proveedor: [seguridad de entrega de ImageKit](https://imagekit.io
 Un rollback a la versión antigua no es compatible con el bloqueo de URLs sin
 firma: conservar una versión de respaldo que use el endpoint protegido.
 
+## Integridad de imágenes e índice único
+
+Un archivo de ImageKit tiene un solo documento en `images`, identificado por
+`(proveedor, fileId)`. El alta conserva el documento existente ante reintentos,
+incluidas peticiones simultáneas, apoyándose en `proveedor_fileId_unico`.
+Responde 201 al crear y 200 al reutilizar. Repetir el registro no cambia el alt,
+la receta de origen ni el ID. Subir dos veces los mismos bytes puede generar
+dos `fileId` distintos: esta protección no compara el contenido de los archivos.
+
+### Comprobación de solo lectura
+
+```bash
+npm run integridad:imagenes
+# Para obtener únicamente JSON, sin la cabecera de npm:
+npm run --silent integridad:imagenes -- --json
+```
+
+Lee todas las recetas, incluidos borradores y restringidas, y los metadatos.
+Recorre la carpeta de ImageKit del entorno y sus subcarpetas con paginación.
+No descarga originales, crea índices, repara referencias ni borra archivos.
+Exige la pareja `recetas_dev/dev` o `recetas_prod/prod`. Para leer producción,
+usar su configuración y añadir `-- --permitir-prod` explícito; no basta con
+cambiar el nombre de base dejando la carpeta de desarrollo.
+
+El informe enumera IDs y rutas, sin credenciales ni URLs firmadas:
+
+- Registros duplicados por proveedor y archivo.
+- Referencias de portada/pasos a metadatos inexistentes.
+- Imágenes sin referencias, incluso si conservan `recetaId`.
+- Archivos de ImageKit sin metadatos.
+- Metadatos cuyo archivo no aparece en la carpeta comprobada.
+- Rutas que no coinciden con el proveedor o pertenecen a otra carpeta.
+
+Códigos de salida: **0** comprobación completa sin incidencias, **1** completa
+con incidencias, **2** incompleta por configuración, conexión o listado inválido.
+Un fallo al paginar no produce un informe parcial presentado como completo.
+Hacerlo sin subidas ni ediciones concurrentes: no es una instantánea
+transaccional. Una imagen sin referencias puede estar pendiente de guardado;
+el informe es una lista para revisar, nunca una orden de borrado. Si se guarda
+la salida de producción, conservarla localmente fuera de Git.
+
+### Aplicación del índice
+
+1. Ejecutar el inventario en el entorno de destino sin ediciones concurrentes.
+   Ante código 2, resolver el fallo y repetir antes de interpretar los datos.
+2. Si hay duplicados, detener la aplicación del índice. Hacer backup y preparar
+   una reparación revisada: elegir un ID canónico, redirigir todas las referencias
+   de portada/pasos y eliminar **solo los metadatos sobrantes**. No usar
+   `DELETE /api/imagenes/[id]` para fusionar duplicados: borraría el archivo
+   compartido de ImageKit. El comando de integridad no hace esa reparación.
+3. Ejecutar `npm run indices`. En producción, con sus credenciales y
+   `MONGODB_DB=recetas_prod`, usar `npm run indices -- --permitir-prod`.
+   `crearIndices()` comprueba duplicados antes de crear índices y aborta con
+   una indicación concreta si los encuentra. No los fusiona automáticamente.
+4. Repetir el inventario y verificar `proveedor_fileId_unico` en `images`
+   (`unique: true`, claves `proveedor: 1, fileId: 1`). Revisar las demás incidencias
+   aunque no impidan crear ese índice.
+5. Aplicar y verificar el índice en producción **antes de integrar el cambio
+   en `main`**. La creación en desarrollo no demuestra que exista en producción.
+
+La entrega y el borrado de imágenes siguen resolviendo referencias de recetas.
+Antes de que otra sección utilice `images`, ampliar conjuntamente autorización,
+borrado e inventario para considerar también sus referencias.
+
 ## Acceso y permisos
 
 - El correo queda aplazado por decisión del propietario: sin dominio ni
@@ -76,10 +140,13 @@ PROBAR_HTTP=1 npm run test:entorno
 npm run build
 ```
 
-La prueba HTTP opcional crea y elimina cuentas y documentos temporales en dev.
+La prueba HTTP opcional crea y elimina cuentas, documentos y un PNG privado de
+1 px en la carpeta `dev` de ImageKit. No usa ni modifica fotografías editoriales.
 Comprueba visibilidad de página/API/foto, CSRF, guardado idempotente, conflicto
 If-Match, cambio de contraseña, sesión caducada, desafío TOTP, código de
-recuperación de un solo uso y eliminación de lector. No prueba entrega de correo,
+recuperación de un solo uso y eliminación de lector. Comprueba también el alta
+real de imagen y reintentos simultáneos con el mismo ID y metadatos conservados.
+No prueba entrega de correo,
 pantallas en dispositivos reales ni aislamiento de producción. No usarla contra
 una URL de Vercel ni una base real de producción.
 

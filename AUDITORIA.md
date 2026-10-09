@@ -1,6 +1,6 @@
 # Checklist para completar Recetario
 
-Actualizado: 19 de septiembre de 2026. Los cambios de cierre están integrados
+Estado de producción comprobado el 19 de septiembre de 2026: los cambios de cierre están integrados
 en `main` y desplegados según confirmación del propietario. La entrega protegida
 de imágenes se ha comprobado en producción y el bloqueo de ImageKit está activo. Las decisiones
 vigentes están en [CLAUDE.md](./CLAUDE.md) y los procedimientos en
@@ -113,8 +113,13 @@ sandbox. Los primeros fallos de DNS/conexión no eran fallos de credenciales.
 - [ ] **S12 · P2 · Integridad de imágenes — implementación parcial.** El alta
   contrasta fileId, origen, carpeta, tipo, tamaño y dimensiones con ImageKit;
   rechaza SVG. Hay límites de textos/arrays y comprobación de fotos existentes
-  al editar. Faltan pruebas con proveedor real y resolver carreras entre
-  guardado, borrado y reutilización.
+  al editar. El registro es idempotente por `(proveedor, fileId)` y conserva
+  metadatos existentes; requiere el índice único `proveedor_fileId_unico`.
+  `npm run integridad:imagenes` detecta duplicados y referencias/archivos
+  descolgados en modo de solo lectura, incluidas subcarpetas del proveedor.
+  Aplicar y verificar el índice en producción según `docs/OPERACION.md` antes
+  de integrar en `main`. Siguen pendientes las carreras entre guardado,
+  borrado y reutilización y la reparación de incidencias detectadas.
 - [ ] **S13 · P2 · Fronteras de servidor.** Consultas administrativas ya pasan
   por `conVisibilidad`. Falta una barrera de importación de módulos privados
   verificada por el compilador; no se añadió otra dependencia.
@@ -134,7 +139,8 @@ sandbox. Los primeros fallos de DNS/conexión no eran fallos de credenciales.
   falta corte de red real y navegación atrás con cambios sin guardar.
 - [ ] **F3 · P1 · Sustitución de fotos — parcial.** Se confirma la nueva
   referencia antes de borrar la foto antigua; una foto referenciada no se
-  elimina. Falta limpieza/reintento de huérfanas tras fallo o cierre de pestaña.
+  elimina. El inventario detecta imágenes sin referencias y archivos sin
+  metadatos. Falta limpieza/reintento de huérfanas tras fallo o cierre de pestaña.
 - [ ] **F4 · P1 · Borrado — parcial.** Limpia guardadas; conserva fotos
   reutilizadas y muestra aviso de limpieza incompleta. Faltan acción de
   reintento y pruebas de carreras; los metadatos fallidos se conservan.
@@ -193,11 +199,12 @@ Referencias para revisión del texto, no certificación legal:
 | Icono Apple | PNG 180 × 180 | Verificar en iPhone |
 | Imagen social | PNG 1200 × 630 con marca | Revisar tarjeta compartida |
 | Portada horizontal/móvil | Optimizador Next y selección por ancho | Medir peso, carga y encuadre reales |
-| Foto personal y vídeo | Bloques retirados de la portada aprobada | No son requisitos pendientes |
+| Foto personal | Presentación en portada con `public/Imagen-Persona.png`; texto en `src/contenido/presentacion.ts` | Mantener texto y fotografía vigentes |
+| Vídeo | No forma parte de la portada vigente | No es un requisito pendiente |
 | Fotos de recetas | Se resuelven por IDs referenciados | Inventario de portadas y pasos |
 | Texto alternativo | Editable desde portada y pasos en el editor | Revisión editorial de descripciones útiles |
 
-- [ ] **V1 · P1:** icono sustituido; comprobar tamaño pequeño. Foto/bucle retirados.
+- [ ] **V1 · P1:** icono sustituido; comprobar tamaño pequeño. La foto personal está integrada; el bucle de vídeo permanece retirado.
 - [ ] **V2 · P1:** Apple/OG generados y alt editable; falta revisión en dispositivos.
 - [x] **V3 · P1:** medición móvil de laboratorio realizada: portada 90 de
   rendimiento, LCP 3,6 s y CLS 0 antes de esta entrega. Reducidos peso de cubierta

@@ -40,6 +40,14 @@ test("distingue archivos ausentes de rutas incorrectas y de otros entornos", () 
   assert.deepEqual(resultado.rutasInconsistentes.map(imagen => imagen.imagenId), ["movida", "otro-entorno"]);
 });
 
+test("el inventario protege fotos de alimentos, también borradores, y localiza sus referencias rotas", () => {
+  const resultado = comprobarIntegridadImagenes([], [imagen("despensa")], [archivo("despensa")], "dev", [
+    { _id: "alimento-1", fotoId: "despensa" }, { _id: "alimento-2", fotoId: "ausente" },
+  ]);
+  assert.deepEqual(resultado.imagenesSinReferencias, []);
+  assert.deepEqual(resultado.referenciasRotas, [{ alimentoId: "alimento-2", imagenId: "ausente", ubicacion: "foto" }]);
+});
+
 test("el inventario exige destinos conocidos, carpetas coherentes y permiso explícito para producción", () => {
   assert.deepEqual(entornoIntegridadImagenes("recetas_dev", "/dev/"), { base: "recetas_dev", carpeta: "dev" });
   assert.deepEqual(entornoIntegridadImagenes("recetas_prod", "prod", true), { base: "recetas_prod", carpeta: "prod" });

@@ -55,7 +55,8 @@ npm run integridad:imagenes
 npm run --silent integridad:imagenes -- --json
 ```
 
-Lee todas las recetas, incluidos borradores y restringidas, y los metadatos.
+Lee todas las recetas, incluidos borradores y restringidas, todos los alimentos
+de Despensa (también borradores) y los metadatos.
 Recorre la carpeta de ImageKit del entorno y sus subcarpetas con paginación.
 No descarga originales, crea índices, repara referencias ni borra archivos.
 Exige la pareja `recetas_dev/dev` o `recetas_prod/prod`. Para leer producción,
@@ -65,7 +66,7 @@ cambiar el nombre de base dejando la carpeta de desarrollo.
 El informe enumera IDs y rutas, sin credenciales ni URLs firmadas:
 
 - Registros duplicados por proveedor y archivo.
-- Referencias de portada/pasos a metadatos inexistentes.
+- Referencias de portada/pasos y fotos de alimentos a metadatos inexistentes.
 - Imágenes sin referencias, incluso si conservan `recetaId`.
 - Archivos de ImageKit sin metadatos.
 - Metadatos cuyo archivo no aparece en la carpeta comprobada.
@@ -98,9 +99,30 @@ la salida de producción, conservarla localmente fuera de Git.
 5. Aplicar y verificar el índice en producción **antes de integrar el cambio
    en `main`**. La creación en desarrollo no demuestra que exista en producción.
 
-La entrega y el borrado de imágenes siguen resolviendo referencias de recetas.
-Antes de que otra sección utilice `images`, ampliar conjuntamente autorización,
-borrado e inventario para considerar también sus referencias.
+La entrega y el borrado de imágenes resuelven referencias de recetas y alimentos
+mediante `src/lib/usos-imagenes.ts`. Antes de que otra sección utilice `images`,
+ampliar conjuntamente autorización, borrado e inventario con sus referencias.
+
+### Incorporar Despensa
+
+1. Aplicar `npm run indices` en desarrollo. Añade la colección `foods`, el índice
+   único `alimento_nombre_unico` por `claveNombre`, `despensa_publicada` y el índice
+   `images.alimentoId`. No rellena alimentos ni modifica recetas existentes.
+2. Comprobar en local y Preview: alta de borrador, publicación, indispensable,
+   revisión de enlaces, foto, edición concurrente y retirada. Las pruebas HTTP
+   locales cubren además que borrar una receta conserve la foto de un alimento
+   y viceversa. No ejecutar la suite HTTP contra Vercel.
+3. Ejecutar inventario y aplicar los índices con la configuración de producción
+   y `npm run indices -- --permitir-prod`, **antes** de integrar en `main`.
+4. Verificar `/despensa`, su entrada en cabecera y sitemap, y
+   `/admin/despensa`. El estado inicial vacío es válido: las recomendaciones
+   se escriben desde el panel, sin contenidos de muestra publicados.
+
+Los documentos antiguos de imágenes pueden no llevar `alimentoId`; se resuelven
+sin migración. Una vez haya fotos de alimentos, un rollback debe conservar las
+comprobaciones de usos de Despensa: el código antiguo que solo consultaba recetas
+no sirve para autorizar ni limpiar esas fotos. El backup habitual incluye `foods`
+automáticamente y los originales siguen en `images`.
 
 ## Acceso y permisos
 
@@ -146,6 +168,8 @@ Comprueba visibilidad de página/API/foto, CSRF, guardado idempotente, conflicto
 If-Match, cambio de contraseña, sesión caducada, desafío TOTP, código de
 recuperación de un solo uso y eliminación de lector. Comprueba también el alta
 real de imagen y reintentos simultáneos con el mismo ID y metadatos conservados.
+Incluye publicación y retirada de alimentos, deduplicación de nombres, revisión
+de destinos, conflictos y conservación/borrado de fotografías compartidas.
 No prueba entrega de correo,
 pantallas en dispositivos reales ni aislamiento de producción. No usarla contra
 una URL de Vercel ni una base real de producción.

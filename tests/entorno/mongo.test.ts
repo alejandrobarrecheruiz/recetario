@@ -130,6 +130,8 @@ describe("indices", () => {
     const enImagenes = (await db.collection(COLECCIONES.imagenes).listIndexes().toArray()).map(
       (indice) => indice.name,
     );
+    const enAlimentos = await db.collection(COLECCIONES.alimentos).listIndexes().toArray();
+    assert.ok(enAlimentos.some(indice => indice.name === "alimento_nombre_unico" && indice.unique));
 
     assert.ok(enRecetas.includes("slug_unico"), `faltan indices en recipes: ${enRecetas.join(", ")}`);
     assert.ok(
@@ -138,6 +140,7 @@ describe("indices", () => {
     );
     assert.ok(enImagenes.includes("recetaId"), `faltan indices en images: ${enImagenes.join(", ")}`);
     assert.ok(enImagenes.includes("proveedor_fileId_unico"), "falta el índice único de archivos del proveedor");
+    assert.ok(enImagenes.includes("alimentoId"), "falta el índice de limpieza de fotos de Despensa");
   });
 
   test("el indice de slug rechaza duplicados de verdad", async () => {

@@ -65,24 +65,29 @@ export function CrearReceta() {
   }
 
   return (
-    <form onSubmit={crear} className="flex flex-col gap-6">
-      <label className="flex flex-col gap-3">
-        <span className="font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.2em] text-tinta/50">
+    <form onSubmit={crear} className="panel-formulario-alta">
+      <label className="panel-etiqueta-alta">
+        <span className="editor-etiqueta">
           Título
         </span>
         <input
           autoFocus
+          required
+          maxLength={300}
+          disabled={enviando}
           value={titulo}
           onChange={(evento) => setTitulo(evento.target.value)}
           placeholder="Arroz con costra, sin prisa"
-          className="border-b border-tinta/25 bg-transparent pb-3 font-[family-name:var(--font-bricolage)] text-[clamp(26px,3.4vw,44px)] font-extrabold tracking-[-0.04em] outline-none placeholder:text-tinta/25 focus:border-tinta"
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? "error-crear-receta" : undefined}
+          className="editor-campo panel-titulo-alta"
         />
       </label>
-      {error && <p role="alert" className="text-sm text-acento">{error}</p>}
+      {error && <p id="error-crear-receta" role="alert" className="text-sm text-acento">{error}</p>}
       <button
         type="submit"
         disabled={enviando}
-        className="self-start rounded-full bg-tinta px-6 py-3.5 font-[family-name:var(--font-dm-mono)] text-[11.5px] uppercase tracking-[0.14em] text-papel hover:bg-acento disabled:opacity-50"
+        className="boton-panel self-start"
       >
         {enviando ? "Creando…" : "Crear y abrir el editor"}
       </button>

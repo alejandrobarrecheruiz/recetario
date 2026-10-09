@@ -20,6 +20,10 @@ export function NavegacionPublica() {
       <Suspense fallback={<Link href="/recetas?buscar=1" aria-label="Buscar recetas" className="icono-cabecera"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4.5 4.5" /></svg></Link>}>
         <BuscadorCabecera />
       </Suspense>
+      <Link href="/despensa" aria-label="Despensa: alimentos recomendados" aria-current={ruta === "/despensa" ? "page" : undefined} className="icono-cabecera">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 3h10v4H7zM8 7v2l-2 3v7a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-7l-2-3V7M6 13h12M6 17h12" /></svg>
+        <span aria-hidden="true" className="ayuda-cabecera">Despensa</span>
+      </Link>
       <Link href="/cuenta" aria-label="Mi cuenta y guardadas" aria-current={ruta === "/cuenta" ? "page" : undefined} className="icono-cabecera">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c.7-4.2 3.2-6 7-6s6.3 1.8 7 6" /></svg>
         <span aria-hidden="true" className="ayuda-cabecera">Mi cuenta y guardadas</span>

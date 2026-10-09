@@ -90,12 +90,12 @@ Las copias contienen metadatos de fotos, no sus archivos originales.
 | `verification` | Identificador, valor de verificación y fechas; usado también por desafíos de seguridad | Hay consumo y limpieza oportunista de caducados al consultar. El borrado de usuario no acredita barrido de todas sus verificaciones |
 | `rateLimit` | Clave formada por IP resuelta (o identificador de respaldo) y ruta, contador y fecha de última petición | Limpieza oportunista al reiniciar una ventana existente; ventana de límite no equivale a plazo máximo de conservación |
 | `twoFactor` | Relación de usuario, secreto y códigos de recuperación cifrados, verificación y contadores de bloqueo | Hook posterior a eliminar lector. Activación aplazada; no se ha inspeccionado contenido real |
-| `recipes`, `images` | Textos, autor/subidor, fechas, descripciones, IDs y metadatos de fotografía | Borrado editorial y limpieza de referencias; originales en ImageKit. No borrar fotos que otras recetas utilizan |
+| `recipes`, `foods`, `images` | Textos, autor/subidor, fechas, recomendaciones y lugares de compra, IDs y metadatos de fotografía | Borrado editorial y limpieza de referencias; originales en ImageKit. No borrar fotos que otras recetas o alimentos utilizan |
 | Backup local | Todas las colecciones no internas, índices y originales de fotos | Copia manual; sin rotación ni eliminación automática. Incluye hashes de contraseñas y tokens de sesión, además de datos personales |
 | Correo de contacto | Remitente, texto y adjuntos que la persona envíe voluntariamente a Gmail | Fuera de la base de la web; plazo y procedimiento pendientes |
 
 Fuentes: `src/lib/auth.ts`, `src/lib/privacidad-sesion.ts`, `src/lib/mongo.ts`, `src/models/`,
-`scripts/backup.ts`, rutas de recetas/imágenes y Better Auth
+`scripts/backup.ts`, rutas de recetas/alimentos/imágenes y Better Auth
 `dist/db/internal-adapter.mjs` / `dist/api/rate-limiter/index.mjs`.
 El proyecto no declara índices TTL para autenticación en `crearIndices()`;
 no se han inspeccionado los índices efectivos de producción en esta revisión.

@@ -21,6 +21,8 @@ export const imagenSchema = z.object({
   _id: idSchema,
   /** Receta de origen para limpieza; los usos reales están en portadaId/pasos. */
   recetaId: idSchema.nullable(),
+  /** Opcional para mantener compatibles las imágenes anteriores a Despensa. */
+  alimentoId: idSchema.nullable().optional(),
   proveedor: proveedorSchema,
   /**
    * Id del fichero en ImageKit. OBLIGATORIO: sin el no se puede borrar alli, y
@@ -48,7 +50,7 @@ export const imagenEntradaSchema = imagenSchema.omit({
   _id: true,
   subidaEn: true,
   subidaPor: true,
-});
+}).refine(imagen => !(imagen.recetaId && imagen.alimentoId), "La imagen tiene un único origen: receta o alimento.");
 
 export type TipoImagen = z.infer<typeof tipoImagenSchema>;
 export type Imagen = z.infer<typeof imagenSchema>;
@@ -57,9 +59,10 @@ export type ImagenEntrada = z.infer<typeof imagenEntradaSchema>;
 /** La imagen tal y como vive en MongoDB. Ver la nota de `RecetaDoc`. */
 export type ImagenDoc = Omit<
   Imagen,
-  "_id" | "recetaId" | "subidaPor"
+  "_id" | "recetaId" | "alimentoId" | "subidaPor"
 > & {
   _id: ObjectId;
   recetaId: ObjectId | null;
+  alimentoId?: ObjectId | null;
   subidaPor: ObjectId;
 };

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
-import { obtenerRecetas } from "@/lib/mongo";
+import { obtenerColecciones } from "@/lib/mongo";
 import { conVisibilidad } from "@/lib/visibilidad";
+import { conVisibilidadAlimentos } from "@/lib/alimentos";
 
 // Un buscador es un visitante anonimo: el sitemap se genera SIEMPRE con el rol
 // "publico", fijo. Las recetas de registrados y los borradores no aparecen —
@@ -12,7 +13,8 @@ export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
-  const coleccion = await obtenerRecetas();
+  const { recetas: coleccion, alimentos } = await obtenerColecciones();
+  const ultimoAlimento = await alimentos.findOne(conVisibilidadAlimentos("publico"), { sort: { actualizadaEn: -1 }, projection: { actualizadaEn: 1 } });
 
   const docs = await coleccion
     .find(conVisibilidad("publico", { estado: "publicada" }))
@@ -20,6 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .toArray();
 
   return [
+    { url: `${base}/despensa`, ...(ultimoAlimento ? { lastModified: ultimoAlimento.actualizadaEn } : {}) },
     {
       url: base,
       lastModified: docs[0]?.actualizadaEn ?? new Date(),

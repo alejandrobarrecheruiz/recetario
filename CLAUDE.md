@@ -22,6 +22,8 @@ Qué hace:
   el público no ve.
 - Las recetas son **documentos JSON en MongoDB** servidos por API. **Sin MDX.**
 - Fotos de portada y de pasos individuales.
+- Despensa pública con alimentos recomendados, lugares de compra e indispensables,
+  mantenida desde el panel.
 
 El blog está **estrenado y en producción desde el 24 de agosto de 2026**
 (`https://recetario-36ok.vercel.app`). El ritmo es semanal: escribir la receta
@@ -86,7 +88,7 @@ Cuando algo «no va» y no se sabe si es el código o el entorno, lo primero es
 
 ## 4. Modelo de datos
 
-Colecciones: `recipes`, `images`, `saves`, y las de Better Auth (`user`,
+Colecciones: `recipes`, `foods`, `images`, `saves`, y las de Better Auth (`user`,
 `session`, `account`, `verification`).
 
 Los **nombres de colección van en inglés** y los **campos en español**
@@ -137,6 +139,7 @@ navegador. La forma real en Mongo es `RecetaDoc` (import de solo tipo).
 {
   _id: ObjectId,          // identificador compartido con la receta
   recetaId: ObjectId | null,
+  alimentoId?: ObjectId | null, // origen alternativo; opcional en documentos antiguos
   proveedor: "imagekit",
   fileId: string,         // id en ImageKit; sin esto no se puede borrar allí
   url: string,
@@ -155,6 +158,12 @@ permite reutilizar imágenes entre recetas y detectar huérfanas. **`fileId` es
 obligatorio**: sin él, al borrar una receta la foto quedaría en ImageKit para
 siempre y sin forma de localizarla.
 
+La imagen tiene un único origen: receta o alimento. Las referencias reales son
+`recipes.portadaId`, `recipes.pasos.imagenId` y `foods.fotoId`. Entrega y limpieza
+consultan esos usos mediante `src/lib/usos-imagenes.ts`; conservar una foto no
+depende solo de su propietario. Al eliminar el propietario, una imagen compartida
+se reasigna a otro uso existente. Las imágenes antiguas no requieren migración.
+
 Un archivo se registra una sola vez: índice único `(proveedor, fileId)` y alta
 idempotente mediante `registrarImagen()` en `src/lib/imagenes.ts`. El primer
 registro responde 201; los reintentos devuelven 200 con el mismo ID y conservan
@@ -163,12 +172,54 @@ los metadatos existentes. Esto no deduplica los bytes de dos subidas distintas.
 La aplicación del índice en cada entorno sigue el procedimiento de
 `docs/OPERACION.md`; debe estar aplicado antes de integrar en `main`.
 
-`npm run integridad:imagenes` cruza todas las referencias de recetas (incluidos
-borradores y restringidas), metadatos e inventario paginado de ImageKit, incluidas
+`npm run integridad:imagenes` cruza todas las referencias de recetas y alimentos
+(incluidos borradores y recetas restringidas), metadatos e inventario paginado de ImageKit, incluidas
 subcarpetas del entorno. Informa de duplicados, referencias rotas, imágenes sin
 uso, archivos sin metadatos, archivos ausentes y rutas inconsistentes. Solo lee;
 no limpia ni repara. La ausencia de referencias es independiente de `recetaId`
 y requiere revisión: una subida pendiente todavía puede no estar guardada.
+
+### `foods` — Despensa
+
+Una recomendación por alimento, definida en `src/models/alimento.ts`:
+
+```ts
+{
+  _id: ObjectId,
+  nombre: string,
+  claveNombre: string, // servidor: sin tildes, minúsculas y espacios normalizados; única
+  recomendacion: string,
+  estado: "borrador" | "publicado",
+  indispensable: boolean,
+  fotoId: ObjectId | null,
+  compras: [{ id: string, tienda: string, url: string, nota: string, revisadoEn: Date | null }],
+  publicadaEn: Date | null,
+  actualizadaEn: Date,
+  autorId: ObjectId
+}
+```
+
+Indispensables es una selección de las mismas fichas, nunca otra colección.
+No hay utensilios, afiliación ni ventas. Todas las recomendaciones publicadas
+son públicas; los borradores solo se consultan en administración, usando
+`conVisibilidadAlimentos()` de `src/lib/alimentos.ts`. La página pública excluye
+borradores incluso para admins. No hay relación automática por nombre con los
+ingredientes de recetas ni una copia de recomendaciones dentro de ellas.
+
+Los lugares de compra son específicos del alimento y tienen IDs estables. Un
+enlace vacío permite tiendas físicas; los enlaces web deben ser HTTPS, sin
+credenciales. La fecha de revisión se marca expresamente con «Comprobado hoy»;
+guardar otros cambios no la renueva y modificar tienda o URL invalida la
+revisión anterior. No se consultan automáticamente webs de tiendas ni existencias.
+
+El servidor calcula la clave única del nombre tanto en altas como en cambios.
+Permite borrar o retirar la recomendación a borrador. Para publicar exige nombre
+y recomendación personal; foto y lugares de compra son opcionales. `publicadaEn`
+conserva la primera publicación. PUT y DELETE exigen `If-Match` con la versión
+actual; un conflicto devuelve 412 sin sustituir datos. El editor conserva lo
+escrito y ofrece descarga JSON, con aviso al abandonar cambios pendientes.
+El guardado es explícito, no autoguardado. La foto se sube después del primer
+guardado; solo se limpia la sustituida una vez confirmadas sus nuevas referencias.
 
 ### `saves`
 
@@ -241,10 +292,11 @@ Sobre los roles (`src/models/usuario.ts`):
 - Una publicación requiere ingredientes y pasos; el slug no cambia después
   de la primera publicación. Resumen y portada continúan siendo opcionales.
 - Las fotos antiguas se borran después de guardar sus nuevas referencias y
-  nunca si otra receta las usa. Se validan metadatos con ImageKit y referencias
+  nunca si otra receta o alimento las usa. Se validan metadatos con ImageKit y referencias
   al guardar. Las fotos se resuelven por IDs referenciados, no por propietario.
   No hay transacción distribuida Mongo/ImageKit ni tarea de limpieza automática.
-- Las fotografías siguen la visibilidad de las recetas que las referencian.
+- Las fotografías se entregan si alguna receta visible o alimento publicado
+  las referencia; los borradores de alimentos solo permiten acceso al admin.
   El cliente recibe `/api/imagenes/[id]`, nunca una firma reutilizable de ImageKit.
   La ruta autoriza cada descarga, entrega sin caché compartida y solicita al
   proveedor una versión de hasta 1600 px. El original se conserva para backup.
@@ -293,7 +345,10 @@ Definidos en `crearIndices()` de `src/lib/mongo.ts`, aplicados con
 db.recipes.createIndex({ slug: 1 }, { unique: true })
 db.recipes.createIndex({ estado: 1, visibilidad: 1, publicadaEn: -1 })  // la consulta de la portada
 db.images.createIndex({ recetaId: 1 })
+db.images.createIndex({ alimentoId: 1 })
 db.images.createIndex({ proveedor: 1, fileId: 1 }, { unique: true })
+db.foods.createIndex({ claveNombre: 1 }, { unique: true })
+db.foods.createIndex({ estado: 1, indispensable: -1, claveNombre: 1 })
 db.saves.createIndex({ usuarioId: 1, recetaId: 1 }, { unique: true })
 ```
 
@@ -523,8 +578,8 @@ acento `oklch(0.55 0.19 30)` (rojo anaranjado, ÚNICO acento) y
 **Solo existe el estilo claro.** El modo oscuro se retiró a propósito: un
 único `themeColor` y ninguna media query de `prefers-color-scheme`.
 
-**La cabecera**: logo circular que lleva a inicio y tres SVG uniformes:
-cuadrícula (`/recetas`), lupa y perfil (`/cuenta`, que reenvía al login sin
+**La cabecera**: logo circular que lleva a inicio y cuatro SVG uniformes:
+cuadrícula (`/recetas`), lupa, tarro (`/despensa`) y perfil (`/cuenta`, que reenvía al login sin
 sesión). Sin rótulos visibles permanentes, con nombres accesibles, ayuda al
 enfocar/pasar el cursor y controles de 44 px. Guardadas vive dentro de cuenta,
 no se disfraza el acceso al perfil como una lista de guardadas.
@@ -638,12 +693,33 @@ Decisión cerrada: no conservar el progreso entre esos recorridos ni recargas.
 Se mantiene únicamente la continuidad en memoria dentro del recorrido público;
 salir del modo cocina y volver a abrirlo ahí permite retomarlo.
 
+**Despensa** (`/despensa`): recomendaciones de alimentos con foto opcional,
+texto personal completo y lugares de compra. La selección «Indispensables» usa
+`?indispensables=1` y los mismos documentos. Enlaces normales, funcionales sin
+JavaScript. Tres columnas en escritorio, dos en anchuras intermedias y una en
+móvil; sin reservar fotografías ficticias. La cabecera y el sitemap incluyen
+la sección. El panel tiene entradas Recetas y Despensa; esta última vive en
+`/admin/despensa`, con alta y edición por ID. El editor de alimentos es un
+formulario de guardado explícito y reutiliza subida y descripción de imágenes.
+Los lugares con revisión pendiente se indican en el listado administrativo.
+
 **El panel**: editor sobre la receta tal como se ve. contentEditable sin
 control de React para título, resumen, pasos y nota; autoguardado con debounce
 y rótulo «Guardado hace Xs»; barra lateral con visibilidad, ficha, categorías
 y etiquetas como chips, y la descripción SEO; fotos con subida directa a
 ImageKit; reordenado por arrastre. El alta (`/admin/recetas/nueva`) pide solo
 el título y salta al editor. Todo valida con el MISMO Zod que la API.
+El listado, alta y editor de recetas comparten controles y tokens de `globals.css`:
+Instrument Sans sin rótulos decorativos en mayúsculas, cabecera papel con logo de
+44 px, superficie blanca de lectura y fotografías completas dentro de `marco-foto`.
+Título y resumen se escriben separados de la foto, sin degradados ni texto
+superpuesto; los datos visuales reutilizan `DatosReceta`. La nota personal conserva
+el tratamiento centrado y en cursiva de la ficha. Los campos, acciones de imagen
+y botones de orden tienen áreas de al menos 44 px y foco visible. Ingredientes
+reorganizan cantidad, unidad, nombre y nota en móvil; las fotos de los pasos
+aprovechan el ancho de lectura. Los detalles laterales son desplegables por debajo
+de 1100 px y visibles en escritorio. Publicar es una acción explícita y el estado
+de guardado se muestra sin parpadeos ni anuncios de cada segundo al lector de pantalla.
 
 **Las guardadas**: un marcador vacío junto a cada receta (en la introducción
 de la ficha y sobre la foto destacada o junto a la fila) que se rellena al tocarlo

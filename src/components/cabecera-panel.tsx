@@ -5,21 +5,18 @@ import { Logo } from "@/components/logo";
 /** Cabecera compartida del listado y el alta del panel. El editor no la usa:
  * ocupa la pantalla con su propia barra. El logo lleva a la portada: es la
  * salida del panel sin tocar la URL. */
-export function CabeceraPanel() {
+export function CabeceraPanel({ seccion = "recetas" }: { seccion?: "recetas" | "despensa" }) {
   return (
-    <header className="flex items-center justify-between gap-4 border-b border-tinta/15 pb-5">
-      <span className="flex items-center gap-3.5">
-        <Logo tamano={48} />
-        <Link href="/admin" className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-tinta">
-          <span className="font-[family-name:var(--font-bricolage)] text-xl font-bold tracking-[-0.03em]">
-            Panel
-          </span>
-          <span className="font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.3em] text-tinta/45">
-            Mi libro de recetas
-          </span>
-        </Link>
+    <header className="cabecera-panel">
+      <span className="cabecera-panel-identidad">
+        <Logo tamano={44} />
+        <Link href="/admin" className="editor-enlace-panel">Panel</Link>
       </span>
-      <BotonSalir />
+      <BotonSalir className="boton-panel boton-panel-secundario" />
+      <nav aria-label="Secciones del panel" className="pestanas-despensa panel-pestanas">
+        <Link href="/admin" aria-current={seccion === "recetas" ? "page" : undefined}>Recetas</Link>
+        <Link href="/admin/despensa" aria-current={seccion === "despensa" ? "page" : undefined}>Despensa</Link>
+      </nav>
     </header>
   );
 }

@@ -1,8 +1,8 @@
 import { ObjectId } from "mongodb";
 import { comprobarOrigen } from "@/lib/origen";
-import { conVisibilidad } from "@/lib/visibilidad";
 import { obtenerColecciones } from "@/lib/mongo";
-import { borrarDeImageKit, urlFirmadaDeImagen } from "@/lib/imagekit";
+import { urlFirmadaDeImagen } from "@/lib/imagekit";
+import { buscarUsoDeImagen, borrarImagenSinUso } from "@/lib/usos-imagenes";
 import { anchoImagen } from "@/lib/entrega-imagenes";
 import { docAImagen } from "@/lib/imagenes";
 import { rolActual } from "@/lib/sesion";
@@ -40,12 +40,10 @@ export async function GET(peticion: Request, contexto: Contexto) {
   if (ancho === null) return new Response(null, { status: 400, headers: cabecerasPrivadas });
   try {
     const rol = await rolActual();
-    const { recetas, imagenes } = await obtenerColecciones();
+    const { imagenes } = await obtenerColecciones();
     const imagenId = new ObjectId(id);
     if (rol !== "admin") {
-      const visible = await recetas.findOne(conVisibilidad(rol, {
-        $or: [{ portadaId: imagenId }, { "pasos.imagenId": imagenId }],
-      }), { projection: { _id: 1 } });
+      const visible = await buscarUsoDeImagen(imagenId, rol);
       if (!visible) return noExiste();
     }
     const imagen = await imagenes.findOne({ _id: imagenId });
@@ -66,7 +64,7 @@ export async function GET(peticion: Request, contexto: Contexto) {
 }
 
 /**
- * Borra fichero y metadatos únicamente si ninguna receta lo referencia.
+ * Borra fichero y metadatos únicamente si ninguna receta o alimento lo referencia.
  * El editor guarda primero la sustitución y después solicita esta limpieza.
  *
  * El orden importa: primero ImageKit y solo despues Mongo. Si el borrado
@@ -87,29 +85,22 @@ export async function DELETE(_peticion: Request, contexto: Contexto) {
     return Response.json({ error: "Identificador no valido." }, { status: 404 });
   }
 
-  const { recetas, imagenes } = await obtenerColecciones();
+  const { imagenes } = await obtenerColecciones();
   const doc = await imagenes.findOne({ _id: new ObjectId(idValido.data) });
   if (!doc) {
     return Response.json({ error: "No existe esa imagen." }, { status: 404 });
   }
 
-  const referencia = await recetas.findOne(conVisibilidad("admin", {
-    $or: [{ portadaId: doc._id }, { "pasos.imagenId": doc._id }],
-  }), { projection: { _id: 1 } });
-  if (referencia) {
-    return Response.json({ error: "Esta foto sigue en una receta. Guarda primero el cambio de foto." }, { status: 409 });
-  }
-
   try {
-    await borrarDeImageKit(doc.fileId);
+    if (!await borrarImagenSinUso(doc)) {
+      return Response.json({ error: "Esta foto sigue en uso. Guarda primero el cambio de foto." }, { status: 409 });
+    }
   } catch {
     return Response.json(
       { error: "ImageKit no respondio al borrar. Vuelve a intentarlo." },
       { status: 502 },
     );
   }
-
-  await imagenes.deleteOne({ _id: doc._id });
 
   return Response.json(docAImagen(doc));
 }

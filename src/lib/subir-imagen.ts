@@ -14,11 +14,13 @@ import type { Imagen, TipoImagen } from "@/models/imagen";
 export async function subirImagen({
   fichero,
   recetaId,
+  alimentoId,
   tipo,
   alt,
 }: {
   fichero: File;
-  recetaId: string;
+  recetaId?: string;
+  alimentoId?: string;
   tipo: TipoImagen;
   alt: string;
 }): Promise<Imagen> {
@@ -49,7 +51,8 @@ export async function subirImagen({
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      recetaId,
+      recetaId: recetaId ?? null,
+      alimentoId: alimentoId ?? null,
       proveedor: "imagekit",
       fileId: subida.fileId,
       url: subida.url,
@@ -70,10 +73,10 @@ export async function subirImagen({
   return respuestaMetadatos.json();
 }
 
-/** Borra fichero y metadatos; el servidor rechaza imágenes aún referenciadas. */
+/** Limpia fotos descartadas; una foto compartida (409) ya queda conservada por el servidor. */
 export async function quitarImagen(id: string): Promise<void> {
   const respuesta = await fetch(`/api/imagenes/${id}`, { method: "DELETE" });
-  if (!respuesta.ok && respuesta.status !== 404) {
+  if (!respuesta.ok && respuesta.status !== 404 && respuesta.status !== 409) {
     const cuerpo = await respuesta.json().catch(() => null);
     throw new Error(cuerpo?.error ?? "No se pudo borrar la imagen.");
   }

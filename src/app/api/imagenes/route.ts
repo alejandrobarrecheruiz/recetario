@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import { comprobarOrigen } from "@/lib/origen";
 import { obtenerColecciones } from "@/lib/mongo";
 import { conVisibilidad } from "@/lib/visibilidad";
+import { conVisibilidadAlimentos } from "@/lib/alimentos";
 import { detallesDeImageKit } from "@/lib/imagekit";
 import { imagenADoc, imagenParaCliente, registrarImagen } from "@/lib/imagenes";
 import { sesionActual } from "@/lib/sesion";
@@ -26,9 +27,12 @@ export async function POST(peticion: Request) {
     );
   }
 
-  const { recetas, imagenes: coleccion } = await obtenerColecciones();
+  const { recetas, alimentos, imagenes: coleccion } = await obtenerColecciones();
   if (cuerpo.data.recetaId && !await recetas.findOne(conVisibilidad("admin", { _id: new ObjectId(cuerpo.data.recetaId) }), { projection: { _id: 1 } })) {
     return Response.json({ error: "No existe esa receta." }, { status: 404 });
+  }
+  if (cuerpo.data.alimentoId && !await alimentos.findOne(conVisibilidadAlimentos("admin", { _id: new ObjectId(cuerpo.data.alimentoId) }), { projection: { _id: 1 } })) {
+    return Response.json({ error: "No existe ese alimento." }, { status: 404 });
   }
   let archivo;
   try { archivo = await detallesDeImageKit(cuerpo.data.fileId); }

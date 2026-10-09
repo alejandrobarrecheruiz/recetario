@@ -1,6 +1,7 @@
 /** Inventario de solo lectura: MongoDB + la carpeta del entorno en ImageKit. */
 import { obtenerCliente, obtenerColecciones } from "../src/lib/mongo";
 import { conVisibilidad } from "../src/lib/visibilidad";
+import { conVisibilidadAlimentos } from "../src/lib/alimentos";
 import { listarArchivosDeImageKit } from "../src/lib/imagekit";
 import { comprobarIntegridadImagenes, entornoIntegridadImagenes } from "../src/lib/integridad-imagenes";
 
@@ -12,27 +13,29 @@ async function principal() {
   const entorno = entornoIntegridadImagenes(process.env.MONGODB_DB, process.env.IMAGEKIT_FOLDER, argumentos.includes("--permitir-prod"));
   const cliente = await obtenerCliente();
   try {
-    const { recetas, imagenes } = await obtenerColecciones();
-    const [docsRecetas, docsImagenes, archivos] = await Promise.all([
+    const { recetas, imagenes, alimentos } = await obtenerColecciones();
+    const [docsRecetas, docsImagenes, archivos, docsAlimentos] = await Promise.all([
       recetas.find(conVisibilidad("admin"), { projection: { portadaId: 1, "pasos.id": 1, "pasos.imagenId": 1 } }).sort({ _id: 1 }).toArray(),
-      imagenes.find({}, { projection: { proveedor: 1, fileId: 1, path: 1, recetaId: 1 } }).sort({ _id: 1 }).toArray(),
+      imagenes.find({}, { projection: { proveedor: 1, fileId: 1, path: 1, recetaId: 1, alimentoId: 1 } }).sort({ _id: 1 }).toArray(),
       listarArchivosDeImageKit(entorno.carpeta),
+      alimentos.find(conVisibilidadAlimentos("admin"), { projection: { fotoId: 1 } }).sort({ _id: 1 }).toArray(),
     ]);
     const incidencias = comprobarIntegridadImagenes(
       docsRecetas.map(receta => ({ _id: receta._id.toHexString(), portadaId: receta.portadaId?.toHexString() ?? null,
         pasos: receta.pasos.map(paso => ({ id: paso.id, imagenId: paso.imagenId?.toHexString() ?? null })) })),
       docsImagenes.map(imagen => ({ _id: imagen._id.toHexString(), proveedor: imagen.proveedor, fileId: imagen.fileId,
-        path: imagen.path, recetaId: imagen.recetaId?.toHexString() ?? null })),
+        path: imagen.path, recetaId: imagen.recetaId?.toHexString() ?? null, alimentoId: imagen.alimentoId?.toHexString() ?? null })),
       archivos,
       entorno.carpeta,
+      docsAlimentos.map(alimento => ({ _id: alimento._id.toHexString(), fotoId: alimento.fotoId?.toHexString() ?? null })),
     );
     const informe = { completo: true, ...entorno, comprobadoEn: new Date().toISOString(),
-      totales: { recetas: docsRecetas.length, imagenes: docsImagenes.length, archivos: archivos.length }, incidencias };
+      totales: { recetas: docsRecetas.length, alimentos: docsAlimentos.length, imagenes: docsImagenes.length, archivos: archivos.length }, incidencias };
     if (argumentos.includes("--json")) {
       console.log(JSON.stringify(informe, null, 2));
     } else {
       console.log(`Integridad de imágenes: ${entorno.base} / ${entorno.carpeta}`);
-      console.log(`${informe.totales.recetas} recetas, ${informe.totales.imagenes} imágenes, ${informe.totales.archivos} archivos.`);
+      console.log(`${informe.totales.recetas} recetas, ${informe.totales.alimentos} alimentos, ${informe.totales.imagenes} imágenes, ${informe.totales.archivos} archivos.`);
       const titulos: Record<keyof typeof incidencias, string> = {
         duplicados: "Archivos registrados varias veces",
         referenciasRotas: "Referencias a imágenes inexistentes",

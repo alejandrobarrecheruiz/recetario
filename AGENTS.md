@@ -99,6 +99,11 @@ empezar por `src/lib/visibilidad.ts` y comprobar todos los consumidores,
 incluidos guardadas y sitemap. Para cambiar imágenes hay que revisar en
 conjunto la firma, la subida directa, los metadatos, el borrado en ImageKit y
 la limpieza de referencias.
+El alta reutiliza un único documento por `(proveedor, fileId)`; los reintentos
+no sobrescriben metadatos. `npm run integridad:imagenes` cruza las referencias
+reales y el inventario de ImageKit en modo de solo lectura. No identifica
+huérfanas solo por `recetaId` ni las borra automáticamente. Antes de aplicar el
+índice único, revisar duplicados siguiendo `docs/OPERACION.md`.
 
 ## Entorno y comandos
 
@@ -124,8 +129,14 @@ npm run build
 la base de desarrollo. `npm run test:todo` ejecuta ambas suites.
 
 `PROBAR_HTTP=1 npm run test:entorno` añade flujos HTTP con el servidor local
-en `localhost:3000`; crea y limpia cuentas temporales solo en `recetas_dev`.
+en `localhost:3000`; crea y limpia cuentas temporales solo en `recetas_dev`
+y un PNG privado de prueba en la carpeta `dev` de ImageKit.
 No se ejecuta contra Vercel ni contra producción.
+
+`npm run integridad:imagenes` usa `.env.local` y solo lee MongoDB e ImageKit.
+Admite `--json`; devuelve 0 sin incidencias, 1 con incidencias y 2 si falla la
+comprobación. Exige `recetas_dev/dev` o `recetas_prod/prod`, y para producción
+requiere `--permitir-prod` explícito. No ejecutar durante subidas o ediciones.
 
 Los scripts cargan `.env.local` y se protegen frente a producción. `seed:dev`
 no se ejecuta nunca contra `recetas_prod`. `indices`, `backup` y

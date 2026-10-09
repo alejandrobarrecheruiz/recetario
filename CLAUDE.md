@@ -71,6 +71,7 @@ npm run test         # pruebas puras (visibilidad y esquemas), sin red
 npm run test:entorno # comprueba .env.local: Atlas e ImageKit de verdad
 npm run test:todo    # las dos anteriores
 npm run indices      # crea los índices de MongoDB (idempotente)
+npm run integridad:imagenes # inventario de solo lectura: referencias y archivos
 npm run crear-usuario           # alta de usuario, rol registrado
 npm run crear-usuario -- --rol admin
 npm run seed:dev     # datos de ejemplo (solo recetas_dev)
@@ -153,6 +154,21 @@ Definido en `src/models/imagen.ts`. Colección separada, **no subdocumentos**:
 permite reutilizar imágenes entre recetas y detectar huérfanas. **`fileId` es
 obligatorio**: sin él, al borrar una receta la foto quedaría en ImageKit para
 siempre y sin forma de localizarla.
+
+Un archivo se registra una sola vez: índice único `(proveedor, fileId)` y alta
+idempotente mediante `registrarImagen()` en `src/lib/imagenes.ts`. El primer
+registro responde 201; los reintentos devuelven 200 con el mismo ID y conservan
+los metadatos existentes. Esto no deduplica los bytes de dos subidas distintas.
+`crearIndices()` detecta duplicados antes de crear índices y aborta sin fusionarlos.
+La aplicación del índice en cada entorno sigue el procedimiento de
+`docs/OPERACION.md`; debe estar aplicado antes de integrar en `main`.
+
+`npm run integridad:imagenes` cruza todas las referencias de recetas (incluidos
+borradores y restringidas), metadatos e inventario paginado de ImageKit, incluidas
+subcarpetas del entorno. Informa de duplicados, referencias rotas, imágenes sin
+uso, archivos sin metadatos, archivos ausentes y rutas inconsistentes. Solo lee;
+no limpia ni repara. La ausencia de referencias es independiente de `recetaId`
+y requiere revisión: una subida pendiente todavía puede no estar guardada.
 
 ### `saves`
 
@@ -277,6 +293,7 @@ Definidos en `crearIndices()` de `src/lib/mongo.ts`, aplicados con
 db.recipes.createIndex({ slug: 1 }, { unique: true })
 db.recipes.createIndex({ estado: 1, visibilidad: 1, publicadaEn: -1 })  // la consulta de la portada
 db.images.createIndex({ recetaId: 1 })
+db.images.createIndex({ proveedor: 1, fileId: 1 }, { unique: true })
 db.saves.createIndex({ usuarioId: 1, recetaId: 1 }, { unique: true })
 ```
 

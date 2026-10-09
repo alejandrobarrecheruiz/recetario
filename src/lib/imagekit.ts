@@ -1,4 +1,5 @@
 import ImageKit, { NotFoundError } from "@imagekit/nodejs";
+import { inventariarArchivosImageKit } from "@/lib/inventario-imagekit";
 
 /**
  * Cliente de servidor de ImageKit. Se usa para gestionar ficheros ya subidos:
@@ -28,6 +29,11 @@ export function urlFirmadaDeImagen(path: string, ancho?: number): string {
 
 export async function detallesDeImageKit(fileId: string) {
   return clienteImageKit().files.get(fileId);
+}
+
+/** Solo lectura: no descarga originales ni modifica archivos del proveedor. */
+export async function listarArchivosDeImageKit(carpeta: string) {
+  return inventariarArchivosImageKit(carpeta, parametros => clienteImageKit().assets.list(parametros));
 }
 
 function clienteImageKit(): ImageKit {

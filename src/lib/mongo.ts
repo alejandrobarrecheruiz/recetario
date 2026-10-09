@@ -60,8 +60,8 @@ export function obtenerCliente(): Promise<MongoClient> {
 }
 
 /**
- * Base de datos del entorno actual. `MONGODB_DB` es lo UNICO que cambia entre
- * dev y prod: la cadena de conexion es la misma. Ver CLAUDE.md.
+ * Base de datos del entorno actual. `MONGODB_DB` selecciona la base; las
+ * credenciales de `MONGODB_URI` deben estar limitadas a su entorno. Ver CLAUDE.md.
  */
 export async function obtenerDb(): Promise<Db> {
   const nombre = process.env.MONGODB_DB;
@@ -111,6 +111,16 @@ export function esBaseDeProduccion(): boolean {
 export async function crearIndices(): Promise<string[]> {
   const { recetas, imagenes, guardadas } = await obtenerColecciones();
 
+  // Comprobar antes de crear índices: nunca fusionar ni borrar datos al migrar.
+  const duplicado = await imagenes.aggregate([
+    { $group: { _id: { proveedor: "$proveedor", fileId: "$fileId" }, cantidad: { $sum: 1 } } },
+    { $match: { cantidad: { $gt: 1 } } },
+    { $limit: 1 },
+  ]).next();
+  if (duplicado) {
+    throw new Error("Hay imágenes duplicadas por proveedor y fileId. Ejecuta npm run integridad:imagenes y resuelve sus referencias antes de crear índices. No se ha eliminado ningún dato.");
+  }
+
   const creados = await Promise.all([
     // El slug es la URL: tiene que ser unico.
     recetas.createIndex({ slug: 1 }, { unique: true, name: "slug_unico" }),
@@ -121,6 +131,10 @@ export async function crearIndices(): Promise<string[]> {
     ),
     // Para resolver las imagenes de una receta de una sola pasada.
     imagenes.createIndex({ recetaId: 1 }, { name: "recetaId" }),
+    imagenes.createIndex(
+      { proveedor: 1, fileId: 1 },
+      { unique: true, name: "proveedor_fileId_unico" },
+    ),
     // Guardar dos veces no duplica; cubre tambien "las guardadas de este usuario".
     guardadas.createIndex(
       { usuarioId: 1, recetaId: 1 },

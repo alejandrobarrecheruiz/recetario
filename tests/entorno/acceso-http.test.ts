@@ -1,8 +1,9 @@
-/** Prueba optativa del servidor local con cuentas temporales; nunca producción. */
+/** Prueba optativa local con cuentas y una imagen privada temporales; nunca producción. */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes, createHmac } from "node:crypto";
 import { ObjectId } from "mongodb";
+import ImageKit from "@imagekit/nodejs";
 import { obtenerCliente, obtenerColecciones, obtenerDb } from "@/lib/mongo";
 import { conVisibilidad } from "@/lib/visibilidad";
 
@@ -17,6 +18,7 @@ function codigoTotp(uri: string) {
 
 test("HTTP: acceso, contraseña, TOTP, borrado, fotos, CSRF y conflicto entre pestañas", { skip: process.env.PROBAR_HTTP !== "1" }, async t => {
   assert.equal(process.env.MONGODB_DB, "recetas_dev");
+  assert.equal(process.env.IMAGEKIT_FOLDER, "dev");
   const origen = process.env.BETTER_AUTH_URL!;
   assert.ok(["http://localhost:3000", "http://127.0.0.1:3000"].includes(origen));
   const { auth } = await import("@/lib/auth");
@@ -25,7 +27,9 @@ test("HTTP: acceso, contraseña, TOTP, borrado, fotos, CSRF y conflicto entre pe
   const marca = randomBytes(8).toString("hex");
   const usuarios: ObjectId[] = [];
   const recetaId = new ObjectId();
-  const imagenId = new ObjectId();
+  let imagenId = new ObjectId();
+  const proveedor = new ImageKit({ privateKey: process.env.IMAGEKIT_PRIVATE_KEY! });
+  let archivoTemporal: string | undefined;
   const atributosCookies = new Set<string>();
   const cookies = (respuesta: Response) => {
     for (const cookie of respuesta.headers.getSetCookie()) {
@@ -53,17 +57,45 @@ test("HTTP: acceso, contraseña, TOTP, borrado, fotos, CSRF y conflicto entre pe
       sesiones[rol] = cookies(acceso);
       assert.ok(sesiones[rol]);
     }
-    const foto = await imagenes.findOne({});
-    assert.ok(foto, "Hace falta una fotografía en desarrollo para comprobar entrega real.");
-    await imagenes.insertOne({ ...foto, _id: imagenId, recetaId, subidaPor: usuarios[1] });
     const receta = {
       _id: recetaId, autorId: usuarios[1], slug: `prueba-http-${marca}`, titulo: "Receta de prueba HTTP", resumen: "",
       estado: "publicada" as const, visibilidad: "registrada" as const, publicadaEn: new Date(), actualizadaEn: new Date(),
       raciones: 2, tiempo: { preparacion: 1, coccion: 0, total: 1 }, dificultad: "facil" as const, categorias: [], etiquetas: [],
       ingredientes: [{ id: "ingrediente", cantidad: 1, unidad: "", nombre: "Prueba" }],
-      pasos: [{ id: "paso", orden: 0, texto: "Preparar.", imagenId: null }], portadaId: imagenId, seo: { descripcion: "" },
+      pasos: [{ id: "paso", orden: 0, texto: "Preparar.", imagenId: null }], portadaId: null as ObjectId | null, seo: { descripcion: "" },
     };
     await recetas.insertOne(receta);
+    // PNG de 1 px, privado y exclusivo de esta ejecución. Nunca copiar ni
+    // modificar metadatos de una foto editorial para preparar la prueba.
+    const subida = await proveedor.files.upload({
+      file: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aVr0AAAAASUVORK5CYII=",
+      fileName: `prueba-http-${marca}.png`, folder: "/dev", isPrivateFile: true,
+      useUniqueFileName: false, overwriteFile: false,
+    });
+    archivoTemporal = subida.fileId;
+    assert.ok(archivoTemporal && subida.filePath && subida.url && subida.width && subida.height && subida.size);
+    const metadatos = { recetaId: recetaId.toHexString(), proveedor: "imagekit", fileId: archivoTemporal,
+      url: subida.url, path: subida.filePath, ancho: subida.width, alto: subida.height, bytes: subida.size,
+      alt: "Foto temporal de prueba", tipo: "portada", orden: 0 };
+    const alta = await llamada("/api/imagenes", sesiones.admin, "POST", metadatos);
+    assert.equal(alta.status, 201, `Alta de imagen: ${alta.status === 201 ? "correcta" : await alta.text()}`);
+    const foto = await alta.json();
+    imagenId = new ObjectId(foto._id);
+    receta.portadaId = imagenId;
+    await recetas.updateOne(conVisibilidad("admin", { _id: recetaId }), { $set: { portadaId: imagenId } });
+    const original = await imagenes.findOne({ _id: imagenId });
+    const reintentos = await Promise.all(Array.from({ length: 2 }, () => llamada("/api/imagenes", sesiones.admin, "POST", {
+      ...metadatos, alt: "El reintento no modifica la foto existente",
+    })));
+    for (const registro of reintentos) {
+      assert.equal(registro.status, 200, "Repetir el registro de un archivo devuelve la imagen existente");
+      const repetida = await registro.json();
+      assert.equal(repetida._id, foto._id);
+      assert.equal(repetida.alt, foto.alt);
+      assert.equal(repetida.url, `/api/imagenes/${foto._id}`);
+    }
+    assert.equal(await imagenes.countDocuments({ proveedor: foto.proveedor, fileId: foto.fileId }), 1);
+    assert.deepEqual(await imagenes.findOne({ _id: imagenId }), original);
     const ruta = `/api/recetas/${recetaId}`;
     const rutaFoto = `/api/imagenes/${imagenId}?ancho=240`;
     assert.equal((await llamada(ruta)).status, 404);
@@ -119,12 +151,20 @@ test("HTTP: acceso, contraseña, TOTP, borrado, fotos, CSRF y conflicto entre pe
     assert.equal(await db.collection("twoFactor").countDocuments({ userId: usuarios[0] }), 0);
     t.diagnostic(`Cookies locales observadas (sin valores): ${[...atributosCookies].join(" | ")}`);
   } finally {
+    try {
     await guardadas.deleteMany({ recetaId });
     await recetas.deleteOne(conVisibilidad("admin", { _id: recetaId }));
-    await imagenes.deleteOne({ _id: imagenId });
+    // También localiza el alta si se perdió su respuesta HTTP.
+    if (archivoTemporal) await imagenes.deleteMany({ proveedor: "imagekit", fileId: archivoTemporal });
     for (const nombre of ["account", "session", "twoFactor"]) await db.collection(nombre).deleteMany({ userId: { $in: usuarios } });
     await db.collection("user").deleteMany({ _id: { $in: usuarios } });
     await db.collection("verification").deleteMany({ value: { $in: usuarios.map(id => id.toHexString()) } });
-    await (await obtenerCliente()).close();
+    } finally {
+      try {
+        if (archivoTemporal) await proveedor.files.delete(archivoTemporal);
+      } finally {
+        await (await obtenerCliente()).close();
+      }
+    }
   }
 });

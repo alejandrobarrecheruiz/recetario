@@ -13,6 +13,7 @@
     "test:entorno": "node --env-file=.env.local --import tsx --test-reporter=spec --test \"tests/entorno/*.test.ts\"",
     "test:todo": "npm run test && npm run test:entorno",
     "indices": "node --env-file=.env.local --import tsx scripts/indices.ts",
+    "integridad:imagenes": "node --env-file=.env.local --import tsx scripts/integridad-imagenes.ts",
     "crear-usuario": "node --env-file=.env.local --import tsx scripts/crear-usuario.ts",
     "seed:dev": "node --env-file=.env.local --import tsx scripts/seed-dev.ts",
     "backup": "node --env-file=.env.local --import tsx scripts/backup.ts",

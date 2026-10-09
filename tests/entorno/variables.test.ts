@@ -118,9 +118,8 @@ describe("MongoDB", () => {
   });
 
   test("MONGODB_URI no fija base de datos: eso es cosa de MONGODB_DB", () => {
-    // La cadena es identica en local y en Vercel. Lo unico que cambia entre dev
-    // y prod es MONGODB_DB. Si la base va incrustada en la URI, esa separacion
-    // deja de ser fiable en cuanto alguien use el cliente sin pasar por obtenerDb.
+    // La base se selecciona con MONGODB_DB y las credenciales se separan por
+    // entorno. La URI no debe seleccionar implícitamente una base distinta.
     const uri = exigir("MONGODB_URI");
     const trasAutoridad = uri.split("://")[1]?.split("@").pop() ?? "";
     const camino = trasAutoridad.split("?")[0].split("/")[1] ?? "";

@@ -243,7 +243,7 @@ describe("imagenSchema", () => {
     assert.equal(imagenSchema.safeParse({ ...imagenValida(), fileId: "" }).success, false);
   });
 
-  test("recetaId puede ser null (imagen huerfana detectable)", () => {
+  test("recetaId puede ser null; no determina si la imagen tiene referencias", () => {
     assert.ok(imagenSchema.safeParse({ ...imagenValida(), recetaId: null }).success);
   });
 

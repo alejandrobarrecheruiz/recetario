@@ -6,14 +6,15 @@ import { CrearReceta } from "@/components/crear-receta";
 // verdad; esta pagina solo esta tras el guard del layout.
 export default function PaginaNuevaReceta() {
   return (
-    <div className="mx-auto flex min-h-svh w-full max-w-[1100px] flex-col gap-8 px-[clamp(20px,4vw,40px)] py-8">
+    <main className="pagina-panel">
       <CabeceraPanel />
-      <section className="flex max-w-[720px] flex-col gap-6">
-        <h2 className="font-[family-name:var(--font-bricolage)] text-[clamp(26px,3vw,40px)] font-extrabold leading-none tracking-[-0.035em]">
+      <section className="panel-alta" aria-labelledby="titulo-alta">
+        <h1 id="titulo-alta" className="panel-titulo">
           Nueva receta
-        </h2>
+        </h1>
+        <p className="panel-introduccion">Empieza por el nombre del plato. En el editor podrás escribir los ingredientes, los pasos y añadir las fotos.</p>
         <CrearReceta />
       </section>
-    </div>
+    </main>
   );
 }

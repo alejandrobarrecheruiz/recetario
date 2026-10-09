@@ -135,6 +135,31 @@ Raciones y paso se comparten mientras se navega entre las páginas
 públicas. El progreso es temporal: recargar o entrar en cuenta/acceso/panel lo
 reinicia. Las guardadas sí usan la cuenta y la base de datos habituales.
 
+El alta y el editor de recetas usan el mismo estilo de lectura y fotografías
+enmarcadas que la web pública. En móvil, «Detalles de la receta» despliega
+visibilidad, raciones, tiempos y categorías. El editor conserva el autoguardado;
+la publicación sigue siendo una acción explícita.
+
+### Despensa
+
+`/despensa` reúne alimentos recomendados, dónde comprarlos y una selección de
+indispensables. Se entra desde el tarro de la cabecera. Para mantenerla:
+
+1. Abrir **Panel → Despensa → Añadir alimento**.
+2. Escribir el nombre y la recomendación personal. Guardar el borrador para
+   poder añadir una foto opcional.
+3. Añadir tiendas físicas o enlaces HTTPS. «Comprobado hoy» registra una revisión
+   expresa del lugar; cambiar la tienda o el enlace reinicia esa fecha.
+4. Marcar «Indispensable» si corresponde y pulsar **Publicar**. Los cambios
+   posteriores se guardan con **Guardar cambios**; **Retirar de la despensa**
+   vuelve a borrador. No hay autoguardado en este formulario.
+
+Los nombres equivalentes por tildes, mayúsculas y espacios no crean otra ficha.
+Las fotos comparten el sistema protegido de recetas. El inventario de imágenes
+incluye también los alimentos. Antes de desplegar por primera vez, aplicar
+`npm run indices` en desarrollo y, con su configuración y permiso explícito,
+en producción según [docs/OPERACION.md](./docs/OPERACION.md).
+
 El blog está estrenado y en producción desde el 24 de agosto de 2026. El ritmo
 es semanal: escribir la receta en el panel, publicarla y `npm run backup`. Los
 pendientes de seguridad, contenido y puesta en marcha están en

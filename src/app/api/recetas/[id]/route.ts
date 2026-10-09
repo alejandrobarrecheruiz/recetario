@@ -3,7 +3,7 @@ import { comprobarOrigen } from "@/lib/origen";
 import { conVisibilidad } from "@/lib/visibilidad";
 import { MongoServerError } from "mongodb";
 import { obtenerColecciones, obtenerRecetas } from "@/lib/mongo";
-import { borrarDeImageKit } from "@/lib/imagekit";
+import { limpiarImagenesAsociadas } from "@/lib/usos-imagenes";
 import { docAReceta, recetaADoc, resolverPublicadaEn } from "@/lib/recetas";
 import { rolActual } from "@/lib/sesion";
 import { idSchema, recetaEntradaSchema, recetaSchema } from "@/models/receta";
@@ -111,39 +111,16 @@ export async function DELETE(_peticion: Request, contexto: Contexto) {
     return Response.json({ error: "Identificador no valido." }, { status: 404 });
   }
 
-  const { recetas, imagenes, guardadas } = await obtenerColecciones();
+  const { recetas, guardadas } = await obtenerColecciones();
   const resultado = await recetas.findOneAndDelete(conVisibilidad("admin", { _id: new ObjectId(idValido.data) }));
   if (!resultado) {
     return Response.json({ error: "No existe esa receta." }, { status: 404 });
   }
   await guardadas.deleteMany({ recetaId: resultado._id });
 
-  // Limpieza de sus imagenes: primero el fichero en ImageKit y solo despues los
-  // metadatos. Si ImageKit falla, el documento conserva su fileId y se puede
-  // reintentar; el fallo se cuenta en la respuesta, no se esconde.
-  const deLaReceta = await imagenes.find({ recetaId: resultado._id }).toArray();
-  let imagenesBorradas = 0;
-  let imagenesConFallo = 0;
-  for (const imagen of deLaReceta) {
-    const referencia = await recetas.findOne(conVisibilidad("admin", {
-      $or: [{ portadaId: imagen._id }, { "pasos.imagenId": imagen._id }],
-    }), { projection: { _id: 1 } });
-    if (referencia) {
-      await imagenes.updateOne({ _id: imagen._id }, { $set: { recetaId: referencia._id } });
-      continue;
-    }
-    try {
-      await borrarDeImageKit(imagen.fileId);
-      await imagenes.deleteOne({ _id: imagen._id });
-      imagenesBorradas += 1;
-    } catch {
-      imagenesConFallo += 1;
-    }
-  }
-
+  const limpieza = await limpiarImagenesAsociadas({ recetaId: resultado._id });
   return Response.json({
     receta: docAReceta(resultado),
-    imagenesBorradas,
-    imagenesConFallo,
+    ...limpieza,
   });
 }

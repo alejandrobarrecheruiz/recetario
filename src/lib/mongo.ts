@@ -2,6 +2,7 @@ import { MongoClient, type Collection, type Db } from "mongodb";
 import type { RecetaDoc } from "@/models/receta";
 import type { ImagenDoc } from "@/models/imagen";
 import type { GuardadaDoc } from "@/models/guardada";
+import type { AlimentoDoc } from "@/models/alimento";
 
 /**
  * Cliente de MongoDB cacheado en `globalThis`: en serverless el modulo se puede
@@ -16,6 +17,7 @@ const COLECCIONES = {
   recetas: "recipes",
   imagenes: "images",
   guardadas: "saves",
+  alimentos: "foods",
 } as const;
 
 const globalConCache = globalThis as typeof globalThis & {
@@ -79,12 +81,14 @@ export async function obtenerColecciones(): Promise<{
   recetas: Collection<RecetaDoc>;
   imagenes: Collection<ImagenDoc>;
   guardadas: Collection<GuardadaDoc>;
+  alimentos: Collection<AlimentoDoc>;
 }> {
   const db = await obtenerDb();
   return {
     recetas: db.collection<RecetaDoc>(COLECCIONES.recetas),
     imagenes: db.collection<ImagenDoc>(COLECCIONES.imagenes),
     guardadas: db.collection<GuardadaDoc>(COLECCIONES.guardadas),
+    alimentos: db.collection<AlimentoDoc>(COLECCIONES.alimentos),
   };
 }
 
@@ -109,7 +113,7 @@ export function esBaseDeProduccion(): boolean {
 
 /** Crea los indices. Idempotente; se ejecuta con `npm run indices`. */
 export async function crearIndices(): Promise<string[]> {
-  const { recetas, imagenes, guardadas } = await obtenerColecciones();
+  const { recetas, imagenes, guardadas, alimentos } = await obtenerColecciones();
 
   // Comprobar antes de crear índices: nunca fusionar ni borrar datos al migrar.
   const duplicado = await imagenes.aggregate([
@@ -131,6 +135,7 @@ export async function crearIndices(): Promise<string[]> {
     ),
     // Para resolver las imagenes de una receta de una sola pasada.
     imagenes.createIndex({ recetaId: 1 }, { name: "recetaId" }),
+    imagenes.createIndex({ alimentoId: 1 }, { name: "alimentoId" }),
     imagenes.createIndex(
       { proveedor: 1, fileId: 1 },
       { unique: true, name: "proveedor_fileId_unico" },
@@ -140,6 +145,8 @@ export async function crearIndices(): Promise<string[]> {
       { usuarioId: 1, recetaId: 1 },
       { unique: true, name: "usuario_receta_unico" },
     ),
+    alimentos.createIndex({ claveNombre: 1 }, { unique: true, name: "alimento_nombre_unico" }),
+    alimentos.createIndex({ estado: 1, indispensable: -1, claveNombre: 1 }, { name: "despensa_publicada" }),
   ]);
 
   return creados;

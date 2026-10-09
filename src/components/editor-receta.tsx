@@ -17,8 +17,9 @@ import {
 } from "@/models/receta";
 import type { Imagen } from "@/models/imagen";
 import { subirImagen, quitarImagen } from "@/lib/subir-imagen";
-import { parsearCantidad, urlConAncho } from "@/lib/formato";
+import { fechaDePublicacion, parsearCantidad, urlConAncho } from "@/lib/formato";
 import { Logo } from "@/components/logo";
+import { DatosReceta } from "@/components/datos-receta";
 import { DescripcionImagen } from "@/components/descripcion-imagen";
 import { leerBorradores, prefijoBorrador } from "@/lib/borradores-editor";
 import type { DatosEditor, BorradorEditor } from "@/models/borrador-editor";
@@ -60,14 +61,16 @@ const formatoCantidadEditor = new Intl.NumberFormat("es-ES", {
 function EntradaCantidad({
   valor,
   onCambio,
+  etiqueta,
 }: {
   valor: number;
   onCambio: (cantidad: number) => void;
+  etiqueta: string;
 }) {
   const [texto, setTexto] = useState(() => formatoCantidadEditor.format(valor));
   return (
     <input
-      aria-label="Cantidad"
+      aria-label={etiqueta}
       value={texto}
       onChange={(evento) => {
         setTexto(evento.target.value);
@@ -79,7 +82,7 @@ function EntradaCantidad({
         setTexto(formatoCantidadEditor.format(cantidad));
         if (cantidad !== valor) onCambio(cantidad);
       }}
-      className="bg-transparent font-[family-name:var(--font-dm-mono)] text-[13px] text-acento outline-none"
+      className="editor-campo editor-ingrediente-cantidad"
     />
   );
 }
@@ -148,7 +151,7 @@ function CampoEditable({
       onInput={(evento) =>
         onCambio((evento.currentTarget as HTMLDivElement).innerText.replace(/\n+$/, ""))
       }
-      className={`whitespace-pre-wrap rounded-[3px] outline-none focus:bg-tinta/5 empty:before:pointer-events-none empty:before:text-tinta/30 empty:before:content-[attr(data-placeholder)] ${className ?? ""}`}
+      className={`editor-editable ${className ?? ""}`}
     />
   );
 }
@@ -156,9 +159,9 @@ function CampoEditable({
 /** Rotulillo de grupo de la barra lateral. */
 function RotuloLateral({ children }: { children: ReactNode }) {
   return (
-    <div className="mb-3 font-[family-name:var(--font-dm-mono)] text-[10.5px] uppercase tracking-[0.2em] text-tinta/50">
+    <h3 className="editor-rotulo">
       {children}
-    </div>
+    </h3>
   );
 }
 
@@ -193,7 +196,7 @@ function GrupoChips({
             title="Quitar"
             aria-label={`Quitar ${valor}`}
             onClick={() => onCambio(valores.filter((otro) => otro !== valor))}
-            className="rounded-full bg-tinta/10 px-3 py-1.5 text-[12.5px] hover:bg-tinta/20"
+            className="editor-chip"
           >
             {valor} <span className="text-tinta/45">×</span>
           </button>
@@ -215,13 +218,13 @@ function GrupoChips({
                 setAnadiendo(false);
               }
             }}
-            className="w-28 border-b border-tinta/30 bg-transparent px-1 py-1 text-[12.5px] outline-none"
+            className="editor-campo editor-chip-campo"
           />
         ) : (
           <button
             type="button"
             onClick={() => setAnadiendo(true)}
-            className="whitespace-nowrap rounded-full border border-dashed border-tinta/30 px-3 py-1.5 text-[12.5px] text-tinta/55 hover:border-tinta/60"
+            className="boton-panel boton-panel-secundario"
           >
             + añadir
           </button>
@@ -271,6 +274,7 @@ export function EditorReceta({
   const [subiendo, setSubiendo] = useState<Record<string, boolean>>({});
   const [errorSubida, setErrorSubida] = useState<string | null>(null);
   const [confirmandoBorrado, setConfirmandoBorrado] = useState(false);
+  const [ajustesAbiertos, setAjustesAbiertos] = useState(false);
   const [arrastre, setArrastre] = useState<
     { lista: "ingredientes" | "pasos"; desde: number } | null
   >(null);
@@ -575,18 +579,12 @@ export function EditorReceta({
   }
 
   const portada = datos.portadaId ? imagenesPorId[datos.portadaId] : undefined;
-  const clasePildoraEstado = (activa: boolean) =>
-    `rounded-full px-3.75 py-2 font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.12em] ${
-      activa ? "bg-acento text-[#f1f6f8]" : "text-tinta/60 hover:text-tinta"
-    }`;
-  const claseFilaFicha =
-    "flex items-baseline justify-between gap-3 border-b border-tinta/15 pb-2.25";
-  const claseDatoFicha =
-    "bg-transparent text-right font-[family-name:var(--font-dm-mono)] text-[13px] outline-none";
+  const claseFilaFicha = "editor-fila-ficha";
+  const claseDatoFicha = "editor-campo editor-dato-ficha";
 
   return (
-    <div key={versionVista} className="flex min-h-svh flex-col">
-      {recuperables.length > 0 && <aside className="border-b border-tinta/20 bg-superficie p-5" aria-label="Borradores recuperables">
+    <div key={versionVista} className="editor-receta">
+      {recuperables.length > 0 && <aside className="editor-aviso" aria-label="Borradores recuperables">
         <p>Hay cambios sin guardar de otra pestaña o sesión en este navegador.</p>
         {recuperables.map(({ clave, borrador }) => <div key={clave} className="mt-3 flex flex-wrap items-center gap-4">
           <span>{new Date(borrador.guardadoEn).toLocaleString("es")}</span>
@@ -594,81 +592,66 @@ export function EditorReceta({
           <button type="button" onClick={() => { window.localStorage.removeItem(clave); setRecuperables(actuales => actuales.filter(b => b.clave !== clave)); }}>Descartar copia local</button>
         </div>)}
       </aside>}
-      {avisoLocal && <p role="alert" className="p-4 text-acento">{avisoLocal}</p>}
-      {conProblema && <aside className="flex flex-wrap items-center gap-4 border-b border-tinta/20 bg-superficie p-4">
+      {avisoLocal && <p role="alert" className="editor-aviso text-acento">{avisoLocal}</p>}
+      {conProblema && <aside className="editor-aviso editor-aviso-acciones" aria-label="Recuperar cambios">
         <button type="button" onClick={descargarCambios}>Descargar mis cambios</button>
         <a href={`/recetas/${receta.slug}`} target="_blank" rel="noopener noreferrer">Revisar receta del servidor</a>
         <button type="button" onClick={() => window.location.reload()}>Recargar y conservar borrador local</button>
         <button type="button" onClick={() => void guardarMiVersion()}>Guardar mi versión revisada</button>
       </aside>}
       {/* ── Barra superior ─────────────────────────────────────────── */}
-      <div className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-tinta/15 bg-superficie px-[clamp(16px,3vw,28px)] py-3">
-        <div className="flex min-w-0 items-center gap-5 font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.14em]">
-          <Logo tamano={36} />
-          <Link href="/admin" className="whitespace-nowrap text-tinta/65">
-            ← Panel
-          </Link>
-          <span className="flex min-w-0 items-center normal-case tracking-[0.06em] text-tinta/45">
-            /recetas/
-            <input
-              value={datos.slug}
-              readOnly={Boolean(datos.publicadaEn)}
-              onChange={(evento) =>
-                tocar({ slug: evento.target.value.toLowerCase() })
-              }
-              aria-label="URL de la receta"
-              className="w-[24ch] max-w-[40vw] bg-transparent lowercase text-tinta/70 outline-none focus:text-tinta"
-            />
-          </span>
+      <header className="editor-barra">
+        <a href="#contenido-editor" className="saltar-contenido">Saltar a la receta</a>
+        <div className="editor-barra-identidad">
+          <Logo tamano={44} />
+          <Link href="/admin" className="editor-enlace-panel">Panel · Recetas</Link>
+          <span className="editor-estado">{datos.estado === "publicada" ? "Publicada" : "Borrador"}</span>
         </div>
-        <div className="flex flex-wrap items-center gap-3.5">
+        <div className="editor-barra-acciones">
           <span
             role="status"
-            className={`flex items-center gap-2 font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.12em] ${
-              conProblema ? "text-acento" : "text-tinta/60"
-            }`}
+            className={`editor-guardado ${conProblema ? "text-acento" : "text-tinta/65"}`}
           >
-            <span
-              className={`h-1.5 w-1.5 rounded-full bg-acento ${
-                guardado.fase === "limpio" ? "parpadea" : ""
-              }`}
-            />
-            {textoGuardado()}
+            <span aria-hidden="true">{textoGuardado()}</span>
+            <span className="sr-only">{guardado.fase === "limpio" ? "Cambios guardados" : textoGuardado()}</span>
           </span>
-          <div className="flex gap-0.5 rounded-full bg-tinta/10 p-[3px]">
+          {datos.estado === "publicada" && (
             <button
               type="button"
               onClick={() => tocar({ estado: "borrador" })}
-              className={clasePildoraEstado(datos.estado === "borrador")}
+              disabled={guardado.fase === "guardando" || borrando}
+              className="boton-panel boton-panel-secundario"
             >
-              Borrador
+              Pasar a borrador
             </button>
-            <span className={clasePildoraEstado(datos.estado === "publicada")}>
-              Publicada
-            </span>
-          </div>
-          <button type="button" disabled={guardado.fase === "guardando" || borrando} onClick={() => void guardar()} className="rounded-full border border-tinta/30 px-5 py-3 disabled:opacity-50">Guardar</button>
-          <button
+          )}
+          <button type="button" disabled={guardado.fase === "guardando" || borrando} onClick={() => void guardar()} className={`boton-panel ${datos.estado === "publicada" ? "" : "boton-panel-secundario"}`}>Guardar</button>
+          {datos.estado === "borrador" && <button
             type="button"
             disabled={guardado.fase === "guardando" || borrando}
             onClick={() => void guardar(true)}
-            className="rounded-full bg-tinta px-5.5 py-2.75 font-[family-name:var(--font-dm-mono)] text-[11.5px] uppercase tracking-[0.14em] text-papel hover:bg-acento"
+            className="boton-panel"
           >
             Publicar
-          </button>
+          </button>}
         </div>
-      </div>
+      </header>
 
-      <div className="flex min-h-0 flex-1 flex-wrap items-stretch">
+      <div className="editor-disposicion">
         {/* ── Barra lateral ──────────────────────────────────────── */}
-        <aside className="flex max-w-[340px] flex-1 basis-[260px] flex-col gap-7 border-r border-tinta/15 bg-lateral px-6 py-6.5">
+        <aside className="editor-lateral" aria-label="Detalles de la receta">
+          <h2 className="editor-ajustes-titulo">Detalles de la receta</h2>
+          <button type="button" className="editor-ajustes-toggle" aria-expanded={ajustesAbiertos} aria-controls="ajustes-receta" onClick={() => setAjustesAbiertos(abiertos => !abiertos)}>
+            <span>Detalles de la receta</span><span aria-hidden="true">{ajustesAbiertos ? "−" : "+"}</span>
+          </button>
+          <div id="ajustes-receta" className="editor-ajustes-contenido" data-abierto={ajustesAbiertos}>
           <div>
             <RotuloLateral>Quién la ve</RotuloLateral>
             <div className="flex flex-col gap-2.25">
               {(
                 [
                   ["publica", "Pública"],
-                  ["registrada", "Solo registradas"],
+                  ["registrada", "Lectores registrados"],
                 ] as const
               ).map(([valor, rotulo]) => {
                 const activa = datos.visibilidad === valor;
@@ -676,17 +659,12 @@ export function EditorReceta({
                   <button
                     key={valor}
                     type="button"
+                    aria-pressed={activa}
                     onClick={() => tocar({ visibilidad: valor })}
-                    className={`flex items-center gap-2.5 text-left text-[14.5px] ${
-                      activa ? "text-tinta/90" : "text-tinta/55"
-                    }`}
+                    className="editor-opcion-visibilidad"
                   >
                     <span
-                      className={`h-[13px] w-[13px] rounded-full ${
-                        activa
-                          ? "bg-acento shadow-[inset_0_0_0_3px_var(--lateral)]"
-                          : "border border-tinta/35"
-                      }`}
+                      aria-hidden="true" className="editor-indicador-opcion"
                     />
                     {rotulo}
                   </button>
@@ -707,11 +685,11 @@ export function EditorReceta({
                   onChange={(evento) =>
                     tocar({ raciones: evento.target.valueAsNumber || 0 })
                   }
-                  className={`${claseDatoFicha} w-12`}
+                  className={claseDatoFicha}
                 />
               </label>
               <div className={claseFilaFicha}>
-                <span className="text-sm text-tinta/65">Prep · cocción</span>
+                <span className="text-sm text-tinta/65">Preparación / cocción (min)</span>
                 <span className="flex items-baseline gap-1">
                   <input
                     type="number"
@@ -728,9 +706,9 @@ export function EditorReceta({
                         },
                       });
                     }}
-                    className={`${claseDatoFicha} w-9`}
+                    className={`${claseDatoFicha} editor-dato-tiempo`}
                   />
-                  <span className="font-[family-name:var(--font-dm-mono)] text-[13px] text-tinta/45">
+                  <span className="text-tinta/45" aria-hidden="true">
                     ·
                   </span>
                   <input
@@ -748,7 +726,7 @@ export function EditorReceta({
                         },
                       });
                     }}
-                    className={`${claseDatoFicha} w-9`}
+                    className={`${claseDatoFicha} editor-dato-tiempo`}
                   />
                 </span>
               </div>
@@ -763,7 +741,7 @@ export function EditorReceta({
                       tiempo: { ...datos.tiempo, total: evento.target.valueAsNumber || 0 },
                     })
                   }
-                  className={`${claseDatoFicha} w-12`}
+                  className={claseDatoFicha}
                 />
               </label>
               <label className={claseFilaFicha}>
@@ -781,8 +759,8 @@ export function EditorReceta({
                 </select>
               </label>
               {datos.publicadaEn && (
-                <p className="pt-1 text-[12.5px] leading-relaxed text-tinta/50">
-                  Publicada el {new Date(datos.publicadaEn).toLocaleDateString("es-ES")}. La
+                <p className="editor-ayuda">
+                  Publicada el {fechaDePublicacion(new Date(datos.publicadaEn))}. La
                   fecha se conserva aunque vuelva a borrador.
                 </p>
               )}
@@ -801,6 +779,10 @@ export function EditorReceta({
           />
 
           <div>
+            <RotuloLateral>Dirección de la receta</RotuloLateral>
+            <label className="editor-direccion"><span>/recetas/</span><input className="editor-campo" aria-label="URL de la receta" value={datos.slug} readOnly={Boolean(datos.publicadaEn)} onChange={evento => tocar({ slug: evento.target.value.toLowerCase() })} /></label>
+          </div>
+          <div>
             <RotuloLateral>Para buscadores</RotuloLateral>
             <textarea
               aria-label="Descripción para buscadores"
@@ -808,41 +790,44 @@ export function EditorReceta({
               value={datos.seoDescripcion}
               onChange={(evento) => tocar({ seoDescripcion: evento.target.value })}
               placeholder="La descripción que sale en Google."
-              className="w-full resize-y border-b border-tinta/20 bg-transparent pb-2 text-[13.5px] leading-relaxed outline-none placeholder:text-tinta/35 focus:border-tinta/50"
+              className="editor-campo editor-descripcion-seo"
             />
           </div>
 
           <div className="mt-auto flex flex-col gap-4">
-            <p className="text-sm leading-relaxed text-tinta/50">
-              Escribes sobre la receta tal como se va a ver. Pincha cualquier bloque para
-              editarlo.
+            <p className="editor-ayuda">
+              Escribe en el título, los ingredientes y los pasos. Los cambios se guardan automáticamente.
             </p>
             <button
               type="button"
               onClick={() => void borrarReceta()}
-              className="self-start font-[family-name:var(--font-dm-mono)] text-[11px] uppercase tracking-[0.14em] text-acento/80 hover:text-acento"
+              className="boton-panel boton-panel-peligro"
             >
               {confirmandoBorrado ? "¿Seguro? Pulsa otra vez" : "Borrar receta"}
             </button>
           </div>
+          </div>
         </aside>
 
         {/* ── La receta, tal como se ve ──────────────────────────── */}
-        <div className="min-w-0 flex-1 basis-[520px] bg-papel pb-22">
-          <div className="relative flex h-[44vh] min-h-[320px] items-end overflow-hidden">
-            {portada ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={urlConAncho(portada.url, 1600)}
-                alt={portada.alt}
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-            ) : (
-              <div className="rayas absolute inset-0" />
-            )}
-            <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(222,230,233,0.95),rgba(222,230,233,0.3))]" />
-            <div className="absolute right-4 top-4 flex gap-2 font-[family-name:var(--font-dm-mono)] text-[10.5px] uppercase tracking-[0.12em]">
-              <label className="cursor-pointer whitespace-nowrap rounded-full border border-tinta/20 bg-superficie/90 px-3.25 py-1.75 text-tinta hover:border-tinta/50 focus-within:outline-2 focus-within:outline-acento focus-within:outline-offset-4">
+        <main id="contenido-editor" tabIndex={-1} className="editor-hoja">
+          <h1 className="sr-only">Editar receta: {datos.titulo}</h1>
+          {errorSubida && <p role="alert" className="editor-aviso text-acento">{errorSubida}</p>}
+          <div className={`editor-introduccion${portada ? "" : " editor-sin-portada"}`}>
+            <div className="editor-presentacion">
+              <p className="editor-etiqueta">Título</p>
+              <CampoEditable inicial={datos.titulo} onCambio={titulo => tocar({ titulo })} placeholder="El nombre del plato" className="ficha-titulo editor-titulo" />
+              <p className="editor-etiqueta">Resumen</p>
+              <CampoEditable inicial={datos.resumen} onCambio={resumen => tocar({ resumen })} multilinea placeholder="Dos líneas sobre por qué esta receta." className="ficha-resumen editor-resumen" />
+              <DatosReceta minutos={datos.tiempo.total} raciones={datos.raciones} dificultad={datos.dificultad} />
+            </div>
+            <section className="editor-portada" aria-label="Foto de portada">
+              {portada && <div className="marco-foto">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={urlConAncho(portada.url, 1200)} alt={portada.alt} width={portada.ancho} height={portada.alto} />
+              </div>}
+              <div className="editor-foto-controles">
+              <label className="boton-panel boton-panel-secundario editor-subida" aria-disabled={subiendo.portada === true}>
                 <input
                   type="file"
                   aria-label="Foto de portada"
@@ -859,60 +844,35 @@ export function EditorReceta({
                   ? "Subiendo…"
                   : portada
                     ? "Cambiar foto"
-                    : "Poner foto"}
+                    : "Añadir foto de portada"}
               </label>
               {portada && (
                 <button
                   type="button"
+                  disabled={subiendo.portada === true}
                   onClick={() => void quitarPortada()}
-                  className="whitespace-nowrap rounded-full border border-tinta/20 bg-superficie/90 px-3.25 py-1.75 text-tinta hover:border-tinta/50"
+                  className="boton-panel boton-panel-secundario"
                 >
-                  Quitar
+                  Quitar foto
                 </button>
               )}
-            </div>
-            <div className="relative w-full px-[clamp(20px,4vw,44px)] pb-8">
-              <div className="mb-2.75 font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.2em] text-acento">
-                Título
               </div>
-              <CampoEditable
-                inicial={datos.titulo}
-                onCambio={(titulo) => tocar({ titulo })}
-                placeholder="El nombre del plato"
-                className="-ml-1.5 max-w-[18ch] px-1.5 py-0.5 font-[family-name:var(--font-bricolage)] text-[clamp(34px,4.8vw,66px)] font-extrabold leading-[0.92] tracking-[-0.045em]"
-              />
-            </div>
+              {portada && <DescripcionImagen key={portada._id} id={portada._id} inicial={portada.alt} onGuardada={alt => setImagenesPorId(actual => ({ ...actual, [portada._id]: { ...actual[portada._id], alt } }))} />}
+            </section>
           </div>
 
-          <div className="max-w-[900px] px-[clamp(20px,4vw,44px)] pt-10">
-            {portada && <DescripcionImagen key={portada._id} id={portada._id} inicial={portada.alt} onGuardada={alt => setImagenesPorId(actual => ({ ...actual, [portada._id]: { ...actual[portada._id], alt } }))} />}
-            {errorSubida && (
-              <p role="alert" className="mb-6 text-sm text-acento">{errorSubida}</p>
-            )}
-
-            <div className="mb-2.75 font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.2em] text-tinta/50">
-              Resumen
-            </div>
-            <CampoEditable
-              inicial={datos.resumen}
-              onCambio={(resumen) => tocar({ resumen })}
-              multilinea
-              placeholder="Dos líneas sobre por qué esta receta."
-              className="-ml-1.5 px-1.5 py-1.5 font-[family-name:var(--font-bricolage)] text-2xl leading-[1.35] tracking-[-0.03em] text-tinta/90"
-            />
-
+          <div className="editor-cuerpo">
             {/* Ingredientes */}
-            <div className="mb-4 mt-11 flex items-center gap-3.5 font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.2em]">
-              <span className="text-tinta/50">Ingredientes</span>
-              <span className="h-px flex-1 bg-tinta/15" />
+            <div className="editor-seccion-cabecera">
+              <h2 className="ficha-titulo-seccion">Ingredientes</h2>
               <button
                 type="button"
                 onClick={() =>
                   tocar({ ingredientes: [...datos.ingredientes, ingredienteVacio()] })
                 }
-                className="whitespace-nowrap uppercase tracking-[0.2em] text-acento"
+                className="boton-panel boton-panel-secundario"
               >
-                + línea
+                Añadir ingrediente
               </button>
             </div>
             <div className="flex flex-col">
@@ -932,22 +892,23 @@ export function EditorReceta({
                     }
                   }}
                   onDrop={(evento) => evento.preventDefault()}
-                  className="grid grid-cols-[22px_58px_68px_minmax(0,1fr)_minmax(60px,120px)_22px] items-baseline gap-3 rounded-[3px] border-t border-tinta/10 px-2 py-2.5 hover:bg-tinta/5"
+                  className="editor-ingrediente"
                 >
-                  <span className="flex flex-col">
+                  <span className="editor-orden editor-orden-ingrediente">
                   <button type="button" aria-label={`Subir ingrediente ${indice + 1}`} disabled={indice === 0} onClick={() => tocar({ ingredientes: mover(datos.ingredientes, indice, indice - 1) })}>↑</button>
                   <span
                     draggable
                     onDragStart={() => setArrastre({ lista: "ingredientes", desde: indice })}
                     onDragEnd={() => setArrastre(null)}
                     title="Arrastra para reordenar"
-                    className="cursor-grab font-[family-name:var(--font-dm-mono)] text-xs text-tinta/30"
+                    className="editor-arrastre"
                   >
                     ::
                   </span>
                   <button type="button" aria-label={`Bajar ingrediente ${indice + 1}`} disabled={indice === datos.ingredientes.length - 1} onClick={() => tocar({ ingredientes: mover(datos.ingredientes, indice, indice + 1) })}>↓</button>
                   </span>
                   <EntradaCantidad
+                    etiqueta={`Cantidad del ingrediente ${indice + 1}`}
                     valor={ingrediente.cantidad}
                     onCambio={(cantidad) =>
                       tocar({
@@ -958,7 +919,7 @@ export function EditorReceta({
                     }
                   />
                   <input
-                    aria-label="Unidad"
+                    aria-label={`Unidad del ingrediente ${indice + 1}`}
                     placeholder="unidad"
                     value={ingrediente.unidad}
                     onChange={(evento) =>
@@ -970,10 +931,10 @@ export function EditorReceta({
                         ),
                       })
                     }
-                    className="bg-transparent font-[family-name:var(--font-dm-mono)] text-[13px] text-tinta/60 outline-none placeholder:text-tinta/30"
+                    className="editor-campo editor-ingrediente-unidad"
                   />
                   <input
-                    aria-label="Nombre"
+                    aria-label={`Nombre del ingrediente ${indice + 1}`}
                     placeholder="ingrediente"
                     value={ingrediente.nombre}
                     onChange={(evento) =>
@@ -985,11 +946,11 @@ export function EditorReceta({
                         ),
                       })
                     }
-                    className="min-w-0 bg-transparent text-base outline-none placeholder:text-tinta/30"
+                    className="editor-campo editor-ingrediente-nombre"
                   />
                   <input
-                    aria-label="Nota"
-                    placeholder="nota"
+                    aria-label={`Nota del ingrediente ${indice + 1}`}
+                    placeholder="Nota (opcional)"
                     value={ingrediente.nota ?? ""}
                     onChange={(evento) =>
                       tocar({
@@ -1006,11 +967,12 @@ export function EditorReceta({
                         ),
                       })
                     }
-                    className="min-w-0 bg-transparent text-[13.5px] text-tinta/55 outline-none placeholder:text-tinta/25"
+                    className="editor-campo editor-ingrediente-nota"
                   />
                   <button
                     type="button"
-                    title="Quitar línea"
+                    title="Quitar ingrediente"
+                    aria-label={`Quitar ingrediente ${indice + 1}`}
                     onClick={() =>
                       tocar({
                         ingredientes: datos.ingredientes.filter(
@@ -1018,7 +980,7 @@ export function EditorReceta({
                         ),
                       })
                     }
-                    className="text-center text-[13px] text-tinta/30 hover:text-acento"
+                    className="editor-quitar-ingrediente boton-icono-panel"
                   >
                     ✕
                   </button>
@@ -1027,15 +989,14 @@ export function EditorReceta({
             </div>
 
             {/* Pasos */}
-            <div className="mb-5 mt-11 flex items-center gap-3.5 font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.2em]">
-              <span className="text-tinta/50">Pasos</span>
-              <span className="h-px flex-1 bg-tinta/15" />
+            <div className="editor-seccion-cabecera">
+              <h2 className="ficha-titulo-seccion">Pasos</h2>
               <button
                 type="button"
                 onClick={() => tocar({ pasos: [...datos.pasos, pasoVacio()] })}
-                className="whitespace-nowrap uppercase tracking-[0.2em] text-acento"
+                className="boton-panel boton-panel-secundario"
               >
-                + paso
+                Añadir paso
               </button>
             </div>
             <div className="flex flex-col gap-5.5">
@@ -1052,22 +1013,22 @@ export function EditorReceta({
                       }
                     }}
                     onDrop={(evento) => evento.preventDefault()}
-                    className="grid grid-cols-[40px_minmax(0,1fr)_92px] items-start gap-4.5 rounded-[4px] px-2.5 py-3.5 hover:bg-tinta/5"
+                    className="editor-paso"
                   >
-                    <div className="flex flex-col items-center gap-2">
+                    <div className="editor-orden editor-paso-orden">
                     <button type="button" aria-label={`Subir paso ${indice + 1}`} disabled={indice === 0} onClick={() => tocar({ pasos: mover(datos.pasos, indice, indice - 1) })}>↑</button>
                     <div
                       draggable
                       onDragStart={() => setArrastre({ lista: "pasos", desde: indice })}
                       onDragEnd={() => setArrastre(null)}
                       title="Arrastra para reordenar"
-                      className="cursor-grab font-[family-name:var(--font-bricolage)] text-3xl font-extrabold leading-none tracking-[-0.045em] text-tinta/30"
+                      className="editor-arrastre ficha-paso-numero"
                     >
                       {String(indice + 1).padStart(2, "0")}
                     </div>
                     <button type="button" aria-label={`Bajar paso ${indice + 1}`} disabled={indice === datos.pasos.length - 1} onClick={() => tocar({ pasos: mover(datos.pasos, indice, indice + 1) })}>↓</button>
                     </div>
-                    <div className="min-w-0">
+                    <div className="editor-paso-textos">
                       <CampoEditable
                         inicial={paso.titulo ?? ""}
                         onCambio={(titulo) =>
@@ -1077,8 +1038,8 @@ export function EditorReceta({
                             ),
                           })
                         }
-                        placeholder="rotulillo (opcional)"
-                        className="mb-2 font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.18em] text-tinta/50"
+                        placeholder={`Título del paso ${indice + 1} (opcional)`}
+                        className="ficha-paso-titulo"
                       />
                       <CampoEditable
                         inicial={paso.texto}
@@ -1090,12 +1051,12 @@ export function EditorReceta({
                           })
                         }
                         multilinea
-                        placeholder="Qué se hace en este paso."
-                        className="px-0.5 text-[17px] leading-[1.6]"
+                        placeholder={`Qué se hace en el paso ${indice + 1}.`}
+                        className="ficha-paso-texto"
                       />
                     </div>
-                    <div className="flex flex-col items-stretch gap-1.5">
-                      <label className="relative block aspect-square cursor-pointer overflow-hidden bg-raya-clara focus-within:outline-2 focus-within:outline-acento focus-within:outline-offset-4">
+                    <div className="editor-paso-imagen">
+                      <label className={`editor-subida ${foto ? "editor-foto-selector marco-foto" : "boton-panel boton-panel-secundario"}`} aria-disabled={subiendo[paso.id] === true}>
                         <input
                           type="file"
                           aria-label={`Foto del paso ${indice + 1}`}
@@ -1111,15 +1072,16 @@ export function EditorReceta({
                         {foto ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={urlConAncho(foto.url, 240)}
+                            src={urlConAncho(foto.url, 960)}
                             alt={foto.alt}
-                            className="absolute inset-0 h-full w-full object-cover"
+                            width={foto.ancho} height={foto.alto}
                           />
                         ) : (
-                          <span className="rayas-finas absolute inset-0 flex items-center justify-center text-center font-[family-name:var(--font-dm-mono)] text-[9.5px] uppercase tracking-[0.12em] text-tinta/50">
-                            {subiendo[paso.id] === true ? "…" : "foto"}
+                          <span>
+                            {subiendo[paso.id] === true ? "Subiendo…" : "Añadir foto al paso"}
                           </span>
                         )}
+                        {foto && <span className="editor-foto-accion">{subiendo[paso.id] === true ? "Subiendo…" : "Cambiar foto del paso"}</span>}
                       </label>
                       {foto && (
                         <DescripcionImagen key={foto._id} id={foto._id} inicial={foto.alt} onGuardada={alt => setImagenesPorId(actual => ({ ...actual, [foto._id]: { ...actual[foto._id], alt } }))} />
@@ -1128,9 +1090,10 @@ export function EditorReceta({
                         <button
                           type="button"
                           onClick={() => void quitarFotoDePaso(paso)}
-                          className="font-[family-name:var(--font-dm-mono)] text-[9.5px] uppercase tracking-[0.12em] text-tinta/45 hover:text-acento"
+                          disabled={subiendo[paso.id] === true}
+                          className="boton-panel boton-panel-secundario"
                         >
-                          quitar foto
+                          Quitar foto
                         </button>
                       )}
                       <button
@@ -1140,9 +1103,9 @@ export function EditorReceta({
                             pasos: datos.pasos.filter((otro) => otro.id !== paso.id),
                           })
                         }
-                        className="font-[family-name:var(--font-dm-mono)] text-[9.5px] uppercase tracking-[0.12em] text-tinta/45 hover:text-acento"
+                        className="boton-panel boton-panel-peligro"
                       >
-                        ✕ quitar paso
+                        Quitar paso
                       </button>
                     </div>
                   </div>
@@ -1151,20 +1114,20 @@ export function EditorReceta({
             </div>
 
             {/* Nota personal */}
-            <div className="mt-10 border-l-2 border-acento bg-superficie px-7 py-6.5">
-              <div className="mb-2.75 font-[family-name:var(--font-dm-mono)] text-[10px] uppercase tracking-[0.2em] text-acento">
+            <section className="editor-nota">
+              <h2 className="editor-etiqueta">
                 Nota personal
-              </div>
+              </h2>
               <CampoEditable
                 inicial={datos.notas}
                 onCambio={(notas) => tocar({ notas })}
                 multilinea
                 placeholder="Lo que le contarías a quien la cocine (opcional)."
-                className="-ml-1 px-1 font-[family-name:var(--font-bricolage)] text-xl leading-[1.4] tracking-[-0.028em]"
+                className="editor-nota-texto"
               />
-            </div>
+            </section>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

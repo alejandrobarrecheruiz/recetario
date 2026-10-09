@@ -36,6 +36,9 @@ consultarlo antes.
 
 - Toda consulta a `recipes` aplica `filtroVisibilidad` o `conVisibilidad` desde
   `src/lib/visibilidad.ts`.
+- Toda consulta de alimentos aplica `conVisibilidadAlimentos` desde
+  `src/lib/alimentos.ts`. La página pública de Despensa solo lista publicados,
+  incluso para admins; los borradores se gestionan en el panel.
 - El rol procede de la sesión del servidor. No se acepta desde parámetros,
   cabeceras ni datos enviados por el cliente.
 - Una receta no visible se trata como inexistente: se devuelve 404 o se llama a
@@ -104,6 +107,14 @@ no sobrescriben metadatos. `npm run integridad:imagenes` cruza las referencias
 reales y el inventario de ImageKit en modo de solo lectura. No identifica
 huérfanas solo por `recetaId` ni las borra automáticamente. Antes de aplicar el
 índice único, revisar duplicados siguiendo `docs/OPERACION.md`.
+
+Para cambiar Despensa, empezar por `src/models/alimento.ts`, sus conversiones y
+filtro en `src/lib/alimentos.ts`, la API, `editor-alimento.tsx` y la página
+`(public)/despensa`. `indispensable` selecciona documentos existentes. La clave
+única del nombre se calcula en el servidor. Las revisiones de compra son
+explícitas, no se renuevan al guardar. `src/lib/usos-imagenes.ts` centraliza
+autorización y limpieza de fotos de recetas y alimentos; cualquier nuevo uso
+debe incorporarse también al inventario de `src/lib/integridad-imagenes.ts`.
 
 ## Entorno y comandos
 

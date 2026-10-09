@@ -6,6 +6,8 @@ import { ObjectId } from "mongodb";
 import ImageKit from "@imagekit/nodejs";
 import { obtenerCliente, obtenerColecciones, obtenerDb } from "@/lib/mongo";
 import { conVisibilidad } from "@/lib/visibilidad";
+import { conVisibilidadAlimentos } from "@/lib/alimentos";
+import { borrarDeImageKit } from "@/lib/imagekit";
 
 function codigoTotp(uri: string) {
   const secreto = new URL(uri).searchParams.get("secret")!;
@@ -23,13 +25,15 @@ test("HTTP: acceso, contraseña, TOTP, borrado, fotos, CSRF y conflicto entre pe
   assert.ok(["http://localhost:3000", "http://127.0.0.1:3000"].includes(origen));
   const { auth } = await import("@/lib/auth");
   const db = await obtenerDb();
-  const { recetas, imagenes, guardadas } = await obtenerColecciones();
+  const { recetas, imagenes, guardadas, alimentos } = await obtenerColecciones();
   const marca = randomBytes(8).toString("hex");
   const usuarios: ObjectId[] = [];
   const recetaId = new ObjectId();
   let imagenId = new ObjectId();
   const proveedor = new ImageKit({ privateKey: process.env.IMAGEKIT_PRIVATE_KEY! });
   let archivoTemporal: string | undefined;
+  let alimentoId: string | undefined;
+  let revisionAlimento: string | undefined;
   const atributosCookies = new Set<string>();
   const cookies = (respuesta: Response) => {
     for (const cookie of respuesta.headers.getSetCookie()) {
@@ -118,6 +122,59 @@ test("HTTP: acceso, contraseña, TOTP, borrado, fotos, CSRF y conflicto entre pe
     assert.equal((await llamada(ruta, sesiones.admin, "PUT", entrada, { "If-Match": receta.actualizadaEn.toISOString() })).status, 200);
     assert.equal((await llamada(ruta, sesiones.admin, "PUT", { ...entrada, titulo: "Cambio de la segunda pestaña" }, { "If-Match": receta.actualizadaEn.toISOString() })).status, 412);
     assert.equal((await recetas.findOne(conVisibilidad("admin", { _id: recetaId })))?.titulo, entrada.titulo);
+    await t.test("Despensa: duplicados, publicación, revisión de enlaces, conflictos y fotos compartidas", async () => {
+      const datos = { nombre: `Alimento temporal ${marca}`, recomendacion: "Recomendación de prueba", estado: "borrador", indispensable: false,
+        fotoId: imagenId.toHexString(), compras: [{ id: "compra", tienda: "Tienda de prueba", url: "https://example.invalid/alimento", nota: "", revisadoEn: "2026-09-01T00:00:00.000Z" }] };
+      assert.equal((await llamada("/api/alimentos", "", "POST", datos)).status, 403);
+      assert.equal((await llamada("/api/alimentos", sesiones.registrado, "POST", datos)).status, 403);
+      assert.equal((await llamada("/api/alimentos", sesiones.admin, "POST", datos, { origin: "https://ajeno.test" })).status, 403);
+      const altaAlimento = await llamada("/api/alimentos", sesiones.admin, "POST", datos);
+      assert.equal(altaAlimento.status, 201);
+      let guardado = (await altaAlimento.json()).alimento;
+      alimentoId = guardado._id;
+      const rutaAlimento = `/api/alimentos/${alimentoId}`;
+      const panel = await llamada(`/admin/despensa/${alimentoId}/editar`, sesiones.admin);
+      assert.equal(panel.status, 200);
+      assert.ok((await panel.text()).includes("Por qué lo recomiendo"));
+      assert.equal((await llamada("/admin/despensa/nuevo", sesiones.admin)).status, 200);
+      assert.equal((await llamada("/api/imagenes", sesiones.admin, "POST", { ...metadatos, recetaId: null, alimentoId })).status, 200, "El alta de fotos acepta alimentos existentes sin duplicar el archivo");
+      assert.equal((await llamada("/api/imagenes", sesiones.admin, "POST", { ...metadatos, recetaId: null, alimentoId: new ObjectId().toHexString() })).status, 404);
+      assert.equal((await llamada("/api/alimentos", sesiones.admin, "POST", { ...datos, nombre: `  ALIMENTO   TEMPORAL ${marca.toUpperCase()} ` })).status, 409);
+      assert.equal((await llamada(rutaAlimento)).status, 404);
+      assert.equal((await llamada(rutaAlimento, sesiones.registrado)).status, 404);
+      assert.ok(!(await (await llamada("/despensa", sesiones.admin)).text()).includes(datos.nombre), "La página pública tampoco muestra borradores al administrador");
+      await recetas.updateOne(conVisibilidad("admin", { _id: recetaId }), { $set: { portadaId: null } });
+      assert.equal((await llamada(rutaFoto, sesiones.registrado)).status, 404, "Solo una referencia de borrador no autoriza la foto");
+      assert.equal((await llamada(`/api/imagenes/${imagenId}`, sesiones.admin, "DELETE")).status, 409, "Una foto en un alimento borrador se conserva");
+      const anterior = guardado.actualizadaEn;
+      let respuesta = await llamada(rutaAlimento, sesiones.admin, "PUT", { ...datos, estado: "publicado" }, { "If-Match": anterior });
+      assert.equal(respuesta.status, 200);
+      guardado = (await respuesta.json()).alimento;
+      assert.ok(guardado.publicadaEn);
+      assert.equal((await llamada(rutaAlimento)).status, 200);
+      assert.equal((await llamada(rutaFoto)).status, 200, "La foto de Despensa publicada se entrega al público");
+      assert.ok((await (await llamada("/despensa")).text()).includes(datos.nombre));
+      assert.ok(!(await (await llamada("/despensa?indispensables=1")).text()).includes(datos.nombre));
+      assert.equal((await llamada(rutaAlimento, sesiones.admin, "PUT", datos, { "If-Match": anterior })).status, 412);
+      assert.equal((await llamada(rutaAlimento, sesiones.admin, "DELETE", undefined, { "If-Match": anterior })).status, 412);
+      respuesta = await llamada(rutaAlimento, sesiones.admin, "PUT", { ...datos, estado: "publicado", indispensable: true,
+        compras: [{ ...datos.compras[0], url: "https://example.invalid/nuevo-destino" }] }, { "If-Match": guardado.actualizadaEn });
+      assert.equal(respuesta.status, 200);
+      guardado = (await respuesta.json()).alimento;
+      assert.equal(guardado.compras[0].revisadoEn, null);
+      assert.ok((await (await llamada("/despensa?indispensables=1")).text()).includes(datos.nombre));
+      assert.equal(await alimentos.countDocuments({ _id: new ObjectId(alimentoId) }), 1);
+      await recetas.updateOne(conVisibilidad("admin", { _id: recetaId }), { $set: { portadaId: imagenId } });
+      // Simular el origen en Despensa para comprobar el traspaso de limpieza a receta.
+      await imagenes.updateOne({ _id: imagenId }, { $set: { recetaId: null, alimentoId: new ObjectId(alimentoId) } });
+      assert.equal((await llamada(rutaAlimento, sesiones.admin, "DELETE", undefined, { "If-Match": guardado.actualizadaEn })).status, 200);
+      assert.equal((await llamada(rutaFoto, sesiones.registrado)).status, 200, "Eliminar el alimento conserva la foto usada por la receta");
+      const otraAlta = await llamada("/api/alimentos", sesiones.admin, "POST", datos);
+      assert.equal(otraAlta.status, 201);
+      guardado = (await otraAlta.json()).alimento;
+      alimentoId = guardado._id; revisionAlimento = guardado.actualizadaEn;
+      assert.equal((await llamada(rutaFoto)).status, 404, "La retirada revoca el acceso público a la foto");
+    });
     const antigua = sesiones.registrado;
     const nuevaClave = randomBytes(24).toString("hex");
     const cambio = await llamada("/api/auth/change-password", antigua, "POST", { currentPassword: claves.registrado, newPassword: nuevaClave, revokeOtherSessions: true });
@@ -149,11 +206,17 @@ test("HTTP: acceso, contraseña, TOTP, borrado, fotos, CSRF y conflicto entre pe
     assert.equal(await db.collection("user").countDocuments({ _id: usuarios[0] }), 0);
     assert.equal(await guardadas.countDocuments({ usuarioId: usuarios[0] }), 0);
     assert.equal(await db.collection("twoFactor").countDocuments({ userId: usuarios[0] }), 0);
+    assert.equal((await llamada(ruta, sesiones.admin, "DELETE")).status, 200);
+    const conservada = await imagenes.findOne({ _id: imagenId });
+    assert.equal(conservada?.alimentoId?.toHexString(), alimentoId, "Eliminar la receta conserva la foto usada por Despensa");
+    assert.equal((await llamada(`/api/alimentos/${alimentoId}`, sesiones.admin, "DELETE", undefined, { "If-Match": revisionAlimento! })).status, 200);
+    assert.equal(await imagenes.countDocuments({ _id: imagenId }), 0, "Al eliminar el último uso se limpian los metadatos");
     t.diagnostic(`Cookies locales observadas (sin valores): ${[...atributosCookies].join(" | ")}`);
   } finally {
     try {
     await guardadas.deleteMany({ recetaId });
     await recetas.deleteOne(conVisibilidad("admin", { _id: recetaId }));
+    if (usuarios[1]) await alimentos.deleteMany(conVisibilidadAlimentos("admin", { autorId: usuarios[1] }));
     // También localiza el alta si se perdió su respuesta HTTP.
     if (archivoTemporal) await imagenes.deleteMany({ proveedor: "imagekit", fileId: archivoTemporal });
     for (const nombre of ["account", "session", "twoFactor"]) await db.collection(nombre).deleteMany({ userId: { $in: usuarios } });
@@ -161,7 +224,7 @@ test("HTTP: acceso, contraseña, TOTP, borrado, fotos, CSRF y conflicto entre pe
     await db.collection("verification").deleteMany({ value: { $in: usuarios.map(id => id.toHexString()) } });
     } finally {
       try {
-        if (archivoTemporal) await proveedor.files.delete(archivoTemporal);
+        if (archivoTemporal) await borrarDeImageKit(archivoTemporal);
       } finally {
         await (await obtenerCliente()).close();
       }

@@ -117,6 +117,8 @@ sandbox. Los primeros fallos de DNS/conexión no eran fallos de credenciales.
   metadatos existentes; requiere el índice único `proveedor_fileId_unico`.
   `npm run integridad:imagenes` detecta duplicados y referencias/archivos
   descolgados en modo de solo lectura, incluidas subcarpetas del proveedor.
+  Entrega, limpieza e inventario consideran tanto recetas como alimentos de
+  Despensa, incluidos sus borradores. Los usos se resuelven en un módulo común.
   Aplicar y verificar el índice en producción según `docs/OPERACION.md` antes
   de integrar en `main`. Siguen pendientes las carreras entre guardado,
   borrado y reutilización y la reparación de incidencias detectadas.

@@ -42,6 +42,7 @@ export function imagenADoc(imagen: Imagen): ImagenDoc {
     ...imagen,
     _id: new ObjectId(imagen._id),
     recetaId: imagen.recetaId === null ? null : new ObjectId(imagen.recetaId),
+    alimentoId: imagen.alimentoId ? new ObjectId(imagen.alimentoId) : null,
     subidaPor: new ObjectId(imagen.subidaPor),
   };
 }
@@ -51,6 +52,7 @@ export function docAImagen(doc: ImagenDoc): Imagen {
     ...doc,
     _id: doc._id.toHexString(),
     recetaId: doc.recetaId === null ? null : doc.recetaId.toHexString(),
+    alimentoId: doc.alimentoId?.toHexString() ?? null,
     subidaPor: doc.subidaPor.toHexString(),
   };
 }

@@ -7,7 +7,8 @@ type RecetaInventariada = {
   portadaId: string | null;
   pasos: Pick<Paso, "id" | "imagenId">[];
 };
-type ImagenInventariada = Pick<Imagen, "_id" | "proveedor" | "fileId" | "path" | "recetaId">;
+type ImagenInventariada = Pick<Imagen, "_id" | "proveedor" | "fileId" | "path" | "recetaId" | "alimentoId">;
+type AlimentoInventariado = { _id: string; fotoId: string | null };
 
 /** No comparar por accidente una base con la carpeta de otro entorno. */
 export function entornoIntegridadImagenes(base?: string, carpeta?: string, permitirProduccion = false) {
@@ -34,12 +35,13 @@ export function comprobarIntegridadImagenes(
   imagenes: ImagenInventariada[],
   archivos: ArchivoInventariado[],
   carpeta: string,
+  alimentos: AlimentoInventariado[] = [],
 ) {
   const porId = new Map(imagenes.map(imagen => [imagen._id, imagen]));
   const porArchivo = new Map<string, ImagenInventariada[]>();
   const archivosPorId = new Map(archivos.map(archivo => [archivo.fileId, archivo]));
   const usadas = new Set<string>();
-  const referenciasRotas: { recetaId: string; imagenId: string; ubicacion: string }[] = [];
+  const referenciasRotas: { recetaId?: string; alimentoId?: string; imagenId: string; ubicacion: string }[] = [];
 
   for (const receta of recetas) {
     const referencias = [
@@ -53,7 +55,13 @@ export function comprobarIntegridadImagenes(
     }
   }
 
-  const imagenesSinReferencias: { imagenId: string; fileId: string; recetaId: string | null }[] = [];
+  for (const alimento of alimentos) {
+    if (!alimento.fotoId) continue;
+    usadas.add(alimento.fotoId);
+    if (!porId.has(alimento.fotoId)) referenciasRotas.push({ alimentoId: alimento._id, imagenId: alimento.fotoId, ubicacion: "foto" });
+  }
+
+  const imagenesSinReferencias: { imagenId: string; fileId: string; recetaId: string | null; alimentoId: string | null }[] = [];
   const imagenesSinArchivo: { imagenId: string; fileId: string }[] = [];
   const rutasInconsistentes: { imagenId: string; fileId: string; path: string; pathProveedor: string | null }[] = [];
   for (const imagen of imagenes) {
@@ -62,7 +70,7 @@ export function comprobarIntegridadImagenes(
     grupo.push(imagen);
     porArchivo.set(clave, grupo);
     if (!usadas.has(imagen._id)) {
-      imagenesSinReferencias.push({ imagenId: imagen._id, fileId: imagen.fileId, recetaId: imagen.recetaId });
+      imagenesSinReferencias.push({ imagenId: imagen._id, fileId: imagen.fileId, recetaId: imagen.recetaId, alimentoId: imagen.alimentoId ?? null });
     }
     const archivo = archivosPorId.get(imagen.fileId);
     const dentroDeCarpeta = imagen.path.startsWith(`/${carpeta}/`);

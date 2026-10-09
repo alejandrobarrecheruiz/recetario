@@ -17,11 +17,11 @@ export function DescripcionImagen({ id, inicial, onGuardada }: { id: string; ini
     } catch { setMensaje("No se pudo guardar la descripción. Vuelve a intentarlo."); }
     finally { setEnviando(false); }
   }
-  return <div className="my-4 flex flex-col gap-2 text-sm">
+  return <div className="descripcion-imagen">
     <label htmlFor={campoId}>Descripción de la foto</label>
-    <textarea id={campoId} rows={2} maxLength={1000} value={texto} onChange={e => setTexto(e.target.value)} className="w-full border border-tinta/25 bg-superficie p-2" />
-    <p className="text-tinta/60">Describe lo que aporta la imagen para quien no puede verla.</p>
-    <button type="button" disabled={enviando} onClick={() => void guardar()} className="self-start border border-tinta/25 px-3 py-2 disabled:opacity-50">{enviando ? "Guardando…" : "Guardar descripción"}</button>
+    <textarea id={campoId} rows={2} maxLength={1000} value={texto} onChange={e => setTexto(e.target.value)} className="campo-panel" />
+    <p className="editor-ayuda">Describe lo que aporta la imagen para quien no puede verla.</p>
+    <button type="button" disabled={enviando} onClick={() => void guardar()} className="boton-panel boton-panel-secundario">{enviando ? "Guardando…" : "Guardar descripción"}</button>
     <p role="status">{mensaje}</p>
   </div>;
 }

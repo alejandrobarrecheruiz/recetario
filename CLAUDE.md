@@ -656,7 +656,8 @@ con el escalador junto al título
 y controles de 44 px también en móvil. Cantidad y nombre se alinean en cada
 fila; en escritorio, la columna compartida de cantidad y unidad se ajusta a la
 medida más larga, sin saltos de línea, y los nombres quedan alineados a su
-derecha. Con notas secundarias, sin casillas,
+derecha. En móvil esa columna llega como mucho al 42 % y, si no cabe, parte
+solo entre palabras, nunca dentro de una unidad. Con notas secundarias, sin casillas,
 tachados, contadores ni «Desmarcar», tampoco en modo cocina. Se mantiene
 `medida()` con su redondeo a cuartos para piezas y medios para otras unidades.
 Sin explicación de escalado ni enlace «Ingredientes y pasos». Pasos con

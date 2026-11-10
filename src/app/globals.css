@@ -112,14 +112,11 @@ html { scroll-padding-top: calc(var(--altura-cabecera) + 20px); }
 .control-raciones button:active:not(:disabled) { background: var(--lateral); }
 .control-raciones button:disabled { opacity: .35; cursor: default; }
 .control-raciones output { display: inline-flex; min-width: 52px; align-items: center; justify-content: center; gap: 6px; font-size: 14px; font-variant-numeric: tabular-nums; }
-.ingredientes-lista > li { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 16px; padding-block: 11px; border-bottom: 1px solid var(--raya-clara); font-size: 17px; line-height: 1.5; overflow-wrap: anywhere; }
-.ingrediente-cantidad { font-weight: 600; font-variant-numeric: tabular-nums; }
+.ingredientes-lista { display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 24px; }
+.ingredientes-lista > li { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; column-gap: inherit; padding-block: 11px; border-bottom: 1px solid var(--raya-clara); font-size: 17px; line-height: 1.5; }
+.ingrediente-cantidad { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; overflow-wrap: normal; hyphens: none; }
+.ingrediente-nombre { min-width: 0; overflow-wrap: anywhere; }
 .ingrediente-nota { display: block; margin-top: 2px; font-size: 14px; color: color-mix(in srgb, var(--tinta) 65%, transparent); }
-@media (min-width: 761px) {
-  .ingredientes-lista { display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 24px; }
-  .ingredientes-lista > li { grid-column: 1 / -1; grid-template-columns: subgrid; column-gap: inherit; }
-  .ingrediente-cantidad { white-space: nowrap; overflow-wrap: normal; }
-}
 @media (max-width: 1050px) and (min-width: 761px) {
   .ingredientes-cabecera .ficha-titulo-seccion { font-size: 23px; }
 }
@@ -135,7 +132,10 @@ html { scroll-padding-top: calc(var(--altura-cabecera) + 20px); }
   .ingredientes-cabecera .ficha-titulo-seccion { font-size: 22px; }
   .control-raciones output { min-width: 36px; gap: 4px; }
   .control-raciones output svg { width: 16px; }
-  .ingredientes-lista > li { grid-template-columns: 82px minmax(0, 1fr); gap: 12px; padding-block: 13px; }
+  /* La columna de cantidad se ajusta a la medida más larga hasta un 42 %; si no cabe, parte solo entre palabras. */
+  .ingredientes-lista { grid-template-columns: fit-content(42%) minmax(0, 1fr); column-gap: 14px; }
+  .ingredientes-lista > li { padding-block: 13px; }
+  .ingrediente-cantidad { white-space: normal; }
   .ficha-preparacion { margin-top: 0; padding-top: 24px; }
   .ficha-paso { grid-template-columns: 30px minmax(0, 1fr); gap: 14px; }
   .ficha-paso-numero { font-size: 22px; }
